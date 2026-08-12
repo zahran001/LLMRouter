@@ -1,0 +1,22 @@
+# --- Rust ---
+/target
+# Cargo.lock is kept in version control since router/ is a binary crate.
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Env files ---
+.env
+.env.*
+!.env.example
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+
+# --- Benchmark outputs ---
+benchmarks/*
+!benchmarks/README.md
