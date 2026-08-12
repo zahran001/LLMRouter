@@ -1,5 +1,5 @@
 # --- Rust ---
-/target
+target/
 # Cargo.lock is kept in version control since router/ is a binary crate.
 
 # --- Python ---
@@ -16,6 +16,9 @@ venv/
 # --- OS cruft ---
 .DS_Store
 Thumbs.db
+
+# --- Local tool config ---
+.claude/
 
 # --- Benchmark outputs ---
 benchmarks/*
