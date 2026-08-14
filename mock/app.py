@@ -12,7 +12,6 @@ Run standalone: `uvicorn mock.app:app --port 9001`
 
 from __future__ import annotations
 
-import asyncio
 import json
 import random
 import time
@@ -24,18 +23,23 @@ from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from mock.configs import CONFIGS, TAIL_MULTIPLIER, TAIL_PROBABILITY, MockConfig
+from mock.timing import precise_sleep
 
 DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 DEFAULT_NUM_TOKENS = 20
 
 
 def _draw_delay_ms(base_ms: float, cfg: MockConfig, rng: random.Random) -> float:
-    """One delay draw for either the ttft wait or one tpot gap.
+    """One delay draw for either the ttft wait or one tpot gap, in ms --
+    the caller converts to seconds and passes it to precise_sleep (which
+    delivers it precisely; this function only decides its magnitude).
 
-    Stable configs return base_ms exactly (any run-to-run spread observed in
-    practice is real scheduler/OS jitter, not injected -- that's the noise
-    the calibration task measures). heavy_tailed configs additionally inject
-    a large right-tail delay on a minority of draws (spec §5).
+    Stable configs return base_ms exactly: ground truth is the configured
+    value, delivered with sub-ms accuracy by precise_sleep (mock/timing.py),
+    not an empirical baseline. heavy_tailed configs additionally inject a
+    large right-tail delay on a minority of draws (spec §5) -- the tail
+    spike is just a larger duration handed to the same precise_sleep, so
+    it's delivered precisely too, not a return to raw/imprecise sleep.
     """
     if cfg.heavy_tailed and rng.random() < TAIL_PROBABILITY:
         return base_ms * TAIL_MULTIPLIER
@@ -80,12 +84,12 @@ async def chat_completions(request: Request) -> StreamingResponse:
         yield _sse(_make_chunk(chat_id, created, model, {"role": "assistant"}, None))
 
         # 2. wait ttft_ms
-        await asyncio.sleep(_draw_delay_ms(cfg.ttft_ms, cfg, rng) / 1000.0)
+        await precise_sleep(_draw_delay_ms(cfg.ttft_ms, cfg, rng) / 1000.0)
 
         # 3. N content chunks, tpot_ms gap between consecutive ones
         for i in range(num_tokens):
             if i > 0:
-                await asyncio.sleep(_draw_delay_ms(cfg.tpot_ms, cfg, rng) / 1000.0)
+                await precise_sleep(_draw_delay_ms(cfg.tpot_ms, cfg, rng) / 1000.0)
             yield _sse(_make_chunk(chat_id, created, model, {"content": f"tok{i} "}, None))
 
         # 4. final chunk

@@ -27,9 +27,32 @@ from mock.configs import CONFIGS
 pytestmark = pytest.mark.integration
 
 STABLE_CONFIGS = ["fast", "slow", "bursty"]
-TIGHT_BAND_MS = 5.0  # stricter than the pipeline eval's hybrid band on purpose
 N_REQUESTS = 40
 NUM_TOKENS = 5
+
+# TPOT is a DIFFERENCE between two chunk arrival times, so per-chunk HTTP/
+# ASGI transport latency (request write, socket round trip, httpx line
+# parsing) cancels out of the subtraction as long as it's roughly constant
+# per chunk -- and precise_sleep's own overshoot is <0.2ms in isolation
+# (see mock/timing.py). Measured post-fix TPOT overshoot: +0.34 to +0.42ms
+# across fast/slow/bursty. 5ms leaves comfortable headroom.
+TPOT_TIGHT_BAND_MS = 5.0
+
+# TTFT is measured from t0 (before .send() is awaited) to the first content
+# chunk's arrival -- a ONE-WAY latency, so unlike TPOT it does NOT get to
+# cancel a per-chunk transport constant against anything. It structurally
+# includes connection + request-send + role-chunk + ASGI/transport delivery
+# time, which spec (WEEK1_MEASUREMENT_SPEC.md #2) deliberately says TTFT
+# SHOULD include -- precise_sleep controls wait *duration*, not this
+# surrounding machinery, so it cannot and should not remove this.
+#
+# Measured post-fix TTFT overshoot (median, 40 req/run, warm connection
+# pool, this dev machine): fast +8.54ms, +7.80ms (rerun); slow +8.40ms;
+# bursty +7.97ms -- config-independent (as expected for a fixed transport
+# constant, not a scaled timer error) and consistent within ~0.7ms across
+# four independent runs. 10ms clears that measured floor with headroom
+# without being loose enough to hide a real regression.
+TTFT_TIGHT_BAND_MS = 10.0
 
 
 async def _measure_one(client: httpx.AsyncClient, url: str, config_name: str) -> tuple[float, list[float]]:
@@ -83,11 +106,11 @@ async def test_mock_timing_accuracy(config_name, mock_base_url):
         f"tpot median={tpot_median:.2f}ms (configured {cfg.tpot_ms}ms, overshoot {tpot_overshoot:+.2f}ms)"
     )
 
-    assert ttft_median == pytest.approx(cfg.ttft_ms, abs=TIGHT_BAND_MS), (
+    assert ttft_median == pytest.approx(cfg.ttft_ms, abs=TTFT_TIGHT_BAND_MS), (
         f"mock delivered TTFT median {ttft_median:.2f}ms, configured {cfg.ttft_ms}ms "
-        f"(overshoot {ttft_overshoot:+.2f}ms) -- outside the {TIGHT_BAND_MS}ms mock-fidelity band"
+        f"(overshoot {ttft_overshoot:+.2f}ms) -- outside the {TTFT_TIGHT_BAND_MS}ms mock-fidelity band"
     )
-    assert tpot_median == pytest.approx(cfg.tpot_ms, abs=TIGHT_BAND_MS), (
+    assert tpot_median == pytest.approx(cfg.tpot_ms, abs=TPOT_TIGHT_BAND_MS), (
         f"mock delivered TPOT median {tpot_median:.2f}ms, configured {cfg.tpot_ms}ms "
-        f"(overshoot {tpot_overshoot:+.2f}ms) -- outside the {TIGHT_BAND_MS}ms mock-fidelity band"
+        f"(overshoot {tpot_overshoot:+.2f}ms) -- outside the {TPOT_TIGHT_BAND_MS}ms mock-fidelity band"
     )
