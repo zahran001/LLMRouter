@@ -46,15 +46,20 @@ conflate:
    even a calibrated-noise-based) floor will not absorb it, because it
    isn't noise, it's a consistent offset.
 
-Concretely, in this session's test run: `slow` (500ms) passed comfortably
-(10% band = 50ms comfortably covers the offset), but `fast` (100ms, 15ms
-floor) and `bursty` (300ms, 30ms band) failed the tight p50 gate against
-the *current placeholder* -- not because the measurement pipeline is wrong
-(Tier 1's 26 pure unit tests are 100% green, and both negative controls
-proved the eval catches injected bugs), but because the placeholder
-tolerance hasn't yet been calibrated against this machine's real timer
-behavior, and that behavior includes a bias term the calibration
-procedure as literally specified doesn't measure.
+Concretely, in this session's clean test run (no other load on the
+machine): `slow` (500ms, 50ms band) and `bursty` (300ms, 30ms band) passed
+comfortably -- their percentage-based bands are wide enough to absorb the
+offset. `fast` (100ms, floor-dominated at 15ms) consistently failed the
+tight p50 gate by ~25-30ms, in both the Tier 3 eval and the Tier 2
+end-to-end test, matching the raw `asyncio.sleep` overshoot measured above
+almost exactly. This is not the measurement pipeline being wrong (Tier 1's
+26 pure unit tests are 100% green, and both negative controls proved the
+eval catches injected bugs) -- it's the 15ms placeholder floor being too
+tight for this machine's real timer behavior, which is exactly what it's
+marked `[CALIBRATE]` for. (Under contention from stray background
+processes, the offset was worse and briefly pushed `bursty` and one
+negative-control sanity check out of band too -- a reminder to run the
+real 200x calibration on an otherwise-idle machine.)
 
 Before setting a final `TOLERANCE_FLOOR_MS`, decide (this is a judgment
 call, not something to guess): is the intent that the tolerance band
