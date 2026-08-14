@@ -16,10 +16,18 @@ from tests.tolerances import hybrid_band
 
 pytestmark = pytest.mark.integration
 
+# See tests/eval/test_deterministic_eval.py:DRIVE_CONCURRENCY -- tests that
+# assert on precise timing values drive the mock sequentially, since this
+# single-process dev mock's delivered TTFT degrades under concurrent SSE
+# streams independent of sleep precision (see BENCHMARKS.md).
+PRECISE_CONCURRENCY = 1
+
 
 async def test_end_to_end_fast_config(mock_base_url):
     warmup, min_samples = 10, 100
-    samples = await drive_requests(mock_base_url, "fast", n=warmup + min_samples, num_tokens=5)
+    samples = await drive_requests(
+        mock_base_url, "fast", n=warmup + min_samples, num_tokens=5, concurrency=PRECISE_CONCURRENCY
+    )
     result = aggregate(samples, warmup=warmup, min_samples=min_samples, config={"name": "fast"})
 
     assert result.valid is True
@@ -54,7 +62,9 @@ async def test_connection_pooling_active(mock_base_url):
     # is warm -- a per-request handshake spike would show up as a much
     # wider spread than the mock's own scheduling jitter.
     warmup, min_samples = 10, 100
-    samples = await drive_requests(mock_base_url, "fast", n=warmup + min_samples, num_tokens=3)
+    samples = await drive_requests(
+        mock_base_url, "fast", n=warmup + min_samples, num_tokens=3, concurrency=PRECISE_CONCURRENCY
+    )
     result = aggregate(samples, warmup=warmup, min_samples=min_samples, config={"name": "fast"})
 
     assert result.valid is True

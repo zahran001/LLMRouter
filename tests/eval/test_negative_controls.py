@@ -25,6 +25,12 @@ pytestmark = [pytest.mark.integration, pytest.mark.negative_control]
 
 WARMUP = 10
 MIN_SAMPLES = 100
+# See tests/eval/test_deterministic_eval.py:DRIVE_CONCURRENCY -- sequential
+# driving keeps the mock's delivered timing precise (concurrent SSE streams
+# on this single-process dev mock degrade TTFT independent of which sleep
+# primitive it uses; see BENCHMARKS.md). The "sanity: real pipeline passes
+# before we break it" check below needs that precision to mean anything.
+DRIVE_CONCURRENCY = 1
 
 
 async def test_broken_percentile_would_fail(mock_base_url, monkeypatch):
@@ -37,7 +43,7 @@ async def test_broken_percentile_would_fail(mock_base_url, monkeypatch):
     cfg = CONFIGS["high-variance"]
     samples = await drive_requests(
         mock_base_url, "high-variance", n=WARMUP + 150, num_tokens=5,
-        concurrency=15, seed=999,
+        concurrency=DRIVE_CONCURRENCY, seed=999,
     )
 
     # Sanity: the real pipeline passes on this data before we break it --
@@ -129,7 +135,7 @@ async def test_leaked_ttft_into_tpot_would_fail(mock_base_url):
     cfg = CONFIGS["fast"]
     n = WARMUP + MIN_SAMPLES
     url = f"{mock_base_url}/v1/chat/completions"
-    sem = asyncio.Semaphore(15)
+    sem = asyncio.Semaphore(DRIVE_CONCURRENCY)
 
     async def drive_one_leaky(client: httpx.AsyncClient) -> RequestSample:
         async with sem:
