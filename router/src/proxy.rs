@@ -108,6 +108,12 @@ pub async fn open_upstream(
 }
 
 /// POST /v1/chat/completions — the real router.
+///
+/// The whole Week 1 streaming claim lives in the body line below. Nothing
+/// between the upstream socket and the client body collects, re-frames or
+/// inspects the stream: no `.bytes().await`, no `.collect()`, no framed
+/// codec, no intermediate `Vec<u8>`. Chunks are handed to hyper as they
+/// arrive from the upstream (decision 2).
 pub async fn proxy(
     State(state): State<AppState>,
     method: Method,
@@ -120,9 +126,8 @@ pub async fn proxy(
     let status = upstream.status();
     let response_headers = headers::response_headers(upstream.headers());
 
-    // Skeleton stage: the body is collected here. Step 4 of the build order
-    // replaces this with Body::from_stream(upstream.bytes_stream()).
-    let collected = upstream.bytes().await.map_err(ProxyError::Upstream)?;
+    // THE line. Do not "optimize" this into a collect.
+    let body = Body::from_stream(upstream.bytes_stream());
 
-    Ok((status, response_headers, Body::from(collected)).into_response())
+    Ok((status, response_headers, body).into_response())
 }
