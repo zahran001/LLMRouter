@@ -112,7 +112,7 @@ concurrent load) could relax this -- out of scope for this fix.
 |---|---|---|
 | Hybrid band `max(±15ms, ±10%)` | -- | `WEEK1_MEASUREMENT_SPEC.md` §4 (locked) |
 | `TOLERANCE_FLOOR_MS` | 15ms | `[CALIBRATE]` placeholder, still pending your 200-run measurement -- see below |
-| `HIGH_VARIANCE_P99_OVER_P50_MULTIPLIER` | 1.5x | `[CALIBRATE]` placeholder from the spec, unchanged |
+| `HIGH_VARIANCE_P99_OVER_P50_MULTIPLIER` | 2.5x | **Calibrated** (CALIBRATION_TASK.md Part B) -- see "p99 multiplier calibration" below |
 | `SPIN_MARGIN_S` | 20ms | Measured: clears the ~15.5ms p95 raw-`asyncio.sleep` overshoot ceiling (table above) |
 | `TTFT_TIGHT_BAND_MS` (mock fidelity test) | 10ms | Measured: clears the ~8-10ms structural TTFT floor (table above) |
 | `TPOT_TIGHT_BAND_MS` (mock fidelity test) | 5ms | Measured: post-fix TPOT overshoot is <1ms; 5ms leaves headroom |
@@ -123,6 +123,39 @@ No constant above was chosen to "make a test pass" without a traceable
 source -- the two still marked `[CALIBRATE]` are explicitly yours to set
 from the pending 200-run noise measurement (unchanged by this fix).
 
+## p99 multiplier calibration (CALIBRATION_TASK.md Part B) -- STATUS: done
+
+`HIGH_VARIANCE_P99_OVER_P50_MULTIPLIER` in `tests/tolerances.py` gates the
+high-variance-config eval assertion `p99 >= p50 * MULTIPLIER`, which exists
+to catch a broken/flat percentile function (one that returns the mean or
+median regardless of `p`) without flaking on the legitimate stochastic tail.
+
+**Observed true tail** (post-fix, seeded, 150 measured requests, from
+"Post-fix results" above): `p50=304.13ms  p99=1207.04ms`, **p99/p50 =
+3.97x**. Strict ordering (p99 > p95 > p50) held; p95/p99 landed almost
+exactly at `300ms x TAIL_MULTIPLIER (4x)`.
+
+**Bounds:**
+- Lower bound (~1.0-1.5x) -- what a broken/flat percentile fn would produce:
+  collapsing p50/p95/p99 to the same value (mean or median) gives a ratio
+  near 1x, at most ~1.5x for a right-skewed mean on this data. The
+  multiplier must sit ABOVE this to actually catch that bug.
+- Upper bound (3.97x) -- the measured true tail. The multiplier must sit
+  BELOW this with margin so the real, stochastic tail passes reliably
+  rather than flaking when the tail draw happens to be light.
+
+**Chosen: 2.5x** -- roughly the midpoint, with margin on both sides (~1x
+above the flat-p99 bound, ~1.5x below the measured tail). Not tuned to
+either edge.
+
+**Reproducibility**: the tail is RNG-driven (`mock/app.py`: per-request
+`random.Random(seed)` when a `seed` query param is supplied), and
+`tests/eval/test_deterministic_eval.py:test_tail_computation` already
+exercises both of spec §5's reproducibility options together -- a fixed
+base seed (`20260813`, incremented per request via `tests/helpers.py:
+drive_requests`) AND a large sample (n=150, ~12 expected tail draws at the
+8% `TAIL_PROBABILITY`) -- so the measured 3.97x is not a one-off draw.
+
 ## Simulated-token caveat
 
 Week 1 measures inter-SSE-chunk gaps (TPOT), not tokenizer-level per-token
@@ -130,21 +163,80 @@ latency. The mock emits one token per chunk, so these coincide for it; real
 vLLM may batch multiple tokens per chunk, making true per-token TPOT out of
 scope for Week 1 (`WEEK1_MEASUREMENT_SPEC.md` §2, §7).
 
-## Noise floor calibration -- STATUS: pending final run
+## Noise floor calibration (CALIBRATION_TASK.md Part A) -- STATUS: done
 
-`tests/tolerances.py: TOLERANCE_FLOOR_MS` is marked `[CALIBRATE]` and is
-currently a **placeholder (15ms)**, matching the spec's own placeholder
-value, not an empirically-set constant. Do not treat it as final.
+`tests/tolerances.py: TOLERANCE_FLOOR_MS` is now **calibrated: 10ms**
+(down from the 15ms placeholder), from the authoritative 200-run measurement
+below. No longer marked `[CALIBRATE]`.
 
-`scripts/calibrate_noise_floor.py` implements the calibration task (run one
-stable config N times, record p50 TTFT per run, look at the run-to-run
-spread). It has been smoke-tested (8 short runs, not the spec's 200) to
-confirm it works end-to-end; the full 200-run calibration is intentionally
-left for you to execute and review before changing `TOLERANCE_FLOOR_MS` --
-see AGENT_METRICS_BRIEF.md's calibration note.
+**Method**: `scripts/calibrate_noise_floor.py --config fast --runs 200`,
+driven sequentially (`DRIVE_CONCURRENCY = 1`, added to the script for this
+run -- it previously defaulted to concurrency=20, which would have
+contaminated the measurement with this mock's known concurrency-dependent
+TTFT degradation, see "concurrent-stream throughput" above). `fast`
+(100ms TTFT / 20ms TPOT) was chosen because it's floor-dominated: 10% of its
+TPOT is only 2ms, so its tolerance band is governed entirely by the floor,
+not the percentage term -- the config the floor actually has to protect.
+200 runs x 110 requests/run (10 warmup + 100 measured), `num_tokens=5`,
+post-timing-fix. Full raw data: `benchmarks/noise_floor_fast.json`.
 
-Smoke-test data (`fast` config, 8 runs x 22 requests, this dev machine,
-2026-08-13), for reference only -- NOT the authoritative 200-run result:
+```
+TTFT p50 across 200 runs: mean=105.67ms  stdev=0.88ms  min=103.36ms  max=107.56ms  range=4.20ms
+                           bias vs 100ms configured=+5.67ms  max |p50-configured|=7.56ms
+TPOT p50 across 200 runs: mean=20.23ms   stdev=0.05ms  min=20.10ms  max=20.37ms   range=0.27ms
+                           bias vs 20ms configured=+0.23ms   max |p50-configured|=0.37ms
+```
+
+**Floor derivation**: the quantity that determines whether the eval flakes
+is `max |p50 - configured|` (not centered spread alone), because
+`hybrid_band` is checked against the raw *configured* value, and TTFT
+carries a real, repeatable ~5-8ms bias on top of its (tiny, ~1ms) spread --
+a floor built from stdev/range alone would silently ignore that bias and
+flake. TTFT's 7.56ms is the binding case (TPOT's 0.37ms is negligible in
+comparison). This also directly answers the pending sanity check
+(CALIBRATION_TASK.md Part A): the ~5-8ms TTFT bias measured here is the
+same structural, config-independent one-way latency (connection + send +
+role chunk + transport) already isolated in `tests/mock/test_timing_
+accuracy.py`'s `TTFT_TIGHT_BAND_MS = 10ms` (measured there via a different
+method -- direct 40-request per-config median, not p50-of-200-runs -- and
+converging on the same ~8-10ms figure). Two independent measurements of the
+same physical constant agreeing is stronger evidence than either alone, so
+**`TOLERANCE_FLOOR_MS = 10ms` reuses that already-validated number**
+rather than shaving a new one to 8ms: it covers the measured 7.56ms worst
+case with ~2.4ms margin, and keeps one source of truth for "the structural
+TTFT floor" instead of two slightly-different constants for the same thing.
+**Decision made**: ground truth for the eval stays the mock's *configured*
+value (not a measured baseline) -- consistent with the standing decision in
+"Mock timing precision fix" above -- and the floor is set to explicitly
+absorb the structural offset, rather than changing what the assertion
+compares against.
+
+This confirms the task's prediction: post-fix, the floor is much tighter
+than the 15ms placeholder (33% reduction), since that placeholder was
+absorbing the now-removed `asyncio.sleep` bias on top of genuine jitter.
+
+**Verification after locking in both calibrated constants**
+(`TOLERANCE_FLOOR_MS=10ms`, `HIGH_VARIANCE_P99_OVER_P50_MULTIPLIER=2.5x`):
+- Full suite: 42/42 passing (`.venv/Scripts/python -m pytest tests`, 503.68s).
+- Negative controls re-verified: both still raise `AssertionError` on the
+  injected bugs. The tighter floor makes the leaked-TPOT control's margin
+  *stricter*, not softer: `hybrid_band(20ms)` dropped from 15ms to 10ms, so
+  the threshold the leaked (~TTFT-sized) TPOT p50 must clear to fail the
+  eval is now `20+10=30ms` instead of `20+15=35ms` -- a lower bar for the
+  bug to trip, i.e. more sensitive. Similarly the "real pipeline" sanity
+  check inside `test_broken_percentile_would_fail` now requires the
+  measured tail to clear `2.5x` (was `1.5x`) before the negative control
+  even runs -- a stricter bar the real 3.97x tail still clears comfortably.
+- 5x determinism re-run (`tests/unit` + `tests/eval`, 5 consecutive runs)
+  with the new constants: **5/5 clean, 32/32 passing every run**, timing
+  391.42s / 391.46s / 391.49s / 391.86s / 391.45s -- under 0.5s / 0.1%
+  spread across runs, tighter than the pre-calibration determinism check
+  (5.75s / 1.4%). The tighter floor did not introduce any flakiness.
+
+Prior smoke-test data (`fast` config, 8 runs x 22 requests, default
+concurrency=20, this dev machine, 2026-08-13), kept for reference only --
+NOT used to set the floor, and NOT comparable to the table above (wrong
+concurrency, predates this script's DRIVE_CONCURRENCY fix):
 
 ```
 p50 TTFT across runs: mean=140.40ms  stdev=8.24ms  min=128.19ms  max=152.43ms  range=24.24ms

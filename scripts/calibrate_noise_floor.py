@@ -2,10 +2,10 @@
 """Calibration task (METRICS_TEST_SUITE.md, "Calibration task" section).
 
 Run ONE stable mock config N times (each a full, independent run: warmup +
->= min_samples measured requests), record p50 TTFT per run, and report the
-run-to-run spread. This spread is the measurement noise floor: the 15ms
-constant in tests/tolerances.py (TOLERANCE_FLOOR_MS, marked [CALIBRATE]) is
-supposed to sit just above it, not be guessed.
+>= min_samples measured requests), record p50 TTFT AND p50 TPOT per run, and
+report the run-to-run spread for both. This spread is the measurement noise
+floor: the 15ms constant in tests/tolerances.py (TOLERANCE_FLOOR_MS, marked
+[CALIBRATE]) is supposed to sit just above it, not be guessed.
 
 This script does NOT modify tests/tolerances.py for you -- that's a
 deliberate choice (see AGENT_METRICS_BRIEF.md task notes): review the
@@ -40,6 +40,15 @@ from mock.app import app as mock_app
 from mock.configs import CONFIGS
 from tests.helpers import drive_requests
 
+# Matches tests/eval/test_deterministic_eval.py:DRIVE_CONCURRENCY -- this
+# mock's delivered TTFT degrades under concurrent SSE streams independent of
+# sleep precision, so precision-sensitive measurement always drives
+# sequentially (see BENCHMARKS.md). CALIBRATION_TASK.md Part A requires this
+# explicitly: driving at the default concurrency=20 would contaminate the
+# noise-floor measurement with that concurrency degradation, not just
+# genuine per-run jitter.
+DRIVE_CONCURRENCY = 1
+
 
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -58,25 +67,58 @@ def _start_mock() -> tuple[str, uvicorn.Server, threading.Thread]:
     return f"http://127.0.0.1:{port}", server, thread
 
 
-async def _run_once(base_url: str, config_name: str, warmup: int, min_samples: int, num_tokens: int) -> float | None:
+async def _run_once(
+    base_url: str, config_name: str, warmup: int, min_samples: int, num_tokens: int
+) -> tuple[float, float] | None:
     cfg = CONFIGS[config_name]
-    samples = await drive_requests(base_url, config_name, n=warmup + min_samples, num_tokens=num_tokens, concurrency=20)
-    result = aggregate(samples, warmup=warmup, min_samples=min_samples, config={"name": config_name, "ttft_ms": cfg.ttft_ms})
-    return result.ttft_p50 if result.valid else None
+    samples = await drive_requests(
+        base_url, config_name, n=warmup + min_samples, num_tokens=num_tokens,
+        concurrency=DRIVE_CONCURRENCY,
+    )
+    result = aggregate(
+        samples, warmup=warmup, min_samples=min_samples,
+        config={"name": config_name, "ttft_ms": cfg.ttft_ms, "tpot_ms": cfg.tpot_ms},
+    )
+    return (result.ttft_p50, result.tpot_p50) if result.valid else None
+
+
+def _spread_stats(p50s: list[float], configured_ms: float) -> dict:
+    """Centered spread (variation around the sample's own mean) AND
+    deviation-from-configured (what the hybrid_band assertion, which checks
+    p50 against the CONFIGURED value, actually needs covered -- these differ
+    when there's a systematic bias, e.g. TTFT's known ~8-10ms structural
+    overhead; see CALIBRATION_TASK.md Part A sanity check)."""
+    mean = statistics.mean(p50s)
+    max_abs_dev_from_configured = max(abs(p50 - configured_ms) for p50 in p50s)
+    return {
+        "mean": mean,
+        "stdev": statistics.pstdev(p50s) if len(p50s) > 1 else 0.0,
+        "min": min(p50s),
+        "max": max(p50s),
+        "range": max(p50s) - min(p50s),
+        "bias_vs_configured": mean - configured_ms,
+        "max_abs_deviation_from_configured": max_abs_dev_from_configured,
+    }
 
 
 async def main_async(args: argparse.Namespace) -> dict:
     base_url, server, thread = _start_mock()
     try:
-        p50s: list[float] = []
+        ttft_p50s: list[float] = []
+        tpot_p50s: list[float] = []
         for i in range(args.runs):
-            p50 = await _run_once(base_url, args.config, args.warmup, args.min_samples, args.num_tokens)
-            if p50 is None:
+            pair = await _run_once(base_url, args.config, args.warmup, args.min_samples, args.num_tokens)
+            if pair is None:
                 print(f"run {i + 1}/{args.runs}: INVALID (below min_samples) -- skipped", file=sys.stderr)
                 continue
-            p50s.append(p50)
+            ttft_p50, tpot_p50 = pair
+            ttft_p50s.append(ttft_p50)
+            tpot_p50s.append(tpot_p50)
             if (i + 1) % max(1, args.runs // 20) == 0 or i == 0:
-                print(f"run {i + 1}/{args.runs}: p50 TTFT = {p50:.2f}ms", file=sys.stderr)
+                print(
+                    f"run {i + 1}/{args.runs}: p50 TTFT = {ttft_p50:.2f}ms  p50 TPOT = {tpot_p50:.2f}ms",
+                    file=sys.stderr,
+                )
     finally:
         server.should_exit = True
         thread.join(timeout=5.0)
@@ -85,15 +127,15 @@ async def main_async(args: argparse.Namespace) -> dict:
     spread = {
         "config": args.config,
         "configured_ttft_ms": cfg.ttft_ms,
-        "runs": len(p50s),
+        "configured_tpot_ms": cfg.tpot_ms,
+        "runs": len(ttft_p50s),
         "requests_per_run": args.warmup + args.min_samples,
         "num_tokens": args.num_tokens,
-        "p50_mean": statistics.mean(p50s),
-        "p50_stdev": statistics.pstdev(p50s) if len(p50s) > 1 else 0.0,
-        "p50_min": min(p50s),
-        "p50_max": max(p50s),
-        "p50_range": max(p50s) - min(p50s),
-        "raw_p50s_ms": p50s,
+        "drive_concurrency": DRIVE_CONCURRENCY,
+        "ttft": _spread_stats(ttft_p50s, cfg.ttft_ms),
+        "tpot": _spread_stats(tpot_p50s, cfg.tpot_ms),
+        "raw_ttft_p50s_ms": ttft_p50s,
+        "raw_tpot_p50s_ms": tpot_p50s,
     }
     return spread
 
@@ -111,15 +153,24 @@ def main() -> None:
     spread = asyncio.run(main_async(args))
 
     print()
-    print(f"config={spread['config']} (configured ttft_ms={spread['configured_ttft_ms']})")
+    print(f"config={spread['config']} (configured ttft_ms={spread['configured_ttft_ms']}, "
+          f"tpot_ms={spread['configured_tpot_ms']})  drive_concurrency={spread['drive_concurrency']}")
     print(f"valid runs: {spread['runs']}")
-    print(f"p50 TTFT across runs: mean={spread['p50_mean']:.2f}ms  stdev={spread['p50_stdev']:.2f}ms  "
-          f"min={spread['p50_min']:.2f}ms  max={spread['p50_max']:.2f}ms  range={spread['p50_range']:.2f}ms")
+    for metric in ("ttft", "tpot"):
+        s = spread[metric]
+        print(
+            f"p50 {metric.upper()} across runs: mean={s['mean']:.2f}ms  stdev={s['stdev']:.2f}ms  "
+            f"min={s['min']:.2f}ms  max={s['max']:.2f}ms  range={s['range']:.2f}ms  "
+            f"bias_vs_configured={s['bias_vs_configured']:+.2f}ms  "
+            f"max_abs_deviation_from_configured={s['max_abs_deviation_from_configured']:.2f}ms"
+        )
     print()
-    print("Set TOLERANCE_FLOOR_MS in tests/tolerances.py just above this observed spread")
-    print("(e.g. a few ms above p50_range/2, or above 3x stdev) -- do not copy a number")
-    print("blindly, look at the distribution. Then document the measured floor in")
-    print("BENCHMARKS.md per WEEK1_MEASUREMENT_SPEC.md #4.")
+    print("TOLERANCE_FLOOR_MS feeds max(±FLOOR, ±10%) checked against the CONFIGURED value")
+    print("(tests/tolerances.py: hybrid_band), so the number that must be covered is")
+    print("max_abs_deviation_from_configured (bias + spread combined), not the centered")
+    print("spread alone -- see CALIBRATION_TASK.md Part A sanity check. Take the larger of")
+    print("the two metrics' max_abs_deviation_from_configured, add a small safety margin,")
+    print("and document the choice in BENCHMARKS.md per WEEK1_MEASUREMENT_SPEC.md #4.")
 
     out_path = Path(args.out) if args.out else Path(__file__).resolve().parent.parent / "benchmarks" / f"noise_floor_{args.config}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
