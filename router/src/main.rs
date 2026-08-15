@@ -1,8 +1,14 @@
 mod config;
+mod headers;
+mod proxy;
 
-use axum::{routing::get, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 
 use crate::config::Config;
+use crate::proxy::AppState;
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +22,11 @@ async fn main() {
         }
     };
 
-    let app = Router::new().route("/health", get(health));
+    let state = AppState::new(cfg.upstream_base_url.clone());
+    let app = Router::new()
+        .route("/health", get(health))
+        .route("/v1/chat/completions", post(proxy::proxy))
+        .with_state(state);
 
     let addr = format!("0.0.0.0:{}", cfg.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
