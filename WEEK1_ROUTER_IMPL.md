@@ -44,6 +44,11 @@ immediate TCP packet. Below the application there is hyper, OS socket buffering
 responsibility is only that the **application** does not intentionally collect/buffer
 the whole body. This directly constrains what the eval may assert (§4).
 
+### Direction asymmetry (explicit)
+The no-buffer rule applies to the **response stream only**. The request body is read
+into memory (32 MiB cap) so the upstream receives a correct `Content-Length`; this is
+by design and has no TTFT impact.
+
 ---
 
 ## 2. Rationale (why these, briefly)
