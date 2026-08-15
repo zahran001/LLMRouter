@@ -1,6 +1,8 @@
 mod config;
 mod headers;
 mod proxy;
+#[cfg(feature = "wrong-routers")]
+mod wrong;
 
 use axum::{
     routing::{get, post},
@@ -25,8 +27,20 @@ async fn main() {
     let state = AppState::new(cfg.upstream_base_url.clone());
     let app = Router::new()
         .route("/health", get(health))
-        .route("/v1/chat/completions", post(proxy::proxy))
-        .with_state(state);
+        .route("/v1/chat/completions", post(proxy::proxy));
+
+    // Negative controls, off unless explicitly compiled in. They serve their
+    // own paths; the real route above is untouched by their presence.
+    #[cfg(feature = "wrong-routers")]
+    let app = {
+        eprintln!(
+            "llmrouter: WARNING — built with --features wrong-routers; \
+             deliberately broken routers are mounted for the eval only"
+        );
+        app.merge(wrong::routes())
+    };
+
+    let app = app.with_state(state);
 
     let addr = format!("0.0.0.0:{}", cfg.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();

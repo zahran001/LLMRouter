@@ -80,10 +80,15 @@ impl IntoResponse for ProxyError {
 /// allowlisted request headers, send the body. Shared by the real handler and
 /// (feature-gated) the negative-control handlers, so those differ from the
 /// real router in exactly one respect: what they do with the response body.
+///
+/// `path` is passed explicitly rather than read off the `Uri` because the
+/// negative-control routes live under their own prefix but must still hit the
+/// upstream's real path.
 pub async fn open_upstream(
     state: &AppState,
     method: Method,
-    uri: &Uri,
+    path: &str,
+    query: Option<&str>,
     incoming: &HeaderMap,
     body: Body,
 ) -> Result<reqwest::Response, ProxyError> {
@@ -91,8 +96,8 @@ pub async fn open_upstream(
         .await
         .map_err(ProxyError::ReadRequestBody)?;
 
-    let mut url = format!("{}{}", state.upstream_base_url, uri.path());
-    if let Some(query) = uri.query() {
+    let mut url = format!("{}{}", state.upstream_base_url, path);
+    if let Some(query) = query {
         url.push('?');
         url.push_str(query);
     }
@@ -121,7 +126,7 @@ pub async fn proxy(
     incoming: HeaderMap,
     body: Body,
 ) -> Result<Response, ProxyError> {
-    let upstream = open_upstream(&state, method, &uri, &incoming, body).await?;
+    let upstream = open_upstream(&state, method, uri.path(), uri.query(), &incoming, body).await?;
 
     let status = upstream.status();
     let response_headers = headers::response_headers(upstream.headers());
