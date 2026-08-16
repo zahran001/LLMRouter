@@ -156,6 +156,66 @@ base seed (`20260813`, incremented per request via `tests/helpers.py:
 drive_requests`) AND a large sample (n=150, ~12 expected tail draws at the
 8% `TAIL_PROBABILITY`) -- so the measured 3.97x is not a one-off draw.
 
+## Router eval calibration (WEEK1_ROUTER_IMPL.md §7) -- STATUS: done
+
+The three `[CALIBRATE]` values in the router spec, locked in
+`tests/router/tolerances.py`. Same rule as the metrics tolerances: each
+traces to the mock's *configured* timing or to an already-measured noise
+floor, never to what the router happened to measure.
+
+| Value | Locked | Traces to |
+|---|---|---|
+| S1 first->last gap | **> 1000ms** | Configured content-stream duration for the slow config at 20 tokens: `(20-1) x 100ms = 1900ms`. 1000ms is 53% of that -- far below the true value, ~100x above the 10ms noise floor. |
+| S2 first-chunk bound | **< 750ms** (TTFT 500ms + 250ms margin) | Margin = `5 x hybrid_band(500ms)` = 5 x 50ms, i.e. five times the band the metrics suite already accepts at that configured value. Also 25x the 10ms noise floor and ~33x the 7.56ms structural TTFT offset. |
+| O1 median overhead | **< 10ms**, and growth between response sizes **< 10ms** | `TOLERANCE_FLOOR_MS` reused verbatim from the Part A calibration above -- not a fresh number. |
+
+### Measured -- 5x determinism run (`scripts/router_eval.sh 5`)
+
+This dev machine, release build, strictly sequential. Every pass: 9 cargo
+unit tests, 5 negative controls, 20 eval tests, all green; `router eval green
+(5 pass(es))`. Ranges are across the five passes.
+
+| Check | Bound | Real router (5 passes) | `WRONG_ROUTER_BUFFERS` (5 passes) |
+|---|---|---|---|
+| S1 first->last gap | > 1000ms | 1912.4 - 1951.5ms | **0.2 - 0.7ms** |
+| S2 first content chunk | < 750ms | 512.0 - 533.2ms | **2445.7 - 2542.5ms** |
+| O1 delta, 5 tokens | < 10ms | -1.34 to -0.00ms | **+81.6 to +85.5ms** |
+| O1 delta, 25 tokens | < 10ms | -1.08 to +1.10ms | **+490.8 to +500.6ms** |
+| O1 growth (large - small) | < 10ms | -0.66 to +1.34ms | **+406 to +418ms** |
+
+Both streaming bounds clear by roughly 2x on the correct router and are
+missed by 3-4 orders of magnitude (S1) or ~1.7 seconds (S2) by the buffering
+one, which is the separation the bounds were chosen to produce. Run-to-run
+spread on the real router is ~39ms for S1 and ~21ms for S2 -- far inside the
+bounds' margins, so the streaming assertions are deterministic, not
+borderline.
+
+F1 against `WRONG_ROUTER_REEMIT`: 1532 bytes direct vs 1428 re-emitted, the
+same figures in all five passes (the mock's seeded mode makes the body
+byte-reproducible, so this control is exactly repeatable). The JSON
+round-trip alphabetizes keys and compacts separators. F2 still passes against
+the same router -- the divergence between F1 and F2 is what shows F1 tests
+byte-identity rather than semantic equivalence.
+
+The router's own overhead measures **at or below zero** on most medians here,
+i.e. it is inside the instrument's noise. Note that O1 is a *difference*
+between two
+arms measured under identical conditions, so it is immune to the structural
+TTFT offset that the mock-timing self-test measures directly: during these
+runs the mock's delivered TTFT sat at ~114ms against a configured 100ms
+(machine drift, see caveat below), and the direct-vs-proxied delta was still
+sub-millisecond.
+
+### Caveat: mock-timing drift on this machine
+
+`tests/mock/test_timing_accuracy.py` currently fails on this dev machine for
+fast/slow/bursty (TTFT overshoot ~+15 to +17ms against its 10ms band). This
+predates the router work -- the same three fail identically on unmodified
+`main` -- and is a machine-state/calibration question for the mock, not a
+router finding. It does not affect the router eval: fidelity and header/error
+tests are timing-free, the streaming bounds are seconds-coarse, and O1 is a
+difference statistic that cancels the offset.
+
 ## Simulated-token caveat
 
 Week 1 measures inter-SSE-chunk gaps (TPOT), not tokenizer-level per-token
