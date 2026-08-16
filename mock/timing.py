@@ -38,13 +38,21 @@ import time
 SPIN_MARGIN_S = 0.020
 
 
-async def precise_sleep(duration_s: float, spin_margin_s: float = SPIN_MARGIN_S) -> None:
+async def precise_sleep(duration_s: float, spin_margin_s: float | None = None) -> None:
     """Sleep `duration_s` with sub-ms accuracy.
 
     Coarse `asyncio.sleep` for the bulk of the interval (cheap, but
     imprecise -- may overshoot by the OS's timer granularity), then a tight
     spin against `time.perf_counter()` (monotonic) for the final
     `spin_margin_s`, which is where the actual precision comes from.
+
+    `spin_margin_s` defaults to the module-level `SPIN_MARGIN_S`, read at
+    call time (not bound as a function default) so a calibration harness can
+    monkeypatch `mock.timing.SPIN_MARGIN_S` before driving requests -- e.g.
+    setting it to 0 makes this degenerate to a bare `asyncio.sleep`, which is
+    the A/B this module's docstring references (WEEK2_PLAN.md §7 /
+    MOCK_TRUST_BOUNDARY.md: is the busy-wait even needed on Linux). Passing
+    `spin_margin_s` explicitly still overrides per-call as before.
 
     The spin loop yields to the event loop every iteration via
     `await asyncio.sleep(0)` -- a bare `while` with no await would starve
@@ -53,6 +61,8 @@ async def precise_sleep(duration_s: float, spin_margin_s: float = SPIN_MARGIN_S)
     """
     if duration_s <= 0:
         return
+    if spin_margin_s is None:
+        spin_margin_s = SPIN_MARGIN_S
 
     deadline = time.perf_counter() + duration_s
     coarse = duration_s - spin_margin_s
