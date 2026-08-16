@@ -1,0 +1,41 @@
+name: router eval
+
+# The Week 1 router gate. The load-bearing part is the negative-control step:
+# CI asserts S1/S2/O1 fail against WRONG_ROUTER_BUFFERS and F1 fails against
+# WRONG_ROUTER_REEMIT, so a future refactor that quietly reintroduces
+# buffering (or quietly declaws the eval) turns this workflow red.
+#
+# Scope note: this workflow runs the router suite only. The mock's timing
+# self-test (tests/mock) calibrates a machine-specific structural offset and
+# is not a shared-runner gate.
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  router-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Show toolchain versions
+        run: |
+          cargo --version
+          rustc --version
+          python --version
+
+      - name: Run the router gate (eval + must-fail negative controls)
+        run: bash scripts/router_eval.sh
