@@ -25,8 +25,11 @@ async def test_h1_request_headers_forwarded_and_hop_by_hop_dropped(router_base_u
         "Accept": "text/event-stream",
         "Authorization": "Bearer test-token",
         # Should not reach the upstream: hop-by-hop, plus one ordinary header
-        # that simply is not on the allowlist.
-        "Connection": "keep-alive",
+        # that simply is not on the allowlist. "close" rather than
+        # "keep-alive" so the assertion below discriminates -- hyper may
+        # legitimately set its own Connection header on the hop it makes, but
+        # it would never choose the value the client happened to send here.
+        "Connection": "close",
         "X-Client-Only": "should-not-be-forwarded",
     }
 
@@ -45,7 +48,7 @@ async def test_h1_request_headers_forwarded_and_hop_by_hop_dropped(router_base_u
     assert received["authorization"] == "Bearer test-token"
 
     assert "x-client-only" not in received
-    assert received.get("connection", "").lower() != "keep-alive" or "connection" not in received
+    assert received.get("connection", "").lower() != "close"
     # Host must describe the hop the router actually made, not the router's
     # own address as the client addressed it.
     assert received["host"] == mock_base_url.removeprefix("http://")
@@ -117,9 +120,7 @@ async def test_e2_mid_stream_drop_truncates_cleanly(router_over_truncating_upstr
     elapsed_s = time.perf_counter() - t0
 
     assert elapsed_s < 10.0, f"stream did not end promptly ({elapsed_s:.1f}s) -- the router hung"
-    assert TRUNCATED_PREFIX.startswith(received) or received == TRUNCATED_PREFIX, (
-        "client received bytes the upstream never sent"
-    )
+    assert TRUNCATED_PREFIX.startswith(received), "client received bytes the upstream never sent"
     assert router_proc.is_alive(), "router process died on a mid-stream upstream drop"
 
     async with httpx.AsyncClient(timeout=5.0) as client:

@@ -68,9 +68,11 @@ impl IntoResponse for ProxyError {
                 (StatusCode::BAD_REQUEST, format!("could not read request body: {err}")).into_response()
             }
             ProxyError::Upstream(err) => {
-                // 502, not 500: the router is fine, the upstream is not.
+                // 502, not 500: the router is fine, the upstream is not. The
+                // detail (which includes the upstream's address) goes to the
+                // operator's log, not to the client.
                 eprintln!("llmrouter: upstream request failed: {err}");
-                (StatusCode::BAD_GATEWAY, format!("upstream request failed: {err}")).into_response()
+                (StatusCode::BAD_GATEWAY, "upstream request failed").into_response()
             }
         }
     }

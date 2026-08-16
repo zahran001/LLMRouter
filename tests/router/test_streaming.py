@@ -26,6 +26,12 @@ async def test_s1_incremental_delivery(router_base_url):
     """S1 -- first-to-last content chunk spans most of the configured
     content-stream duration, i.e. the client got data as it was produced."""
     sample = await sample_one(router_base_url, request_params(STREAMING_CONFIG, STREAMING_NUM_TOKENS))
+
+    # Printed so a run leaves the measured separation behind, not just a
+    # green tick (WEEK1_MEASUREMENT_SPEC.md §7 metadata habit).
+    print(f"\nS1: first->last gap {sum(sample.tpot_samples_ms):.1f}ms over "
+          f"{sample.content_chunk_count} content chunks")
+
     assert_incremental_delivery(sample)
 
 
@@ -33,4 +39,7 @@ async def test_s2_first_chunk_is_early(router_base_url):
     """S2 -- the first content chunk lands near the configured TTFT rather
     than near completion."""
     sample = await sample_one(router_base_url, request_params(STREAMING_CONFIG, STREAMING_NUM_TOKENS))
+
+    print(f"\nS2: first content chunk at {sample.ttft_ms:.1f}ms")
+
     assert_first_chunk_early(sample)

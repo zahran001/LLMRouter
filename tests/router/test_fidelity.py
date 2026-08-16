@@ -15,7 +15,14 @@ import pytest
 
 from mock.configs import CONFIGS
 from tests.router._assertions import assert_byte_identical, assert_gating_identical, assert_parser_agrees
-from tests.router._client import CHAT_PATH, capture_raw, request_params, sample_one
+from tests.router._client import (
+    CHAT_PATH,
+    capture_raw,
+    first_content_index,
+    parsed_chunks,
+    request_params,
+    sample_one,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.router]
 
@@ -63,8 +70,6 @@ async def test_f2_gating_excludes_the_role_chunk(mock_base_url, config):
     content on both. This pins the direct-path position to 1 (the role chunk
     is index 0), so F2's agreement is agreement about the correct answer.
     """
-    from tests.router._client import first_content_index, parsed_chunks
-
     raw = await capture_raw(mock_base_url, request_params(config, NUM_TOKENS, seed=SEED))
     chunks = parsed_chunks(raw.body)
 
