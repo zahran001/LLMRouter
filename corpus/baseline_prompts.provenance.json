@@ -1,0 +1,20 @@
+{
+  "source_dataset": "anon8231489123/ShareGPT_Vicuna_unfiltered",
+  "source_file": "ShareGPT_V3_unfiltered_cleaned_split.json",
+  "source_url": "https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered/resolve/main/ShareGPT_V3_unfiltered_cleaned_split.json",
+  "source_commit": "192ab2185289094fc556ec8ce5ce1e8e587154ca",
+  "download_date": "2026-08-16",
+  "filter_definition": "keep an entry iff conversations[0]['from'] in {'human','user'} and conversations[0]['value'], after str.strip(), is a non-empty string -- a validity predicate only. No exclusion by length or content (WEEK2_PLAN.md \u00a73.4: 'may NOT remove valid prompts to shape the spread').",
+  "total_raw_entries": 94145,
+  "total_valid_after_filter": 58820,
+  "selection_seed": 20260816,
+  "subset_size": 5000,
+  "prompt_len_definition": "char count of conversations[0]['value'] after strip(); token count is a Week 3 revisit (WEEK2_PLAN.md \u00a73.4)",
+  "char_len_stats": {
+    "min": 1,
+    "max": 44445,
+    "mean": 899.533
+  },
+  "artifact": "corpus/baseline_prompts.jsonl",
+  "note": "with-replacement i.i.d. draws happen at schedule-materialization time via a separate corpus_rng (WEEK2_PLAN.md \u00a73.2/\u00a73.4); this seed only controls which prompts made it into the pinned subset, not which are drawn from it at runtime."
+}
