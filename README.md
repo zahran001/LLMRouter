@@ -6,9 +6,12 @@ A Rust router that sits in front of a pool of vLLM inference replicas and protec
 
 ## Status
 
-Work in progress — Week 1 (foundation & measurement).
+Week 1 (foundation & measurement) is closed — see
+`docs/archive/week1/` for the completed implementation/closeout docs and
+`WEEK2_PLAN.md` for what's next. Work in progress — Week 2 (load
+generation & baseline).
 
-The `router eval` badge above is the Week 1 gate: it runs the fidelity, streaming, overhead and header/error tests **and** the two deliberately-broken routers the eval must fail against, so it goes red both when the router regresses and when the eval loses its teeth (`WEEK1_ROUTER_IMPL.md` §4–§5).
+The `router eval` badge above is the Week 1 gate: it runs the fidelity, streaming, overhead and header/error tests **and** the two deliberately-broken routers the eval must fail against, so it goes red both when the router regresses and when the eval loses its teeth (`docs/archive/week1/WEEK1_ROUTER_IMPL.md` §4–§5).
 
 ## Planned architecture
 
@@ -25,8 +28,9 @@ loadgen/         # Python load generators (steady, poisson, adversarial)
 mock/            # Python FastAPI mock replica
 metrics/         # Python metrics computation (TTFT/TPOT percentiles)
 scripts/         # Operational scripts (teardown, reproduce)
-docs/            # Architecture notes and ADRs
+docs/            # Architecture notes, ADRs, GPU session notes
 docs/adr/        # Architecture Decision Records
+docs/archive/    # Completed per-week process docs (implementation briefs, closeout runbooks)
 benchmarks/      # Output CSVs and generated charts (gitignored contents)
 ```
 
@@ -56,7 +60,9 @@ PYTHON=.venv/Scripts/python scripts/router_eval.sh      # one pass, as CI runs i
 PYTHON=.venv/Scripts/python scripts/router_eval.sh 5    # 5x determinism check
 ```
 
-The load generator is not yet implemented — see `docs/` for planned architecture and scope decisions.
+The load generator is not yet implemented — see `WEEK2_PLAN.md` for scope and `docs/` for architecture decisions.
+
+Standing up a real vLLM GPU instance (needed for Week 2's `BASELINE.md` and beyond)? Read `docs/GPU_SESSION_NOTES.md` first — it has the exact working `gcloud`/vLLM invocation and several environment-specific gotchas already worked out.
 
 ## License
 
