@@ -222,6 +222,10 @@ Workflow `router eval`, both runs green on `feature/router-impl`: run
 31923160568 (push, 3m19s) and 31923325886 (pull_request, 4m00s), each doing a
 cold release build plus the full gate.
 
+**Every figure below was measured with the busy-wait ENABLED** (`precise_sleep`
+with its default `SPIN_MARGIN_S`), as in every run to date. Read the next
+subsection before drawing any conclusion from the Linux column.
+
 | | Windows dev machine | ubuntu-latest (CI) |
 |---|---|---|
 | direct TTFT p50 (fast, configured 100ms) | ~113-115ms | **102.7-103.1ms** |
@@ -233,14 +237,35 @@ Negative controls bit identically on Linux: buffering gap 0.1ms, first chunk
 2405.8ms, overhead +80.63ms (5 tokens) / +482.10ms (25 tokens); re-emit 1532 ->
 1428 bytes.
 
-**Worth noting for Week 2.** The structural TTFT offset is ~3ms on the Linux
-runner against ~13-15ms here, and every configured duration lands closer to
-target. That is a *free first data point* on the question
-`MOCK_TRUST_BOUNDARY.md` §1 defers -- "whether the busy-wait is even needed on
-Linux" -- and it points the same way: the overshoot `precise_sleep` exists to
-correct looks far smaller on the Linux/GCP target. It is not a substitute for
-the planned calibration re-run (one CI run, one config, no repetition, and the
-spin was still enabled), but it is evidence the re-run is worth doing early.
+#### What the Linux column does NOT settle (read before reusing ~3ms)
+
+The Week-2 question in `MOCK_TRUST_BOUNDARY.md` §1 is **"is the busy-wait
+needed on Linux?"** Status: **still open. Early evidence says probably not --
+but this run cannot close it, and no run with the spin enabled ever can.**
+
+The confound, stated next to the number so it cannot be skimmed past: **the
+spin was ON for these measurements.** So ~3ms is "how well the mock delivers
+its configured timing on Linux *with* `precise_sleep` doing its job" -- not
+"how well `asyncio.sleep` behaves on Linux unaided," which is the quantity the
+question is actually about. Those two are only equal if the spin contributes
+nothing, which is precisely what has not been tested.
+
+Worse for the tempting reading: because the spin was correcting overshoot on
+*both* platforms, the residual ~3ms vs ~13-15ms gap is mostly **structural**
+(transport, event-loop scheduling, one-way request/role-chunk latency), not
+sleep overshoot at all. It is a different quantity from the ~10-30ms bare
+`asyncio.sleep()` overshoot that motivated the busy-wait in the first place
+(see "Mock timing precision fix" above). Encouraging, directionally consistent,
+and not the measurement.
+
+**What would actually close it:** an A/B on Linux -- the sequential noise
+calibration run twice, once with the spin disabled and once with it enabled,
+compared against the *configured* values. `mock/timing.py` makes the disabled
+arm a one-line change: `precise_sleep(d, spin_margin_s=0)` degenerates to a
+bare `asyncio.sleep(d)`. If the disabled arm lands inside the tolerance floor,
+the spin can go on Linux (and with it the concurrency contention that
+`MOCK_TRUST_BOUNDARY.md` §1 pins the trust boundary on). Until that A/B exists,
+the busy-wait stays.
 
 ## Seed/timing RNG independence (router eval prerequisite) -- STATUS: verified
 

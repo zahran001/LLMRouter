@@ -302,8 +302,13 @@ CI-measured (ubuntu-latest, cold build): S1 gap 1903.0 ms, S2 first chunk
 502.4 ms, O1 delta −0.25 ms (5 tokens) / −0.12 ms (25 tokens); negative controls
 caught the wrong routers (buffering gap 0.1 ms, first chunk 2405.8 ms, overhead
 +80.6/+482.1 ms; re-emit 1532 → 1428 bytes). Every bound cleared by a wider
-margin than on the Windows dev machine — see BENCHMARKS.md for why that matters
-to the deferred Linux busy-wait question.
+margin than on the Windows dev machine.
+
+That Linux margin is **not** an answer to the deferred "is the busy-wait needed
+on Linux?" question (`MOCK_TRUST_BOUNDARY.md` §1) — the spin was enabled for
+this run, so it measures delivery *with* `precise_sleep` working, not
+`asyncio.sleep` unaided. The disabling A/B is still required; see BENCHMARKS.md,
+"What the Linux column does NOT settle".
 
 ---
 
