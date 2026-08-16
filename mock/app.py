@@ -28,6 +28,10 @@ from mock.timing import precise_sleep
 DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 DEFAULT_NUM_TOKENS = 20
 
+# Fixed `created` value used only when a request carries ?seed=. See
+# _identity_for below.
+SEEDED_CREATED = 1_700_000_000
+
 
 def _draw_delay_ms(base_ms: float, cfg: MockConfig, rng: random.Random) -> float:
     """One delay draw for either the ttft wait or one tpot gap, in ms --
@@ -44,6 +48,31 @@ def _draw_delay_ms(base_ms: float, cfg: MockConfig, rng: random.Random) -> float
     if cfg.heavy_tailed and rng.random() < TAIL_PROBABILITY:
         return base_ms * TAIL_MULTIPLIER
     return base_ms
+
+
+def _identity_for(seed: int | None) -> tuple[str, int]:
+    """Return (chat_id, created) for one response.
+
+    Unseeded requests get a fresh uuid4 and the current epoch second, exactly
+    as vLLM would. A **seeded** request instead gets an id/created derived
+    from the seed, so the same (config, num_tokens, seed) request produces a
+    byte-identical response every time.
+
+    That determinism is what gives the router's byte-identity test (F1,
+    WEEK1_ROUTER_IMPL.md §4.1) an oracle: "client->mock directly" and
+    "client->router->mock" are necessarily two separate requests, so without
+    it the uuid and timestamp alone would make identical bytes impossible and
+    F1 would have to weaken to semantic equivalence -- the exact weakening
+    F1 exists to rule out.
+
+    The id is drawn from its own Random instance so the timing RNG's draw
+    sequence (and therefore every existing seeded timing test) is unaffected.
+    """
+    if seed is None:
+        return f"chatcmpl-{uuid.uuid4()}", int(time.time())
+
+    id_rng = random.Random(seed)
+    return f"chatcmpl-{uuid.UUID(int=id_rng.getrandbits(128), version=4)}", SEEDED_CREATED
 
 
 def _make_chunk(chat_id: str, created: int, model: str, delta: dict, finish_reason: str | None) -> dict:
@@ -74,11 +103,20 @@ async def chat_completions(request: Request) -> StreamingResponse:
 
     num_tokens = int(request.query_params.get("num_tokens", DEFAULT_NUM_TOKENS))
     seed_param = request.query_params.get("seed")
-    rng = random.Random(int(seed_param)) if seed_param is not None else random.Random()
+    seed = int(seed_param) if seed_param is not None else None
+    rng = random.Random(seed) if seed is not None else random.Random()
+
+    # Debug affordance for the router's H1 test (WEEK1_ROUTER_IMPL.md §4.4:
+    # "have the mock echo received headers on a debug route"). It hangs off
+    # the chat path rather than a separate route because the Week 1 router
+    # only proxies /v1/chat/completions -- a debug route on any other path
+    # would be unreachable through the router, which is the only place the
+    # question "what headers actually arrived?" can be asked.
+    if request.query_params.get("echo_headers") is not None:
+        return JSONResponse({"headers": {k.lower(): v for k, v in request.headers.items()}})
 
     async def event_stream():
-        chat_id = f"chatcmpl-{uuid.uuid4()}"
-        created = int(time.time())
+        chat_id, created = _identity_for(seed)
 
         # 1. role chunk, emitted immediately, BEFORE the ttft_ms wait.
         yield _sse(_make_chunk(chat_id, created, model, {"role": "assistant"}, None))
