@@ -210,6 +210,35 @@ same failure.
   mock config that closes early); assert the client's stream **ends** without the
   router panicking or hanging. Behavior only — resilience is Week 6.
 
+### 4.5 Test-only mock affordances this eval required (SHIPPED)
+
+Building the eval required exactly **two** additions to the mock. Both are
+test-only query parameters, both are off unless asked for, and **neither changes
+the streaming contract** (`WEEK1_MEASUREMENT_SPEC.md` §1): chunk shape, ordering,
+field set and terminator are untouched, and an ordinary request behaves exactly as
+before. They are recorded here because the mock is the project's ground-truth
+instrument — changes to it deserve the same scrutiny as changes to the parser.
+
+| Affordance | Why the eval cannot work without it | Blast radius |
+|---|---|---|
+| **`?seed=` now also makes the response byte-reproducible** — chat id derived from the seed, `created` fixed | F1 (§4.1) compares "client→mock" against "client→router→mock". Those are necessarily **two separate requests**, so a fresh `uuid4` + epoch second make byte-identity impossible and F1 would have to weaken to semantic equivalence — the exact weakening it exists to rule out. | Seeded requests only. Unseeded requests keep `uuid4` + real epoch second, as vLLM would. |
+| **`?echo_headers=`** — returns the received headers as JSON instead of streaming | H1 (§4.4) explicitly calls for this ("have the mock echo received headers on a debug route"). It hangs off the chat path because the Week 1 router proxies **only** `/v1/chat/completions`; a debug route on any other path is unreachable through the router, which is the only vantage point from which "what actually arrived?" can be asked. | Requests that pass the parameter. No effect on the streaming path. |
+
+**The `?seed=` change carries a load-bearing claim: the identity RNG must not
+consume the timing RNG.** If the two streams were entangled, seeding would shift
+which chunks receive the heavy-tail delay and silently change what every seeded
+timing test measures. `_identity_for` therefore builds its **own** `random.Random`
+instance rather than drawing from the request's timing `rng`.
+
+That claim is **verified by observation, not by inspection**:
+`scripts/verify_seed_rng_independence.py` drives the mock's ASGI app in-process
+with `precise_sleep` stubbed out and records the exact delay magnitudes
+`_draw_delay_ms` returns. Against the pre-change mock, 5 seeds × 30 draws on the
+high-variance config come back **identical in every position**, including the
+indices where the 4× tail spike lands. Corroborated end-to-end: `tests/eval` (both
+seeded suites) passes 6/6 with the change present. Cost of the seeded identity
+path: **+5.5 µs/request**, ~1800× below the 10 ms noise floor. See BENCHMARKS.md.
+
 ---
 
 ## 5. Eval rigor checklist (carried from the metrics-module standard)
@@ -240,19 +269,41 @@ same failure.
 
 ## 6. Definition of Done (router, Week 1)
 
-- [ ] Config-driven upstream URL; startup fails loudly if unset.
-- [ ] Proxy forwards allowlisted request headers; drops hop-by-hop.
-- [ ] Response `Content-Type` preserved; framing left to axum/hyper.
-- [ ] `bytes_stream()` → `Body::from_stream()`, body never collected.
-- [ ] **F1–F3 pass** (byte-identity + parser no-op across all four configs).
-- [ ] **S1–S2 pass against the real router AND fail against `WRONG_ROUTER_BUFFERS`.**
-- [ ] **O1 passes** (small constant sequential overhead) **and fails against the
-      buffering handler** (overhead scales with length).
-- [ ] H1/H2/E1/E2 pass.
-- [ ] Negative controls wired into CI as must-fail.
-- [ ] Overhead bound + streaming thresholds calibrated and provenance-documented.
-- [ ] 5× determinism check green.
-- [ ] mock→vLLM swap confirmed a config-only change (GPU smoke test).
+Status as of 2026-08-15, branch `feature/router-impl` (CI green — see §8).
+
+- [x] Config-driven upstream URL; startup fails loudly if unset. (`router/src/config.rs`; exits 2 with a named error.)
+- [x] Proxy forwards allowlisted request headers; drops hop-by-hop. (`router/src/headers.rs`; H1.)
+- [x] Response `Content-Type` preserved; framing left to axum/hyper. (H2 also asserts no hand-copied `Content-Length`.)
+- [x] `bytes_stream()` → `Body::from_stream()`, body never collected. (`router/src/proxy.rs`; `Body::` appears exactly once in the crate.)
+- [x] **F1–F3 pass** (byte-identity + parser no-op across all four configs).
+- [x] **S1–S2 pass against the real router AND fail against `WRONG_ROUTER_BUFFERS`.** (Real: gap ~1.9s, first chunk ~0.51s. Buffering: gap ~0.2ms, first chunk ~2.5s.)
+- [x] **O1 passes** (median delta −1.34 to +1.10 ms against a 10 ms bound) **and fails against the buffering handler** (delta grows +82 ms → +496 ms with response length).
+- [x] H1/H2/E1/E2 pass.
+- [x] Negative controls wired into CI as must-fail, plus an inventory guard so a control that *disappears* fails too (`scripts/router_eval.sh`).
+- [x] Overhead bound + streaming thresholds calibrated and provenance-documented (§7, `tests/router/tolerances.py`, BENCHMARKS.md).
+- [x] 5× determinism check green (`scripts/router_eval.sh 5`).
+- [x] Test-only mock affordances documented and the `?seed=` RNG-independence claim verified (§4.5).
+- [ ] **OPEN:** mock→vLLM swap confirmed a config-only change (GPU smoke test). Confirmed at code level — no host, URL or port appears anywhere outside `config.rs`, which has no default — but the paid GPU session has not run, so the swap is unproven against real vLLM.
+
+---
+
+## 8. CI
+
+Workflow `router eval` (`.github/workflows/router-eval.yml`) runs
+`scripts/router_eval.sh` on `ubuntu-latest`, for pushes to `main` / `feature/**`
+and PRs to `main`. First green runs on `feature/router-impl`:
+
+| Run | Event | Duration | Result |
+|---|---|---|---|
+| 31923160568 | push | 3m19s | success |
+| 31923325886 | pull_request | 4m00s | success |
+
+CI-measured (ubuntu-latest, cold build): S1 gap 1903.0 ms, S2 first chunk
+502.4 ms, O1 delta −0.25 ms (5 tokens) / −0.12 ms (25 tokens); negative controls
+caught the wrong routers (buffering gap 0.1 ms, first chunk 2405.8 ms, overhead
++80.6/+482.1 ms; re-emit 1532 → 1428 bytes). Every bound cleared by a wider
+margin than on the Windows dev machine — see BENCHMARKS.md for why that matters
+to the deferred Linux busy-wait question.
 
 ---
 

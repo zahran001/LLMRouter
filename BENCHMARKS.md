@@ -216,6 +216,62 @@ router finding. It does not affect the router eval: fidelity and header/error
 tests are timing-free, the streaming bounds are seconds-coarse, and O1 is a
 difference statistic that cancels the offset.
 
+### CI run (ubuntu-latest) -- first Linux data point
+
+Workflow `router eval`, both runs green on `feature/router-impl`: run
+31923160568 (push, 3m19s) and 31923325886 (pull_request, 4m00s), each doing a
+cold release build plus the full gate.
+
+| | Windows dev machine | ubuntu-latest (CI) |
+|---|---|---|
+| direct TTFT p50 (fast, configured 100ms) | ~113-115ms | **102.7-103.1ms** |
+| S1 first->last gap (configured 1900ms) | 1912-1952ms | **1903.0ms** |
+| S2 first content chunk (configured 500ms) | 512-533ms | **502.4ms** |
+| O1 delta, 5 / 25 tokens | -1.34 to +1.10ms | **-0.25 / -0.12ms** |
+
+Negative controls bit identically on Linux: buffering gap 0.1ms, first chunk
+2405.8ms, overhead +80.63ms (5 tokens) / +482.10ms (25 tokens); re-emit 1532 ->
+1428 bytes.
+
+**Worth noting for Week 2.** The structural TTFT offset is ~3ms on the Linux
+runner against ~13-15ms here, and every configured duration lands closer to
+target. That is a *free first data point* on the question
+`MOCK_TRUST_BOUNDARY.md` §1 defers -- "whether the busy-wait is even needed on
+Linux" -- and it points the same way: the overshoot `precise_sleep` exists to
+correct looks far smaller on the Linux/GCP target. It is not a substitute for
+the planned calibration re-run (one CI run, one config, no repetition, and the
+spin was still enabled), but it is evidence the re-run is worth doing early.
+
+## Seed/timing RNG independence (router eval prerequisite) -- STATUS: verified
+
+Making `?seed=` responses byte-reproducible (so F1 has a byte-identity oracle)
+touches the mock, which is the project's ground-truth instrument. The
+load-bearing claim is that the identity RNG does **not** consume the timing
+RNG -- if it did, seeding would shift which chunks get the heavy-tail delay and
+silently change what every seeded timing test measures.
+
+Verified by observation, not by reading the code:
+`scripts/verify_seed_rng_independence.py` drives the mock's ASGI app in-process
+with `precise_sleep` stubbed out (so it compares which delays were *drawn*, not
+how accurately they were *delivered*) and records the exact sequence
+`_draw_delay_ms` returns on the high-variance config -- the only config whose
+draws consume the RNG.
+
+- **5 seeds x 30 draws, against the pre-change mock: identical in every
+  position**, including the indices where the 4x tail spike lands (e.g. seed
+  20260815 -> positions 14 and 20 in both).
+- Same seed twice repeats its sequence in both builds.
+- Only the response *bodies* differ (`created` 1786846276 -> 1700000000 and a
+  derived uuid) -- the intended change.
+- End-to-end: `tests/eval` (both seeded suites -- tail test at seed 20260813,
+  negative controls at seed 999) passes 6/6 in 392s with the change present.
+- Cost of the seeded identity path: **+5.46us/request** (7.14us vs 1.68us for
+  the uuid4 path), ~1800x below the 10ms noise floor, and drawn before the role
+  chunk rather than inside a timed gap.
+
+Re-run it (against any pre-change checkout) if the mock's identity or timing
+code changes again; usage is in the script's docstring.
+
 ## Simulated-token caveat
 
 Week 1 measures inter-SSE-chunk gaps (TPOT), not tokenizer-level per-token

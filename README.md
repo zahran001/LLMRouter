@@ -1,10 +1,14 @@
 # LLMRouter
 
+[![router eval](https://github.com/zahran001/LLMRouter/actions/workflows/router-eval.yml/badge.svg)](https://github.com/zahran001/LLMRouter/actions/workflows/router-eval.yml)
+
 A Rust router that sits in front of a pool of vLLM inference replicas and protects per-request latency targets (time-to-first-token and time-per-output-token) through real-time admission and routing decisions, even under bursty or adversarial load.
 
 ## Status
 
 Work in progress — Week 1 (foundation & measurement).
+
+The `router eval` badge above is the Week 1 gate: it runs the fidelity, streaming, overhead and header/error tests **and** the two deliberately-broken routers the eval must fail against, so it goes red both when the router regresses and when the eval loses its teeth (`WEEK1_ROUTER_IMPL.md` §4–§5).
 
 ## Planned architecture
 
