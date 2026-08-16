@@ -32,6 +32,30 @@ busy-wait is even needed on Linux. The spin exists only to correct Windows
 arise. Re-run the sequential noise calibration on Linux without the busy-wait
 as an early Week-2 check.
 
+**Status update (2026-08-15) — STILL OPEN, and one specific run will be
+tempting to mistake for having closed it.** The router eval's first CI run on
+`ubuntu-latest` delivered configured timing far more accurately than the
+Windows dev machine (direct TTFT p50 ~102.9ms against a configured 100ms,
+versus ~113-115ms here; BENCHMARKS.md, "CI run (ubuntu-latest)"). Early
+evidence, therefore: the busy-wait is **probably not** needed on Linux.
+
+That is not the check, and the number must not be quoted as if it were:
+
+- **The spin was ENABLED for that run.** ~3ms measures how well the mock
+  delivers its configured timing on Linux *with* `precise_sleep` working — not
+  how `asyncio.sleep` behaves unaided, which is the actual question. No
+  spin-enabled run, however clean, can answer it.
+- Because the spin corrected overshoot on both platforms, the ~3ms vs ~13-15ms
+  gap is mostly **structural** latency (transport, event-loop scheduling), a
+  different quantity from the ~10-30ms bare-`asyncio.sleep()` overshoot the
+  busy-wait was built to correct.
+
+**The disabling test is still required.** It closes only on an A/B on Linux:
+the sequential noise calibration run with the spin disabled
+(`precise_sleep(d, spin_margin_s=0)` degenerates to a bare `asyncio.sleep(d)`)
+and again with it enabled, both compared against the *configured* values. Until
+that A/B exists, the busy-wait stays and this question stays open.
+
 ---
 
 ## 2. What "request patterns" means

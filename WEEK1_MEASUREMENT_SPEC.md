@@ -69,6 +69,22 @@ Every JSON chunk carries these fields:
   `delta.reasoning_content`; our models (Llama-3.2-3B, Llama-3.1-8B) are
   non-reasoning, so this field is out of scope for v1.
 
+### Test-only mock affordances (do not affect this contract)
+The mock carries two query parameters that exist solely for the router eval
+(`WEEK1_ROUTER_IMPL.md` §4.5). Neither alters the contract above — chunk shape,
+ordering, field set and terminator are unchanged, and a request that passes
+neither parameter behaves exactly as specified here:
+
+- **`?seed=`** additionally makes a response **byte-reproducible**: `id` is derived
+  from the seed and `created` is fixed, so the same `(config, num_tokens, seed)`
+  returns identical bytes. Needed because the router's byte-identity test compares
+  two necessarily-separate requests. Unseeded requests keep a fresh `uuid4` and the
+  real epoch second. The identity draw uses its own RNG instance and provably does
+  not perturb the timing draw sequence (verified: BENCHMARKS.md, "Seed/timing RNG
+  independence").
+- **`?echo_headers=`** returns the received headers as JSON instead of streaming, so
+  the router's header-forwarding test can see what actually reached the upstream.
+
 ---
 
 ## 2. Timestamp Definitions (LOCKED)

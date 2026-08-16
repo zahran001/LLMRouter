@@ -3,6 +3,17 @@ name = "llmrouter"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+# Test-only. Mounts the two deliberately-broken routers (src/wrong.rs) the
+# eval must fail against. Never enable for a real deployment or benchmark.
+wrong-routers = ["dep:futures-util", "dep:serde_json"]
+
 [dependencies]
 axum = "0.8.9"
+reqwest = { version = "0.13.4", features = ["stream"] }
 tokio = { version = "1.53.1", features = ["full"] }
+
+# wrong-routers only: the real router needs neither a stream combinator nor a
+# JSON parser, which is precisely the point (decision 2 rationale).
+futures-util = { version = "0.3.31", optional = true }
+serde_json = { version = "1.0.145", optional = true }
