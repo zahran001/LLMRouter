@@ -16,9 +16,10 @@ import statistics
 import pytest
 
 from loadgen.corpus import load_corpus
-from loadgen.log import RunLogger
+from loadgen.log import RunLogger, read_log
 from loadgen.schedule import build_steady_schedule
 from loadgen.scheduler import OpenLoopScheduler
+from tests.loadgen._assertions import assert_cap_respected
 
 pytestmark = [pytest.mark.loadgen, pytest.mark.integration]
 
@@ -44,10 +45,17 @@ async def _run(base_url, log_path, rps, duration_s, cap, config="slow"):
 async def test_over_cap_sheds_fail_fast_without_blocking(mock_base_url, tmp_path):
     # slow config (~900ms/response) at 20 RPS with cap=2 guarantees heavy
     # shedding -- in-flight demand (~18 concurrent) vastly exceeds the cap.
-    result, schedule = await _run(mock_base_url, tmp_path / "v3_over.raw_log.jsonl", rps=20.0, duration_s=2.0, cap=2)
+    log_path = tmp_path / "v3_over.raw_log.jsonl"
+    result, schedule = await _run(mock_base_url, log_path, rps=20.0, duration_s=2.0, cap=2)
 
     assert result.n_shed > 0, "expected shedding under a deliberately tight cap"
     assert result.n_sent + result.n_shed + result.n_errored == result.n_scheduled
+
+    # The direct invariant: admitted concurrency never exceeded the cap,
+    # checked from the raw log's own [send_time, close_time] intervals --
+    # not inferred from the shed count (see test_negative_controls.py's V3
+    # control for why shed-count-only comparisons don't prove this).
+    assert_cap_respected(read_log(log_path), cap=2, context="over-cap run: ")
 
     # The load-bearing assertion: if the cap check blocked the scheduler loop
     # instead of failing fast, scheduling lag would blow up under heavy
@@ -58,7 +66,7 @@ async def test_over_cap_sheds_fail_fast_without_blocking(mock_base_url, tmp_path
 
 async def test_below_cap_zero_sheds(mock_base_url, tmp_path):
     # fast config, low RPS, cap comfortably above any plausible in-flight count.
-    result, _ = await _run(
-        mock_base_url, tmp_path / "v3_under.raw_log.jsonl", rps=2.0, duration_s=2.0, cap=50, config="fast"
-    )
+    log_path = tmp_path / "v3_under.raw_log.jsonl"
+    result, _ = await _run(mock_base_url, log_path, rps=2.0, duration_s=2.0, cap=50, config="fast")
     assert result.n_shed == 0, f"expected zero sheds below cap, got {result.n_shed}"
+    assert_cap_respected(read_log(log_path), cap=50, context="below-cap run: ")

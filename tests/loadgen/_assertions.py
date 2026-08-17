@@ -98,6 +98,61 @@ def assert_log_reconciles(rows: list[dict], schedule: Schedule, epsilon_s: float
 
 
 # ---------------------------------------------------------------------------
+# V3 -- concurrency cap
+# ---------------------------------------------------------------------------
+
+
+def peak_concurrency(rows: list[dict]) -> int:
+    """Max number of simultaneously-open [send_time, close_time] intervals
+    among 'sent'/'errored' rows (shed rows never opened a stream).
+
+    send_time is captured right after cap admission (the increment) and
+    close_time right before the matching decrement (loadgen/scheduler.py:
+    OpenLoopScheduler._handle), so these intervals are exactly the
+    scheduler's own open-stream bookkeeping window -- this replays the
+    scheduler's internal _open_streams peak from the log alone, which is
+    the direct way to verify the cap was actually respected. A shed-count
+    comparison across two different cap VALUES cannot prove the enforcement
+    logic itself is correct (see test_negative_controls.py's V3 control);
+    this can, because it's checked against the same cap the run was
+    configured with.
+    """
+    events: list[tuple[float, int]] = []
+    for r in rows:
+        if r["status"] in ("sent", "errored") and r["send_time"] is not None and r["close_time"] is not None:
+            events.append((r["send_time"], 1))
+            events.append((r["close_time"], -1))
+    # At a tied timestamp, process closes (-1) before opens (+1). This is
+    # not a conservatism choice -- it's what the scheduler actually
+    # guarantees: OpenLoopScheduler._handle has no `await` between capturing
+    # close_time and decrementing _open_streams, so a freed slot's decrement
+    # always happens-before any subsequent admission check it enables, even
+    # when time.monotonic()'s resolution can't distinguish the two events'
+    # timestamps (this happens in practice -- verified empirically: a
+    # newly-admitted request's send_time can tie exactly with the close_time
+    # of the request whose slot it took). Sorting opens-first at a tie
+    # attributes that admission to a moment BEFORE the slot was actually
+    # freed, phantom-inflating peak by 1 for a run that never really
+    # exceeded the cap.
+    events.sort(key=lambda e: (e[0], 0 if e[1] == -1 else 1))
+
+    concurrency = 0
+    peak = 0
+    for _, delta in events:
+        concurrency += delta
+        peak = max(peak, concurrency)
+    return peak
+
+
+def assert_cap_respected(rows: list[dict], cap: int, context: str = "") -> None:
+    """WEEK2_PLAN.md §3.3: in-flight streaming responses bounded by the
+    concurrency cap. Checked directly from the raw log's observed peak
+    concurrency, not inferred from shed counts."""
+    peak = peak_concurrency(rows)
+    assert peak <= cap, f"{context}peak observed concurrency {peak} exceeds cap {cap} -- cap enforcement is broken"
+
+
+# ---------------------------------------------------------------------------
 # V4 -- corpus faithfulness
 # ---------------------------------------------------------------------------
 

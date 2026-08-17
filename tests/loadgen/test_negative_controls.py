@@ -22,9 +22,11 @@ from loadgen.schedule import build_poisson_schedule, build_steady_schedule
 from loadgen.scheduler import OpenLoopScheduler
 from tests.loadgen._assertions import (
     assert_all_prompts_valid,
+    assert_cap_respected,
     assert_fits_exponential,
     assert_log_reconciles,
     gaps_from_schedule,
+    peak_concurrency,
 )
 
 pytestmark = [pytest.mark.loadgen, pytest.mark.negative_control]
@@ -88,7 +90,7 @@ async def _closed_loop_achieved_rps(base_url: str, config: str, n: int, num_toke
     return n / elapsed
 
 
-async def _open_loop_achieved_rps(base_url: str, config: str, corpus: Corpus, log_path) -> float:
+async def _open_loop_run(base_url: str, config: str, corpus: Corpus, log_path):
     schedule = build_poisson_schedule(V2_RPS, V2_DURATION_S, SEED, corpus)
     scheduler = OpenLoopScheduler(
         schedule=schedule,
@@ -101,7 +103,7 @@ async def _open_loop_achieved_rps(base_url: str, config: str, corpus: Corpus, lo
     result = await scheduler.run()
     scheduler.logger.close()
     assert result.n_shed == 0, "cap should not bite here -- would confound this control with V3's concern"
-    return result.achieved_rps
+    return result
 
 
 async def test_v2_closed_loop_diverges_but_open_loop_is_invariant(mock_base_url, corpus, tmp_path):
@@ -116,65 +118,136 @@ async def test_v2_closed_loop_diverges_but_open_loop_is_invariant(mock_base_url,
         "so closed-loop throughput should differ by close to that ratio)"
     )
 
-    open_fast = await _open_loop_achieved_rps(mock_base_url, "fast", corpus, tmp_path / "v2c_fast.raw_log.jsonl")
-    open_slow = await _open_loop_achieved_rps(mock_base_url, "slow", corpus, tmp_path / "v2c_slow.raw_log.jsonl")
-    open_divergence = abs(open_fast - open_slow) / open_fast
+    open_fast = await _open_loop_run(mock_base_url, "fast", corpus, tmp_path / "v2c_fast.raw_log.jsonl")
+    open_slow = await _open_loop_run(mock_base_url, "slow", corpus, tmp_path / "v2c_slow.raw_log.jsonl")
+    open_divergence = abs(open_fast.achieved_rps - open_slow.achieved_rps) / open_fast.achieved_rps
 
-    print(f"open-loop achieved RPS: fast={open_fast:.2f} slow={open_slow:.2f} divergence={open_divergence:.1%}")
+    print(
+        f"open-loop achieved RPS: fast={open_fast.achieved_rps:.2f} slow={open_slow.achieved_rps:.2f} "
+        f"divergence={open_divergence:.1%}"
+    )
     assert open_divergence < 0.2, (
         f"open-loop fast vs slow achieved RPS diverged {open_divergence:.1%} -- "
         "response time is leaking into send timing (hidden closed-loop dependency)"
     )
 
+    # achieved_rps alone is not sufficient here: it divides by the FIXED
+    # offered window (schedule.duration_s), so a hypothetical leak that
+    # delays every send but still eventually issues all of them would leave
+    # achieved_rps looking unchanged ("eventually issued" is all it checks,
+    # not "issued on schedule"). Scheduling lag is the metric that actually
+    # rules that out -- a leak would blow up max lag for the slow config
+    # specifically (by roughly its response time) while leaving fast's lag
+    # small, so comparing the two directly closes the gap achieved_rps
+    # alone leaves open. This is NOT confounded by response-tail draining
+    # time the way switching achieved_rps itself to a wall-clock-drain
+    # metric would be (fast/slow inherently differ there even when correct).
+    fast_max_lag = max(open_fast.per_send_lag_s)
+    slow_max_lag = max(open_slow.per_send_lag_s)
+    print(f"open-loop max scheduling lag: fast={fast_max_lag*1000:.1f}ms slow={slow_max_lag*1000:.1f}ms")
+    inter_arrival_gap = 1.0 / V2_RPS
+    for label, lag in (("fast", fast_max_lag), ("slow", slow_max_lag)):
+        assert lag < 0.5 * inter_arrival_gap, (
+            f"open-loop {label} max scheduling lag {lag*1000:.1f}ms is a large fraction of the "
+            f"{inter_arrival_gap*1000:.1f}ms inter-arrival gap -- sends are not landing on schedule "
+            "(closed-loop-style delay, even if achieved_rps looked invariant)"
+        )
+
 
 # ---------------------------------------------------------------------------
-# V3 control: a broken cap (effectively admits fewer than the configured
-# value -- the observable signature of an off-by-N enforcement bug) must
-# shed under load where the correctly-configured cap sheds exactly zero.
+# V3 control: a genuinely broken cap-ENFORCEMENT (off-by-one comparison
+# operator, not a different cap value) must let peak concurrency exceed the
+# cap where the real enforcement respects it -- run at the SAME cap and the
+# SAME load, so the only variable is the comparison itself.
 # ---------------------------------------------------------------------------
 
 
-async def _run_with_cap(base_url, corpus, log_path, rps, duration_s, cap, config="fast"):
+class _OffByOneCapScheduler(OpenLoopScheduler):
+    """Deliberately broken: `>` instead of `>=`. This admits a request when
+    open_streams == cap (the real check sheds it), so the effective ceiling
+    becomes cap+1, not cap -- a realistic single-character bug class (wrong
+    comparison operator), not a smaller configured cap. Body is otherwise an
+    exact copy of OpenLoopScheduler._handle; the changed line is marked.
+    """
+
+    async def _handle(self, request_id, entry, t_start):
+        prompt = self.corpus.prompts[entry.prompt_id]
+
+        if self._open_streams > self.concurrency_cap:  # BUG: should be >=
+            self._n_shed += 1
+            self.logger.write(request_id, None, None, entry.prompt_id, prompt.char_len, "shed")
+            return
+        self._open_streams += 1
+
+        send_time = time.monotonic()
+        self._per_send_lag.append(send_time - (t_start + entry.scheduled_offset))
+        url = f"{self.base_url}{self.endpoint_path}"
+        body = {"model": self.model, "messages": [{"role": "user", "content": prompt.text}], **self.extra_body}
+
+        try:
+            async with self._client.stream("POST", url, params=self.query_params, json=body) as response:
+                response.raise_for_status()
+                async for _ in response.aiter_lines():
+                    pass
+            close_time = time.monotonic()
+            self._n_sent += 1
+            self.logger.write(
+                request_id, send_time - t_start, close_time - t_start, entry.prompt_id, prompt.char_len, "sent"
+            )
+        except Exception:
+            close_time = time.monotonic()
+            self._n_errored += 1
+            self.logger.write(
+                request_id, send_time - t_start, close_time - t_start, entry.prompt_id, prompt.char_len, "errored"
+            )
+        finally:
+            self._open_streams -= 1
+
+
+async def _run_with_scheduler(scheduler_cls, base_url, corpus, log_path, rps, duration_s, cap, config="slow"):
     schedule = build_steady_schedule(rps, duration_s, SEED, corpus)
-    scheduler = OpenLoopScheduler(
+    scheduler = scheduler_cls(
         schedule=schedule, corpus=corpus, base_url=base_url,
         logger=RunLogger(log_path), concurrency_cap=cap,
-        query_params={"config": config, "num_tokens": 5},
+        query_params={"config": config, "num_tokens": 5}, capture_samples=False,
     )
-    result = await scheduler.run()
+    await scheduler.run()
     scheduler.logger.close()
-    return result
+    return read_log(log_path)
 
 
-async def test_v3_below_cap_zero_sheds_but_broken_cap_sheds_early(mock_base_url, corpus, tmp_path):
-    # slow config (~900ms/response) at 20 RPS keeps ~18 streams open at
-    # once -- comfortably under nominal_cap=50 (zero sheds expected) but
-    # well past broken_effective_cap=5, so the two parameter values are
-    # actually distinguished by real concurrent load, not just by the
-    # request COUNT (too few in-flight requests would never touch either
-    # cap, and the control would prove nothing).
-    rps, duration_s, nominal_cap = 20.0, 3.0, 50
+async def test_v3_real_cap_respected_but_broken_comparison_admits_over_cap(mock_base_url, corpus, tmp_path):
+    # slow config (~900ms/response) at 20 RPS sustains ~18 concurrent demand
+    # -- comfortably above cap=10, so demand persistently presses against
+    # the cap boundary for most of the run (not just a single fleeting
+    # instant), making the off-by-one difference reliably observable rather
+    # than dependent on hitting one exact instant. IDENTICAL cap=10 is used
+    # for both runs below -- only the comparison operator differs.
+    rps, duration_s, cap = 20.0, 3.0, 10
 
-    real_result = await _run_with_cap(
-        mock_base_url, corpus, tmp_path / "v3c_real.raw_log.jsonl", rps, duration_s, nominal_cap, config="slow"
+    # Sanity: the real (unmodified) scheduler must respect the cap under
+    # this load, before this control is trusted to mean anything (mirrors
+    # V1's control asserting the real Poisson schedule passes first).
+    real_rows = await _run_with_scheduler(
+        OpenLoopScheduler, mock_base_url, corpus, tmp_path / "v3c_real.raw_log.jsonl", rps, duration_s, cap,
     )
-    assert real_result.n_shed == 0, f"real cap should not shed here, got {real_result.n_shed}"
+    assert_cap_respected(real_rows, cap=cap, context="real scheduler: ")
 
-    # Same load, but an off-by-N enforcement bug means the pool is actually
-    # admitting far fewer streams than configured -- exactly what a broken
-    # "if open_streams >= cap" comparison (e.g. wrong variable, stale value,
-    # wrong sign) looks like from the outside: it sheds well before the load
-    # that the configured cap should tolerate.
-    broken_effective_cap = 5  # i.e. an enforcement bug pins it at 5, not 50
-    broken_result = await _run_with_cap(
-        mock_base_url, corpus, tmp_path / "v3c_broken.raw_log.jsonl", rps, duration_s, broken_effective_cap,
-        config="slow",
+    # Same cap, same load, only the comparison operator is wrong. If fed to
+    # the exact same assertion the real V3 positive test uses
+    # (assert_cap_respected -- see test_v3_concurrency_cap.py), this must
+    # fail: peak concurrency should reach cap+1=11, one over.
+    broken_rows = await _run_with_scheduler(
+        _OffByOneCapScheduler, mock_base_url, corpus, tmp_path / "v3c_broken.raw_log.jsonl", rps, duration_s, cap,
     )
-    assert broken_result.n_shed > 0, (
-        f"expected the broken (effectively-smaller) cap to shed under load where the real "
-        f"cap={nominal_cap} sheds zero, got n_shed={broken_result.n_shed} -- "
-        "control has no teeth"
+    broken_peak = peak_concurrency(broken_rows)
+    print(f"\nV3 control: real peak={peak_concurrency(real_rows)} broken peak={broken_peak} (cap={cap})")
+    assert broken_peak > cap, (
+        f"expected the off-by-one comparison to admit over cap={cap}, but broken peak concurrency was "
+        f"only {broken_peak} -- control has no teeth"
     )
+    with pytest.raises(AssertionError):
+        assert_cap_respected(broken_rows, cap=cap, context="broken scheduler: ")
 
 
 # ---------------------------------------------------------------------------

@@ -83,22 +83,38 @@ feed responses back into scheduling; V2 proves it *doesn't*, empirically.
   throughput *is* `1/response_time`), which is demonstrated first as a sanity
   check (ratio > 2x). Then the *real* `OpenLoopScheduler` is driven at the
   same target RPS against both configs, and its achieved RPS must stay
-  **invariant** (within 20%) — if it didn't, response time would be leaking
-  into send timing, i.e. a hidden closed-loop dependency.
+  **invariant** (within 20%). A second, independent assertion checks max
+  scheduling lag stays small for *both* configs — added because `achieved_rps`
+  alone divides by the fixed offered window, so a hypothetical leak that
+  delayed every send but still eventually issued all of them would leave
+  `achieved_rps` looking unchanged ("eventually issued" is all it checks, not
+  "issued on schedule"). Scheduling lag directly measures the latter and
+  can't be fooled that way; it's also not confounded by response-tail drain
+  time the way naively comparing wall-clock throughput would be (fast/slow
+  inherently differ there by ~20%+ even in a correct implementation, since a
+  slow response's tail genuinely takes longer to drain — that's not a leak).
 
 Files: `test_v2_open_loop_fidelity.py`; control in
 `test_negative_controls.py::test_v2_closed_loop_diverges_but_open_loop_is_invariant`.
 
-**A real bug this caught while building it:** the first version of
-`achieved_rps` divided sends by the wall-clock time to fully *drain* every
-response (including the last few in-flight streams' response tail after the
-last scheduled send), not by the *offered* window — which silently
-under-counted achieved RPS for any config with response time comparable to
-the window length, and would have produced a false "diverges" reading in
-this exact control. Fixed in `loadgen/scheduler.py`: `achieved_rps` is now
-`(n_sent + n_errored) / schedule.duration_s` (§2.5: "sent" for this purpose
-means send_time was captured, whether or not the response later errored;
-shed requests were never attempted and are excluded).
+**Real bugs this caught while building it:**
+- The first version of `achieved_rps` divided sends by the wall-clock time to
+  fully *drain* every response (including the last few in-flight streams'
+  response tail after the last scheduled send), not by the *offered* window
+  — which silently under-counted achieved RPS for any config with response
+  time comparable to the window length, and would have produced a false
+  "diverges" reading in this exact control. Fixed in `loadgen/scheduler.py`:
+  `achieved_rps` is now `(n_sent + n_errored) / schedule.duration_s` (§2.5:
+  "sent" for this purpose means send_time was captured, whether or not the
+  response later errored; shed requests were never attempted and are
+  excluded).
+- A first draft of this control compared `achieved_rps` (offered-window
+  metric) on the open-loop side against wall-clock throughput on the
+  closed-loop side — an apples-to-oranges comparison that happened to pass
+  only because the pass margins (2x / 20%) were wide enough to absorb the
+  mismatch. Closed at Hard Stop 2 review by adding the scheduling-lag
+  assertion above rather than forcing both sides onto an identical metric
+  (which has its own flaw — see the drain-time confound noted above).
 
 ---
 
@@ -110,20 +126,41 @@ shed requests were never attempted and are excluded).
   scheduler keeps firing on schedule for non-shed sends. The load-bearing
   assertion is that mean scheduling lag stays low (<100ms) *even while heavily
   shedding* — if the cap check blocked instead of failing fast, lag would blow
-  up under heavy shedding instead of staying flat.
-- **Negative control:** zero sheds below the cap. Below-cap run (fast config,
-  low RPS, cap comfortably above plausible in-flight count) → `n_shed == 0`.
-  A cap with an off-by-N enforcement bug (effectively admitting far fewer
-  streams than configured) is simulated by driving the *same* concurrent load
-  (slow config, high enough RPS that ~18 streams are typically open at once)
-  against a genuinely smaller effective cap (5, vs the real 50) — it sheds
-  where the correctly-configured cap doesn't. Calibration note: the offered
-  RPS at which shedding *onsets* against the slow mock is the source for the
-  `WEEK2_PLAN.md` §3.3 concurrency-cap `[CALIBRATE]` value (Block C, not this
-  block).
+  up under heavy shedding instead of staying flat. Both positive tests also
+  assert `assert_cap_respected` — peak concurrency, reconstructed directly
+  from the raw log's `[send_time, close_time]` intervals, must never exceed
+  the configured cap.
+- **Negative control:** a genuinely broken cap-*enforcement* — `_OffByOneCapScheduler`,
+  a subclass whose `_handle` uses `self._open_streams > self.concurrency_cap`
+  instead of `>=` (admits one request too many before shedding) — is driven
+  at the *same* cap value and the *same* concurrent load (slow config, ~18
+  concurrent demand against cap=10) as the real scheduler. The real
+  scheduler's peak concurrency must stay at or below the cap (sanity, checked
+  first); the broken variant's must exceed it. An earlier version of this
+  control instead compared the real scheduler at two different cap *values*
+  (50 vs 5) — which only proves "a smaller cap sheds sooner," true of any
+  correct cap and therefore blind to a broken comparison operator. Caught and
+  rewritten at Hard Stop 2 review.
 
 Files: `test_v3_concurrency_cap.py`; control in
-`test_negative_controls.py::test_v3_below_cap_zero_sheds_but_broken_cap_sheds_early`.
+`test_negative_controls.py::test_v3_real_cap_respected_but_broken_comparison_admits_over_cap`.
+
+**A real bug this caught while building it (in the test helper, not
+`loadgen/`):** the first version of `peak_concurrency` (`_assertions.py`)
+broke timestamp ties by processing opens before closes, on the theory that
+was the "conservative" choice. It isn't -- `OpenLoopScheduler._handle` has no
+`await` between capturing `close_time` and decrementing `_open_streams`, so a
+freed slot's decrement always happens-before any admission check it enables,
+even when `time.monotonic()`'s resolution can't distinguish the two events'
+timestamps (confirmed this occurs in practice: a newly-admitted request's
+`send_time` can tie exactly with the `close_time` of the request whose slot
+it took). Sorting opens first at a tie attributed that admission to a moment
+*before* the slot was actually freed, phantom-inflating peak by 1 -- which
+made the *real*, correct scheduler intermittently fail its own new
+`assert_cap_respected` check (observed non-deterministically, ~1 in 15 runs
+at these parameters). Fixed by sorting closes before opens at ties; verified
+15/15 clean on the real scheduler and 15/15 caught on the broken variant
+after the fix.
 
 ---
 
