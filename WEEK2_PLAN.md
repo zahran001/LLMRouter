@@ -612,6 +612,7 @@ read the ~3ms CI number as settling this; it is a prior, not an answer.
 | Offered-vs-achieved band | ±5% | Observed loadgen tracking at low load |
 | Concurrency cap value | — | Mock **slow-config** concurrency sweep; set provably above offered load through breach region with headroom |
 | Loadgen capability target | "comfortably beyond breach" | Same measurement as the cap value: one capped client sustains offered load through breach region without the cap biting |
+| Loadgen scheduler spin margin (`loadgen/scheduler.py:SPIN_MARGIN_S`) | 5ms | **Windows-tuned, not yet Linux-calibrated.** Carried forward from Hard Stop 2 review (2026-08-16): same class of A/B as Block 0's mock-timing spin (`mock/timing.py:SPIN_MARGIN_S`) — run it on the Linux e2 VM, same session if convenient. Do not ship the Windows-tuned 5ms onto Linux vLLM runs unverified. |
 
 Note: the concurrency-cap value and the loadgen-capability target are the **same
 measurement** (§3.3) — "can one capped client sustain offered load through the

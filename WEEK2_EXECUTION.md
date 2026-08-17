@@ -209,6 +209,12 @@ calibration, which violates the trace-to-source discipline.
   flag that the real N comes from the GPU transient plot.
 - **Window Y / ±5% band:** confirm against §8 sources (Y clears ≥100 samples at lowest
   RPS; band from low-load tracking).
+- **Loadgen scheduler spin margin** (carried forward from Hard Stop 2 review,
+  2026-08-16, non-blocking there): `loadgen/scheduler.py:SPIN_MARGIN_S` (5ms) is
+  Windows-tuned, not yet Linux-calibrated. Run the same class of A/B Block 0 already
+  did for the mock's spin (`mock/timing.py:SPIN_MARGIN_S`) — spin-disabled vs
+  spin-enabled on the Linux e2 VM — before this ships onto Linux vLLM runs. Cheap to
+  fold into the same VM session as the cap-value calibration below if convenient.
 
 ### ── HARD STOP 3 — [CALIBRATE] resolution ──
 

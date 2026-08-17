@@ -162,6 +162,13 @@ at these parameters). Fixed by sorting closes before opens at ties; verified
 15/15 clean on the real scheduler and 15/15 caught on the broken variant
 after the fix.
 
+**Accepted at Hard Stop 2 review (2026-08-16) on the strength of that
+reasoning plus the 15/15-both-directions evidence, with a standing note:**
+if V3 ever flakes again, this tie-break is the first suspect before anything
+else. The fix in that case is more principled event-ordering/collision
+handling (e.g. carrying causal order through the log instead of inferring it
+from timestamp comparison), not a threshold nudge.
+
 ---
 
 ## V4 — Corpus faithfulness (offline)
