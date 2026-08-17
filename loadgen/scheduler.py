@@ -31,6 +31,24 @@ from loadgen.schedule import Schedule
 from metrics.consume import consume_stream
 from metrics.types import RequestSample
 
+# Same pattern as mock/timing.py:precise_sleep, applied to absolute-target
+# scheduling instead of a fixed duration: bare `asyncio.sleep` on this
+# platform doesn't guarantee waking at-or-after its target -- it can
+# occasionally return a few/several ms EARLY (observed ~13-15ms, in the
+# neighborhood of Windows' ~15.6ms timer tick), which would violate the
+# "send_time >= scheduled_offset always -- late allowed, early impossible"
+# contract (WEEK2_PLAN.md §3.1, §4 V5). Coarse-sleep for the bulk of the
+# wait, then spin the last SPIN_MARGIN_S against the monotonic clock.
+SPIN_MARGIN_S = 0.005
+
+
+async def _sleep_until(target: float, spin_margin_s: float = SPIN_MARGIN_S) -> None:
+    coarse = target - time.monotonic() - spin_margin_s
+    if coarse > 0:
+        await asyncio.sleep(coarse)
+    while time.monotonic() < target:
+        await asyncio.sleep(0)
+
 
 @dataclass
 class RunResult:
@@ -39,7 +57,8 @@ class RunResult:
     n_shed: int
     n_errored: int
     achieved_rps: float
-    window_s: float
+    window_s: float  # the *offered* window (schedule duration_s) -- what achieved_rps is divided by, §2.5
+    wall_clock_drain_s: float  # actual elapsed time incl. draining the last in-flight responses -- informational only
     per_send_lag_s: list[float] = field(default_factory=list)
     samples: dict[int, RequestSample] = field(default_factory=dict)  # request_id -> sample, sent only
 
@@ -96,9 +115,8 @@ class OpenLoopScheduler:
 
             for request_id, entry in enumerate(self.schedule.entries):
                 target = t_start + entry.scheduled_offset
-                delay = target - time.monotonic()
-                if delay > 0:
-                    await asyncio.sleep(delay)
+                if time.monotonic() < target:
+                    await _sleep_until(target)
 
                 # Fire-and-forget: create the task and move straight to the
                 # next scheduled send. Never `await task` here.
@@ -110,10 +128,18 @@ class OpenLoopScheduler:
             # accounted for. This await is outside the scheduling loop, so it
             # cannot delay any send.
             await asyncio.gather(*tasks)
-            window_s = time.monotonic() - t_start
+            wall_clock_drain_s = time.monotonic() - t_start
 
         n_scheduled = len(self.schedule.entries)
-        achieved_rps = self._n_sent / window_s if window_s > 0 else 0.0
+        # WEEK2_PLAN.md §2.5: achieved RPS is sends (send_time captured --
+        # "sent" AND "errored" both count, since both were actually issued;
+        # only "shed" was never attempted) within the *offered* window,
+        # divided by that offered window duration -- NOT the wall-clock time
+        # to fully drain every response, which includes response-tail time
+        # that has nothing to do with how fast the driver was sending.
+        window_s = self.schedule.provenance["duration_s"]
+        n_issued = self._n_sent + self._n_errored
+        achieved_rps = n_issued / window_s if window_s > 0 else 0.0
         return RunResult(
             n_scheduled=n_scheduled,
             n_sent=self._n_sent,
@@ -121,6 +147,7 @@ class OpenLoopScheduler:
             n_errored=self._n_errored,
             achieved_rps=achieved_rps,
             window_s=window_s,
+            wall_clock_drain_s=wall_clock_drain_s,
             per_send_lag_s=self._per_send_lag,
             samples=self._samples,
         )

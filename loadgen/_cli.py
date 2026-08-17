@@ -123,6 +123,7 @@ async def run_and_report(schedule: Schedule, corpus, args: argparse.Namespace, a
         "n_shed": result.n_shed,
         "n_errored": result.n_errored,
         "window_s": result.window_s,
+        "wall_clock_drain_s": result.wall_clock_drain_s,
         "wall_clock_s": time.time() - t0,
         "scheduling_lag_s": {
             "mean": statistics.mean(lag) if lag else None,
