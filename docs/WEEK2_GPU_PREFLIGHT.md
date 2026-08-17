@@ -106,7 +106,7 @@ when nothing exists yet — exactly the state before Block E starts.
 ## 6. Stage A schedules pre-generated and committed
 
 `scripts/generate_stage_a_schedules.py` → `benchmarks/schedules/stage_a/`
-(committed `<pending, see below>`): 8 Poisson schedules, RPS = [2, 5, 10,
+(committed `b4a43d1`): 8 Poisson schedules, RPS = [2, 5, 10,
 20, 30, 40, 60, 80] (§6.2's example anchor + wide-step points), one
 continuous `duration_s=130s` each (`WARMUP_N_PLACEHOLDER=10s` — [CALIBRATE],
 deferred to Block F per Hard Stop 3 — `+ Y=120s`, confirmed Hard Stop 3),
