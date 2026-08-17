@@ -44,8 +44,12 @@ warn-at-150   $150   thresholds 0.5 / 0.9 / 1.0 CURRENT_SPEND   projects/<REDACT
 Warn-at-10    $10    thresholds 0.5 / 0.9 / 1.0 CURRENT_SPEND   (all projects)
 ```
 
-`warn-at-150`'s project filter `<REDACTED>` matches this project
-(`<REDACTED>`), confirmed via `gcloud projects describe`.
+`warn-at-150`'s project filter matches this project's number, confirmed
+against `gcloud projects describe`. Account and project identifiers are
+redacted here deliberately — this is a public repo, and the evidence a
+reviewer needs is *that* the check was run and what it returned, not which
+account it was run against. Re-run the two commands above to see the live
+values.
 
 Three things to know about what these actually give you, none of them
 blocking:
