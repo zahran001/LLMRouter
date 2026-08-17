@@ -231,6 +231,26 @@ generators: `loadgen/steady.py`, `loadgen/poisson.py`, `loadgen/adversarial.py`.
     handoff specified 5 fields. Open-loop generation made shed/errored a
     first-class *outcome* rather than an error case, so the schema gained a status
     field. This is a justified expansion with a named cause, not schema drift.
+- **Companion TTFT/TPOT sidecar — a second file, NOT more raw-log fields.** The
+  schema above is complete and closed as written; the sidecar sits beside it. Per
+  point the loadgen emits `<tag>.raw_log.jsonl` (this schema, unchanged) *and*
+  `<tag>.samples.jsonl` — one row per **issued** request (`sent` or `errored`; a
+  `shed` request never opened a stream and has no sample), carrying `request_id`,
+  `send_time`, `ttft_ms`, `tpot_samples_ms`, `content_chunk_count`, `error`. The
+  two join on `request_id`, and the sidecar repeats `send_time` in the same
+  t_start-relative basis so the time-based warmup filter (§2.4) needs no join.
+  - **Why a separate file — read this before proposing TTFT columns.**
+    Nothing in the six fields above is a first-token time: `close_time` bounds the
+    *whole* stream. So the breach metric (§2.6 — p99 TTFT) and §6.3's per-request
+    TTFT-vs-wall-clock transient data cannot come from the raw log, while §6.3's
+    per-point percentiles need both files. Adding TTFT columns to the raw log
+    would have been a *second* expansion of a locked schema; adding a companion
+    file keeps the lock intact and costs nothing. **A reader who finds the raw log
+    alone insufficient for a TTFT number has not found a contradiction — they have
+    found this bullet's reason for existing.**
+  - Written per row and flushed, same durable-on-produce discipline as the raw log
+    (§6.3). Mechanism: `loadgen/log.py` (`RunLogger` / `SampleLogger`);
+    per-point metrics computed from the pair by `metrics/point.py`.
 - **ShareGPT corpus** for request content; `prompt_len` is **char count for now**,
   revisited as token count in **Week 3** for KV-cache math (deferred, do not change
   in Week 2).
@@ -294,7 +314,38 @@ reconstructable), target RPS, arrival process, schedule-generation version/confi
   before the breach region, escalate; otherwise A suffices (tens of RPS against a
   single replica is well within one process).
 
-**Concurrency cap value — [CALIBRATE]:**
+**Concurrency cap value — RESOLVED: 3000** (set 2026-08-17; Hard Stop 3-class
+read, deferred there pending Stage A's real RPS range, closed at Block E
+pre-flight). Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP`.
+
+*Provenance for the value.* It clears every concurrency level Block C ever
+produced: the uncapped ("natural") sweep peaked at **2380** simultaneous open
+streams at 300 offered RPS against the slow mock, and at **651** at 100 RPS —
+the closest comparable rate to Stage A's 80 RPS ceiling. 3000 is above the
+former and ~4.6× the latter. Stated as the guardrail's own condition (Little's
+Law): at Stage A's top offered point the cap cannot bite until *mean* end-to-end
+response time exceeds **37.5s** (3000 ÷ 80 RPS) — far beyond any latency at
+which the 500ms p99 TTFT breach is still an interesting measurement. It is
+therefore provably above offered load through the breach region, per the
+requirement below, while still bounding true runaway.
+
+*Verify per point, do not assume:* every point record carries `n_shed_total`
+and `provenance.concurrency_cap` (`metrics/point.py`), and
+`scripts/compute_point_metrics.py` flags any point with `shed > 0`. A
+non-zero shed count at any swept point means the cap bit and that point is
+cap-shaped, not server-shaped — the §2.5 instrument-lies failure mode below.
+
+*Operational precondition — file-descriptor headroom.* 3000 concurrent
+streams means ~3000 open sockets in the driving process. Linux's default soft
+`ulimit -n` is **1024**, well under the cap: the process would fail with
+`EMFILE` before the cap could ever engage, and those failures land as
+`errored` (a real send that failed), **not** `shed` — silently corrupting both
+achieved RPS and the error accounting rather than tripping the shed check
+above. Raise it (`ulimit -n 65535`) before driving any point from a Linux
+host. This is a precondition of the cap value, not a detail of it.
+
+**Original calibration requirements (unchanged, and what the value above
+satisfies):**
 - Calibrated against the mock's **slow config** (realistic response duration) —
   NOT the fast config. A fast mock drains streams immediately, in-flight never
   climbs, and the calibrated cap would be meaningless the moment real vLLM
@@ -610,8 +661,8 @@ read the ~3ms CI number as settling this; it is a prior, not an answer.
 | Per-point warmup N | 10s | Stage A transient plot (TTFT vs wall-clock, find flatten point) |
 | Measurement window Y | 120s | Confirm lowest coarse RPS clears ≥100-sample floor with margin |
 | Offered-vs-achieved band | ±5% | Observed loadgen tracking at low load |
-| Concurrency cap value | — | Mock **slow-config** concurrency sweep; set provably above offered load through breach region with headroom |
-| Loadgen capability target | "comfortably beyond breach" | Same measurement as the cap value: one capped client sustains offered load through breach region without the cap biting |
+| ~~Concurrency cap value~~ | **RESOLVED: 3000** (2026-08-17) | Set above Block C's uncapped peak concurrency (2380 @ 300 RPS; 651 @ 100 RPS) — cannot bite below a 37.5s mean response time at Stage A's 80 RPS ceiling. Full provenance + the `ulimit -n` precondition in §3.3. Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP` |
+| ~~Loadgen capability target~~ | **RESOLVED with the cap** (2026-08-17) | Same measurement (see note below). Verified per point rather than assumed: `shed > 0` at any swept point means the cap bit and that point is cap-shaped — flagged automatically by `scripts/compute_point_metrics.py` |
 | Loadgen scheduler spin margin (`loadgen/scheduler.py:SPIN_MARGIN_S`) | 5ms | **Windows-tuned, not yet Linux-calibrated.** Carried forward from Hard Stop 2 review (2026-08-16): same class of A/B as Block 0's mock-timing spin (`mock/timing.py:SPIN_MARGIN_S`) — run it on the Linux e2 VM, same session if convenient. Do not ship the Windows-tuned 5ms onto Linux vLLM runs unverified. |
 
 Note: the concurrency-cap value and the loadgen-capability target are the **same

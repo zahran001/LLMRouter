@@ -309,13 +309,16 @@ improvising on the meter.
 **Ref:** §2.6, §6.4, §8. All post-teardown, free.
 
 **Build:**
-- Compute per-point p50/p95/p99 TTFT + TPOT from the raw logs; apply the ≥100 achieved-
-  sample validity check; flag any offered-vs-achieved divergent points (Option Y — plot
-  at achieved, log both).
+- Compute per-point p50/p95/p99 TTFT + TPOT from the **raw log + samples sidecar**
+  (§3.1 — TTFT lives in the sidecar; the raw log's six fields hold no first-token
+  time, by design); apply the ≥100 achieved-sample validity check; flag any
+  offered-vs-achieved divergent points (Option Y — plot at achieved, log both).
 - Resolve **breach RPS** = lowest swept RPS whose full-window p99 TTFT ≥ 500ms.
 - **Resolve the deferred warmup N** from the GPU transient plot (TTFT vs wall-clock
   flatten-point) — record with provenance. *(This is a Hard Stop 3-class read; surface
-  the plot for the human to read N off it.)*
+  the plot for the human to read N off it.)* Applying the resolved N is then a
+  re-filter over the committed sidecars, **never a GPU re-run** — the warmup filter
+  is metrics-side and time-based (§2.4).
 - Author **`BASELINE.md`**: the 500ms-breach problem statement, the realized prompt-
   length histogram, the two-source-tail-held-constant sentence (§2.2), the offered-vs-
   achieved footnote, the 2s secondary line, shared-y-axis chart (500ms + 2s lines).

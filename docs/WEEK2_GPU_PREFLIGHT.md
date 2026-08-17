@@ -35,12 +35,38 @@ True	billingAccounts/<REDACTED>
 also 1 (both currently unused — 0 in flight), billing enabled, same account
 Block 0's e2 VM ran on.
 
-**Budget alerts ($50/$100/$150) — could not verify, needs your
-confirmation.** The Billing Budget API isn't enabled on this project, so
-`gcloud billing budgets list` can't see existing alerts (or their absence).
-I did not enable that API or create any budget myself — that's an account-
-level financial setting, yours to configure, not something to do
-unilaterally on your behalf.
+**Budget alerts — verified 2026-08-17** (you enabled the Billing Budget API;
+re-checked directly, not taken on trust):
+
+```
+$ gcloud billing budgets list --billing-account=<REDACTED>
+warn-at-150   $150   thresholds 0.5 / 0.9 / 1.0 CURRENT_SPEND   projects/<REDACTED>
+Warn-at-10    $10    thresholds 0.5 / 0.9 / 1.0 CURRENT_SPEND   (all projects)
+```
+
+`warn-at-150`'s project filter `<REDACTED>` matches this project
+(`<REDACTED>`), confirmed via `gcloud projects describe`.
+
+Three things to know about what these actually give you, none of them
+blocking:
+
+1. **The thresholds are $75 / $135 / $150, not the $50 / $100 / $150 §6.1
+   named.** Same shape — escalating warnings with the hard line at $150 —
+   and the $150 stop is exactly covered. Recording the difference rather
+   than calling the item green against a number it doesn't match; your call
+   whether to adjust.
+2. **The $10 budget is the one that will actually fire.** A g2-standard-8 +
+   L4 spot runs roughly $0.40–0.50/hr, so a single session lands in the
+   $5–15 range and `warn-at-150`'s first threshold ($75) is unlikely to be
+   reached at all. `Warn-at-10`'s $5 threshold is the real "the meter is
+   running" signal.
+3. **Both are `MONTH` period against calendar-month spend**, so August's
+   earlier Block 0 e2 VM spend already counts toward them, and **alerts are
+   email-only and lag** (GCP budget evaluation is not real-time).
+   `notificationsRule` is empty on both, meaning default IAM recipients —
+   billing admins/users on the account — get the email. **These are a
+   tripwire, not a stop:** nothing here halts an instance. Verified teardown
+   (§5) remains the actual control.
 
 ## 3. Launch staged
 
@@ -103,7 +129,82 @@ Confirms `teardown.sh` (unchanged from Week 1, already parameterized via
 env vars) correctly targets the Week 2 instance name/zone and exits clean
 when nothing exists yet — exactly the state before Block E starts.
 
-## 6. Stage A schedules pre-generated and committed
+## 6. TTFT actually reaches disk (added 2026-08-17 — was a hard blocker)
+
+**This item was not on §6.1's list and should have been.** Found while
+re-checking Block E readiness: the loadgen captured per-request TTFT/TPOT
+into an in-memory dict (`OpenLoopScheduler._samples`) and
+`loadgen/_cli.py:run_and_report` printed a summary of counts and scheduling
+lag without it. The samples were never serialized. The raw log cannot
+stand in — `close_time` bounds the whole stream, and §3.1's six fields
+contain no first-token time.
+
+Consequence had this gone unfixed: every Stage A point would have burned
+GPU time and produced a durable log with **no TTFT in it**. Hard Stop 5
+("is the breach bracketed — one point clearly <500ms p99 TTFT, one clearly
+over") would have been unanswerable on the meter, and Block F would have
+had nothing to compute the baseline number from. It would not have failed
+loudly; each point would have looked like a clean run.
+
+**Fix (this commit).** Three durable artifacts per point, not one:
+
+- `<tag>.raw_log.jsonl` — unchanged, §3.1's locked 6 fields.
+- `<tag>.samples.jsonl` — new sidecar, one row per *issued* request:
+  `request_id`, `send_time` (same t_start-relative basis as the raw log),
+  `ttft_ms`, `tpot_samples_ms`, `content_chunk_count`, `error`. Written
+  the instant the sample exists, inside the request handler — §6.3's
+  durable-on-produce rule, applied within a point.
+- `<tag>.metrics.json` — the point record, written when the window closes:
+  p50/p95/p99 TTFT+TPOT, achieved RPS, the §2.5 divergence gate, the §2.4
+  tail-validity gate, and the §2.6 breach verdict.
+
+A **separate file** rather than extra raw-log columns, deliberately: §3.1's
+schema is locked, and §6.3 needs per-request TTFT-vs-wall-clock data it
+cannot carry. The two join on `request_id` offline.
+
+The point record is computed by reading the two files back
+(`metrics/point.py:point_metrics`), so the live on-meter number and Block
+F's offline recompute (`scripts/compute_point_metrics.py`) are the same
+function over the same bytes — verified: recomputing an end-to-end mock run
+at the same N reproduced the live record with zero differing fields.
+
+**Two things this closes that were otherwise open:**
+- Hard Stop 5 is now readable live — each point prints
+  `p99 TTFT=…ms (BREACH|under 500ms)` to stderr as its window closes.
+- The deferred warmup N is a pure offline re-derivation: the filter is
+  metrics-side and time-based (§2.4), so Block F's real N means re-running
+  `scripts/compute_point_metrics.py --warmup-n <N>` over the committed
+  sidecars. **No GPU re-run.** Verified by recomputing the same run at a
+  different N and watching the window, achieved RPS and p99 all move.
+
+**The wording conflict this surfaced — now closed.** Block F used to say
+"compute per-point p50/p95/p99 TTFT + TPOT **from the raw logs**", which
+§3.1's locked 6-field schema cannot support; surfaced at the time rather
+than silently reconciled (`WEEK2_EXECUTION.md:13`). Resolved on your call
+(2026-08-17) in the direction that leaves the lock intact: §3.1 now carries
+a **companion sidecar** bullet stating the six fields are complete and
+closed as written and the sidecar sits beside them — including *why* the
+raw log alone cannot carry TTFT, so a fresh-context read finds the reason
+instead of re-flagging the contradiction. Block F now reads "from the raw
+log + samples sidecar."
+
+**Tests:** `tests/loadgen/test_sample_persistence.py`, 12 cases. Controls
+confirmed to bite, not just to pass:
+- dropped sample-write → sidecar reconciliation goes RED (`missing=`);
+- flush removed from the writer → the durable-on-produce test goes RED
+  ("still empty 2s into a 3s run"), then green again when restored;
+- warmup filter fed a 9000ms pre-warmup transient → p99 stays at 100ms
+  with the filter, jumps above 1000ms without it.
+
+These are my reds, produced on demand. **Hard Stop 2's standard says you
+confirm them personally** — `pytest tests/loadgen/test_sample_persistence.py`
+is green (35/35 for the full loadgen suite), but the reds are the proof.
+
+**One operational note:** `benchmarks/runs/` is gitignored. If the session's
+sidecars are to be reproducible evidence for `BASELINE.md`, they need
+force-adding like the Stage A schedules were.
+
+## 7. Stage A schedules pre-generated and committed
 
 `scripts/generate_stage_a_schedules.py` → `benchmarks/schedules/stage_a/`
 (committed `b4a43d1`): 8 Poisson schedules, RPS = [2, 5, 10,
@@ -123,6 +224,38 @@ schedule can absorb without shrinking the post-warmup window below Y=120s
 would regeneration be needed — worth a quick sanity check once Block F
 resolves N, not expected to bite at these placeholder magnitudes.
 
+## 8. Concurrency cap = 3000, and the one precondition it carries
+
+Resolved 2026-08-17, closing the Hard Stop 3 deferral. Constant:
+`loadgen/_cli.py: BASELINE_CONCURRENCY_CAP`, now the `--concurrency-cap`
+default rather than a required flag — eight hand-run Stage A points should
+not be able to disagree with each other by a typo, and every point record
+still logs the cap it actually ran with (`provenance.concurrency_cap`).
+
+Why 3000 clears the bar (full provenance in `WEEK2_PLAN.md` §3.3): it is
+above **every** concurrency level Block C's uncapped sweep produced — peak
+2380 simultaneous open streams at 300 offered RPS, 651 at 100 RPS, the
+closest comparable rate to Stage A's 80 RPS ceiling. Equivalently, at 80 RPS
+the cap cannot bite until *mean* end-to-end response time exceeds 37.5s,
+which is far past the point where a 500ms p99 TTFT breach is still an
+interesting measurement.
+
+**Verify per point rather than assuming.** §3.3's requirement is that the
+cap never sheds within the characterized range — if it does, the cap and not
+the server shaped the result. Every point record carries `n_shed_total`, and
+`scripts/compute_point_metrics.py` flags any point with `shed > 0` in its
+table. Treat a non-zero shed count at any swept point as a finding.
+
+**Precondition — raise `ulimit -n` before driving from Linux.** 3000
+concurrent streams means ~3000 open sockets in the driving process, and
+Linux's default soft limit is 1024. Below the cap, the process hits `EMFILE`
+before the cap can ever engage — and those failures are recorded as
+`errored` (a send that was really attempted), **not** `shed`. That is the bad
+direction: it corrupts achieved RPS and the error count instead of tripping
+the shed check above. Run `ulimit -n 65535` in the driving shell first.
+Applies whether you drive from the L4 instance or another Linux host; see
+also the open question of driving through the SSH tunnel at high concurrency.
+
 ---
 
 ## Summary
@@ -132,9 +265,12 @@ resolves N, not expected to bite at these placeholder magnitudes.
 | §4 gate (Hard Stop 2) | ✅ confirmed |
 | L4/GPUS_ALL_REGIONS quota | ✅ verified live, 0 in use |
 | Billing enabled | ✅ verified |
-| Budget alerts | ⚠️ **needs your confirmation** — could not verify |
+| Budget alerts | ✅ verified live 2026-08-17 — $150 budget @ 50/90/100% + a $10 canary; thresholds land at $75/$135/$150 rather than $50/$100/$150 (§2) |
 | Launch staged | ✅ `scripts/gpu_session/*.sh` |
 | `--enforce-eager` on/off | ⚠️ **your call at session start** — staged safe default |
 | `--max-model-len` | ✅ computed (20000), your confirmation welcome |
 | Teardown dry-run | ✅ verified against Week 2 instance name |
-| Stage A schedules | ✅ generated, committing now |
+| TTFT reaches disk | ✅ fixed 2026-08-17 (§6) — **was a hard blocker**; controls confirmed biting, your Hard Stop 2-class read still owed |
+| Stage A schedules | ✅ generated, committed `b4a43d1` |
+| Concurrency cap value | ✅ **resolved 3000** 2026-08-17 — above Block C's uncapped peak (2380); provenance in `WEEK2_PLAN.md` §3.3 |
+| `ulimit -n` on the driving host | ⚠️ **your action at session start** — raise to 65535 before any point if driving from Linux; the 1024 default sits below the 3000 cap (§8) |

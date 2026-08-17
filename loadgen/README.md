@@ -9,8 +9,12 @@ traffic against the router/vLLM during Week 2 benchmarks. Spec:
   prompts (with replacement; `draw_prompt_id_long_context` for adversarial).
 - `schedule.py` -- pre-materialize `(scheduled_offset, prompt_id)` schedules
   (Poisson/steady) with an embedded provenance header, before any sending.
-- `log.py` -- streamed 6-field raw per-request log
-  (`request_id, send_time, close_time, prompt_id, prompt_len, status`).
+- `log.py` -- two streamed per-request logs, both flushed per row:
+  `RunLogger` writes the **locked** 6-field raw log (`request_id,
+  send_time, close_time, prompt_id, prompt_len, status`); `SampleLogger`
+  writes the TTFT/TPOT sidecar (`.samples.jsonl`), one row per *issued*
+  request. Separate files so §3.1's locked schema stays untouched -- the
+  raw log has no first-token time in it, and §6.3 needs one.
 - `scheduler.py` -- the open-loop scheduler itself: absolute-time,
   fire-and-forget send, concurrency-capped open streams (shed over-cap).
 - `steady.py` / `poisson.py` / `adversarial.py` -- CLI entry points
@@ -19,3 +23,28 @@ traffic against the router/vLLM during Week 2 benchmarks. Spec:
 Committed frozen schedules live under `benchmarks/schedules/`; per-run raw
 logs under `benchmarks/runs/` (both gitignored except artifacts explicitly
 committed for replay/regression, per WEEK2_PLAN.md §5).
+
+## What one point produces
+
+Each entry-point invocation is one RPS point and leaves three files under
+`--log-dir`, per WEEK2_PLAN.md §6.3's durable-on-produce rule:
+
+| File | Written | Contents |
+|---|---|---|
+| `<tag>.raw_log.jsonl` | per row, during the run | the locked 6 fields (§3.1) |
+| `<tag>.samples.jsonl` | per row, during the run | per-request `ttft_ms` / `tpot_samples_ms` + `send_time` (§6.3) |
+| `<tag>.metrics.json` | once, when the window closes | the point record: p50/p95/p99 TTFT+TPOT, achieved RPS, validity gates, breach verdict |
+
+The metrics record is computed by `metrics/point.py` **by reading the two
+files back**, not from memory -- so the number printed live on the meter and
+the one `scripts/compute_point_metrics.py` recomputes offline after teardown
+come from the same function over the same bytes.
+
+Warmup is discarded **metrics-side and by timestamp** (§2.4), so resolving
+the deferred `[CALIBRATE]` warmup N in Block F is a re-run of
+`scripts/compute_point_metrics.py --warmup-n <N>` over the committed
+sidecars -- never a re-run on the GPU.
+
+`--no-capture-samples` disables all of this and yields no TTFT. It exists
+for request-pattern-only runs (the Block C sweeps, the V-series tests);
+never use it for a baseline sweep point.

@@ -48,6 +48,28 @@ class RequestSample:
     content_chunk_count: int
     error: str | None = None
 
+    def to_dict(self) -> dict:
+        """JSON-serializable record for the per-request sample sidecar
+        (loadgen/log.py: SampleLogger). One sample = one row."""
+        return {
+            "ttft_ms": self.ttft_ms,
+            "tpot_samples_ms": self.tpot_samples_ms,
+            "content_chunk_count": self.content_chunk_count,
+            "error": self.error,
+        }
+
+    @classmethod
+    def from_dict(cls, row: dict) -> "RequestSample":
+        """Inverse of to_dict, tolerant of the extra keys SampleLogger adds
+        around it (request_id, send_time) so a sidecar row can be handed
+        here directly."""
+        return cls(
+            ttft_ms=row["ttft_ms"],
+            tpot_samples_ms=list(row["tpot_samples_ms"]),
+            content_chunk_count=row["content_chunk_count"],
+            error=row.get("error"),
+        )
+
 
 @dataclass
 class RunMetrics:

@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 import httpx
 
 from loadgen.corpus import Corpus
-from loadgen.log import RunLogger
+from loadgen.log import RunLogger, SampleLogger
 from loadgen.schedule import Schedule
 from metrics.consume import consume_stream
 from metrics.types import RequestSample
@@ -77,6 +77,7 @@ class OpenLoopScheduler:
         model: str = "mock",
         timeout_s: float = 60.0,
         capture_samples: bool = True,
+        sample_logger: SampleLogger | None = None,
     ):
         self.schedule = schedule
         self.corpus = corpus
@@ -86,9 +87,16 @@ class OpenLoopScheduler:
         self.extra_body = {"stream": True, **(extra_body or {})}
         self.model = model
         self.logger = logger
+        self.sample_logger = sample_logger
         self.concurrency_cap = concurrency_cap
         self.timeout_s = timeout_s
         self.capture_samples = capture_samples
+        if sample_logger is not None and not capture_samples:
+            raise ValueError(
+                "sample_logger given with capture_samples=False -- nothing would ever be "
+                "written. TTFT/TPOT only exist when the stream is consumed through "
+                "metrics.consume_stream."
+            )
 
         # Plain int, no lock: check-then-increment below has no `await`
         # between the two statements, so it's atomic under asyncio's
@@ -162,9 +170,15 @@ class OpenLoopScheduler:
         self._open_streams += 1
 
         send_time = time.monotonic()
+        send_offset = send_time - t_start
         self._per_send_lag.append(send_time - (t_start + entry.scheduled_offset))
         url = f"{self.base_url}{self.endpoint_path}"
         body = {"model": self.model, "messages": [{"role": "user", "content": prompt.text}], **self.extra_body}
+
+        # Guards the sidecar's one-row-per-issued-request invariant: a stream
+        # that yielded a sample and *then* failed on teardown gets its real
+        # sample row, not a second error row on top of it.
+        sample_written = False
 
         try:
             async with self._client.stream("POST", url, params=self.query_params, json=body) as response:
@@ -172,19 +186,27 @@ class OpenLoopScheduler:
                 if self.capture_samples:
                     sample = await consume_stream(response, send_time, clock=time.monotonic)
                     self._samples[request_id] = sample
+                    # Durable-on-produce (§6.3): the sample hits disk here, at
+                    # the first instant it exists, not at run end. The whole
+                    # breach number is computed from this file.
+                    if self.sample_logger is not None:
+                        self.sample_logger.write(request_id, send_offset, sample)
+                        sample_written = True
                 else:
                     async for _ in response.aiter_lines():
                         pass
             close_time = time.monotonic()
             self._n_sent += 1
             self.logger.write(
-                request_id, send_time - t_start, close_time - t_start, entry.prompt_id, prompt.char_len, "sent"
+                request_id, send_offset, close_time - t_start, entry.prompt_id, prompt.char_len, "sent"
             )
-        except Exception:
+        except Exception as exc:
             close_time = time.monotonic()
             self._n_errored += 1
+            if self.sample_logger is not None and not sample_written:
+                self.sample_logger.write_error(request_id, send_offset, f"{type(exc).__name__}: {exc}")
             self.logger.write(
-                request_id, send_time - t_start, close_time - t_start, entry.prompt_id, prompt.char_len, "errored"
+                request_id, send_offset, close_time - t_start, entry.prompt_id, prompt.char_len, "errored"
             )
         finally:
             self._open_streams -= 1
