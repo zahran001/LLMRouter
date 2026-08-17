@@ -59,6 +59,27 @@ class Schedule:
         entries = [ScheduleEntry(**e) for e in data["entries"]]
         return cls(provenance=data["provenance"], entries=entries)
 
+    def validate_corpus_version(self, corpus: Corpus) -> None:
+        """WEEK2_PLAN.md §5: replay's reproducibility contract is "frozen
+        schedule artifact + pinned corpus artifact (by version) = identical
+        workload" -- a schedule alone is not enough if the corpus it
+        references has silently drifted (re-downloaded, re-filtered,
+        re-sampled) since the schedule was built. Raises on mismatch rather
+        than silently driving a different workload than the one the
+        schedule's own provenance claims.
+        """
+        expected = self.provenance.get("corpus_sha256")
+        if expected is None:
+            raise ValueError("schedule has no corpus_sha256 in its provenance -- cannot validate corpus version")
+        actual = hashlib.sha256(corpus.source_path.read_bytes()).hexdigest()
+        if actual != expected:
+            raise ValueError(
+                f"corpus drift detected: schedule was built against corpus_sha256={expected}, "
+                f"but {corpus.source_path} currently hashes to {actual} -- replay would drive a "
+                "different workload than the one this schedule's provenance claims. Use the exact "
+                "corpus file/version recorded in the schedule's provenance."
+            )
+
 
 def _corpus_provenance(corpus: Corpus) -> dict:
     """Embed enough about the corpus to detect drift on replay (§5: 'the

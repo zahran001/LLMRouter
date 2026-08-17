@@ -61,6 +61,7 @@ def build_or_load_schedule(args: argparse.Namespace, arrival_process: str, long_
 
     if args.schedule_in:
         schedule = Schedule.load(args.schedule_in)
+        schedule.validate_corpus_version(corpus)  # raises on drift -- §5's reproducibility contract
         print(f"replaying frozen schedule {args.schedule_in} ({len(schedule.entries)} entries)", file=sys.stderr)
         return schedule, corpus
 
