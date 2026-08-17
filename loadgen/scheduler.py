@@ -86,7 +86,7 @@ class OpenLoopScheduler:
 
     async def run(self) -> RunResult:
         limits = httpx.Limits(
-            max_connections=self.concurrency_cap + 10,
+            max_connections=None,
             max_keepalive_connections=self.concurrency_cap + 10,
         )
         async with httpx.AsyncClient(timeout=self.timeout_s, limits=limits) as client:
