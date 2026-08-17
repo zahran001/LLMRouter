@@ -81,7 +81,9 @@ blocking:
   Week 1 faithfulness check (uninstall `flashinfer`/`flashinfer-python`,
   `VLLM_USE_FLASHINFER_SAMPLER=0`, `--enforce-eager`).
 - `tunnel.sh` — SSH port-forward, `--ssh-flag` (not `--`, which doesn't
-  reliably pass through gcloud's Windows batch wrapper).
+  reliably pass through gcloud's Windows batch wrapper). **No longer the
+  measurement path** — the loadgen drives on-instance over loopback (§9).
+  Kept for hand-checking `/health` and one-off curls.
 
 **Open item, staged not decided:** `--enforce-eager` is kept because it's
 the Week 1 *proven*-working config, but Week 1's own note flags it as right
@@ -256,6 +258,72 @@ the shed check above. Run `ulimit -n 65535` in the driving shell first.
 Applies whether you drive from the L4 instance or another Linux host; see
 also the open question of driving through the SSH tunnel at high concurrency.
 
+## 9. The loadgen drives from the instance, and it is scripted
+
+**Decision (2026-08-17): on-instance, not through the tunnel.** Driving from
+the laptop over `tunnel.sh` would fold WAN round-trip into every TTFT and
+multiplex up to 3000 concurrent streams through a single TCP connection. At
+Stage A's upper points that characterizes the *tunnel* rather than the
+replica — and it biases in the worst direction, inflating the breach metric
+so the sweep could report a breach that belongs to the client. On-instance
+the driver reaches vLLM at `127.0.0.1:8000` over loopback.
+
+`tunnel.sh` is not retired; it is just no longer the measurement path. Keep
+it for poking `/health` or curling a request by hand.
+
+The operational cost of on-instance (clone, deps, launch, get the artifacts
+back off a disk that dies with the instance) is staged into scripts so none
+of it is improvised on the meter:
+
+- **`scripts/gpu_session/run_on_instance.sh`** (local wrapper) —
+  `bootstrap` | `check` | `run <schedule>` | `stage-a` | `shell`.
+- **`scripts/gpu_session/remote_loadgen.sh`** (runs *on* the instance, from
+  the clone) — `setup` | `env-check` | `run` | `list-artifacts`.
+- **`scripts/gpu_session/pull_artifacts.sh`** (local) — scp the artifacts
+  back and verify them **before teardown**.
+
+Session order: `create_instance.sh` → `setup_and_launch_vllm.sh` →
+`run_on_instance.sh bootstrap` → `check` → `stage-a` →
+`pull_artifacts.sh` → `teardown.sh`.
+
+**Three guards worth knowing about, because each blocks rather than warns:**
+
+1. **`bootstrap` refuses a dirty tree or an unpushed HEAD.** The instance
+   clones from GitHub and checks out the exact SHA in detached HEAD — not a
+   branch name, which could move under the session. Without this the
+   instance would silently clone some older state and every artifact would
+   still look fine. *Verified: it currently refuses, listing the offending
+   files, before issuing a single `gcloud` call.* **This means the branch
+   must be pushed before the session** — `week2/loadgen-baseline` is not on
+   `origin` yet.
+2. **`run` refuses to drive a point if the fd soft limit is under 4000.**
+   `remote_loadgen.sh` raises it to 65535 in the shell that runs the driver
+   and then re-reads it rather than assuming the raise took. This is §8's
+   `ulimit` precondition made non-optional: under the limit, EMFILE
+   failures would land as `errored` instead of `shed` and corrupt achieved
+   RPS instead of tripping the shed check.
+3. **`pull_artifacts.sh` exits non-zero on an incomplete sweep** — a point
+   missing its sidecar (no TTFT, therefore unusable), an unreadable
+   `metrics.json`, or any point with `shed > 0`. It runs while the instance
+   is **still up**, so a bad point can be re-driven for a few cents instead
+   of being discovered after teardown. *Verified against synthetic points:
+   it correctly flagged a missing sidecar, a shed-bitten point, and a
+   tail-invalid point, and exited 0 on a clean set.*
+
+Offered RPS, duration and seed come from each schedule's **own provenance**,
+never from the filename or a typed flag, so a point record's `offered_rps`
+cannot disagree with what was materialized. The loadgen venv on the
+instance (`~/loadgen-env`) is deliberately separate from `~/vllm-env` —
+vLLM pins torch/numpy hard and the driver must not be able to perturb the
+server's environment.
+
+**Still your call at session start:** the output-token policy. The driver
+passes `--extra-body` through via `EXTRA_BODY`, defaulting to unset (vLLM
+generates to EOS, so output length varies per prompt). §2.2 holds the
+prompt-length contribution constant across the sweep; whether output length
+should also be pinned (e.g. `{"max_tokens": 512}`) is an open knob, in the
+same class as `--enforce-eager` and not resolved here.
+
 ---
 
 ## Summary
@@ -273,4 +341,7 @@ also the open question of driving through the SSH tunnel at high concurrency.
 | TTFT reaches disk | ✅ fixed 2026-08-17 (§6) — **was a hard blocker**; controls confirmed biting, your Hard Stop 2-class read still owed |
 | Stage A schedules | ✅ generated, committed `b4a43d1` |
 | Concurrency cap value | ✅ **resolved 3000** 2026-08-17 — above Block C's uncapped peak (2380); provenance in `WEEK2_PLAN.md` §3.3 |
-| `ulimit -n` on the driving host | ⚠️ **your action at session start** — raise to 65535 before any point if driving from Linux; the 1024 default sits below the 3000 cap (§8) |
+| `ulimit -n` on the driving host | ✅ enforced in `remote_loadgen.sh` — raises to 65535 and refuses to drive below 4000 (§8, §9) |
+| Loadgen drives on-instance | ✅ scripted — `run_on_instance.sh` / `remote_loadgen.sh` / `pull_artifacts.sh` (§9) |
+| Branch pushed to `origin` | ⚠️ **required before the session** — `bootstrap` pins the instance to a SHA and refuses an unpushed HEAD (§9) |
+| Output-token policy (`EXTRA_BODY`) | ⚠️ **your call at session start** — unset means generate-to-EOS (§9) |
