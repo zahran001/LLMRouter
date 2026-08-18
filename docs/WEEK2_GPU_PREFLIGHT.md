@@ -93,20 +93,37 @@ blocking:
   per `docs/GPU_SESSION_NOTES.md`'s guidance against complex inline
   `--command` strings). Encodes all three flashinfer workarounds from the
   Week 1 faithfulness check (uninstall `flashinfer`/`flashinfer-python`,
-  `VLLM_USE_FLASHINFER_SAMPLER=0`, `--enforce-eager`).
+  `VLLM_USE_FLASHINFER_SAMPLER=0`, `--enforce-eager`). Eager mode is an
+  `ENFORCE_EAGER` env knob — see the resolved item below.
 - `tunnel.sh` — SSH port-forward, `--ssh-flag` (not `--`, which doesn't
   reliably pass through gcloud's Windows batch wrapper). **No longer the
   measurement path** — the loadgen drives on-instance over loopback (§9).
   Kept for hand-checking `/health` and one-off curls.
 
-**Open item, staged not decided:** `--enforce-eager` is kept because it's
-the Week 1 *proven*-working config, but Week 1's own note flags it as right
-for a single-request faithfulness check, not necessarily a perf run
-(disables CUDA graph capture). Try without it first at session start if you
-want that perf back; the script's default is the safe fallback if it
-crashes the same way Week 1's did. This is exactly what Block E step 2
-("confirm config-only swap holds... any required code change is a finding,
-STOP") is for — not something to resolve here.
+**Resolved 2026-08-18 — `ENFORCE_EAGER` is now a knob.** `--enforce-eager`
+is the Week 1 *proven*-working config, but Week 1's own note flags it as right
+for a single-request faithfulness check, not necessarily a perf run (it
+disables CUDA graph capture). `WEEK2_GPU_IMPLEMENTATION_README.md` §3.2
+therefore attempts **non-eager first** and forbids an automatic fallback.
+
+That was not executable as this item was originally written: the flag was
+hard-coded in the launch line, while `MODEL`/`PORT`/`MAX_MODEL_LEN` beside it
+were all `${VAR:-default}` knobs. Following §3.2 would have meant either a
+source edit or hand-launching the server — and an edit *mid-session* is worse
+than it looks, because it dirties the tree and `run_on_instance.sh bootstrap`
+refuses a dirty or unpushed HEAD, so the fallback path would have cost a new
+benchmark revision on the meter.
+
+Now: `ENFORCE_EAGER=0` for §3.2's first attempt, unset/`1` for the proven
+fallback. **The default is still eager**, so the known-good path is the one
+you get by accident. The launch line echoes the *resolved* mode, which is the
+record that every point in one baseline ran the same way. Verified in all
+three modes (unset / `1` / `0`); non-eager drops the flag cleanly rather than
+passing an empty argument.
+
+Block E step 2 ("confirm config-only swap holds... any required code change
+is a finding, STOP") still governs what happens if non-eager *fails* — that
+is evidence to surface, not something to paper over.
 
 ## 4. `--max-model-len` sizing
 
@@ -456,7 +473,7 @@ the spin exists to protect.
 | Billing enabled | ✅ verified |
 | Budget alerts | ✅ verified live 2026-08-17; policy resolved 2026-08-18 as **$10 canary / $75 / $135 / $150 hard line** — docs now match the live ladder (§2) |
 | Launch staged | ✅ `scripts/gpu_session/*.sh` |
-| `--enforce-eager` on/off | ⚠️ **your call at session start** — staged safe default |
+| `--enforce-eager` on/off | ✅ **`ENFORCE_EAGER` knob** (2026-08-18, §3) — defaults eager (proven); `0` is README §3.2's non-eager first attempt, so the fallback is an env var not an edit |
 | `--max-model-len` | ✅ computed (20000), your confirmation welcome |
 | Teardown dry-run | ✅ verified against Week 2 instance name |
 | TTFT reaches disk | ✅ fixed 2026-08-17 (§6) — **was a hard blocker**; controls confirmed biting, Hard Stop 2-class read **confirmed by you 2026-08-18** |

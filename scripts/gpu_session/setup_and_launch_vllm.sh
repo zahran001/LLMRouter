@@ -11,14 +11,18 @@
 # needed -- confirmed by a quick check at session start (see below) before
 # assuming otherwise.
 #
-# NOTE (staged, not decided -- confirm at session start, WEEK2_EXECUTION.md
-# Hard Stop 4 / Block E step 2): --enforce-eager is kept here because it's
-# the PROVEN-working config from Week 1. Week 1's own note flags it as
-# "the right setting for a single-request faithfulness check, not a perf
-# run" -- removing it (to get CUDA graph capture back for the real
-# sustained-load measurement) is an open question, not resolved here. Try
-# without it first if you want that; fall back to this script's default if
-# it crashes the same way Week 1's did.
+# EAGER MODE is a knob -- see ENFORCE_EAGER below. --enforce-eager is the
+# PROVEN-working config from Week 1, but Week 1's own note flags it as "the
+# right setting for a single-request faithfulness check, not a perf run":
+# it disables CUDA graph capture, which a sustained-load measurement wants
+# back. WEEK2_GPU_IMPLEMENTATION_README.md 3.2 therefore attempts non-eager
+# FIRST and forbids an automatic fallback -- a non-eager failure is evidence
+# to surface, not something to paper over.
+#
+# The knob exists so that fallback is an env var rather than an edit. Editing
+# a script mid-session would dirty the tree and then block `run_on_instance.sh
+# bootstrap`, which refuses a dirty or unpushed HEAD -- i.e. the recovery path
+# would otherwise have cost a new benchmark revision on the meter.
 
 set -euo pipefail
 
@@ -47,8 +51,20 @@ fi
 # outright rather than rely on --enforce-eager alone to avoid every import path.
 ~/vllm-env/bin/pip uninstall -y flashinfer flashinfer-python || true
 
-echo "Launching vLLM: model=$MODEL max_model_len=$MAX_MODEL_LEN port=$PORT"
+# 1 (default) = --enforce-eager, Week 1's proven config and the fallback.
+# 0 = the README 3.2 first attempt, CUDA graph capture left on.
+# Defaulting to 1 keeps the known-good path the one you get by accident.
+ENFORCE_EAGER="${ENFORCE_EAGER:-1}"
+eager_flag=()
+if [ "$ENFORCE_EAGER" = "1" ]; then
+  eager_flag=(--enforce-eager)
+fi
+
+# Echo the RESOLVED mode, not the requested one: every benchmark point in a
+# Week 2 baseline has to run the same mode, and this line is the record of
+# which one this server actually came up in.
+echo "Launching vLLM: model=$MODEL max_model_len=$MAX_MODEL_LEN port=$PORT enforce_eager=$ENFORCE_EAGER"
 VLLM_USE_FLASHINFER_SAMPLER=0 ~/vllm-env/bin/vllm serve "$MODEL" \
   --port "$PORT" \
-  --enforce-eager \
+  "${eager_flag[@]}" \
   --max-model-len "$MAX_MODEL_LEN"

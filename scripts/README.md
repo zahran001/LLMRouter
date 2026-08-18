@@ -51,7 +51,10 @@ In session order:
 
 1. `create_instance.sh` — stand up the L4.
 2. `setup_and_launch_vllm.sh` — **remote**; installs vLLM and serves, with the
-   three flashinfer workarounds from `docs/GPU_SESSION_NOTES.md`.
+   three flashinfer workarounds from `docs/GPU_SESSION_NOTES.md`. Eager mode
+   is the `ENFORCE_EAGER` env knob (default `1` = `--enforce-eager`, Week 1's
+   proven config); `ENFORCE_EAGER=0` is the non-eager first attempt
+   `WEEK2_GPU_IMPLEMENTATION_README.md` §3.2 calls for.
 3. `run_on_instance.sh bootstrap` — clone the repo on the instance pinned to
    this commit, install the driver's deps.
 4. `run_on_instance.sh check` — deps, fd limit, GPU, vLLM health.
