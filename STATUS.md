@@ -40,6 +40,11 @@ Authoritative documents, which take precedence over this summary:
   (`WEEK2_EXECUTION.md` §"Precedence rule").
 - **`docs/WEEK2_GPU_PREFLIGHT.md`** — the Hard Stop 4 evidence checklist,
   standing between here and any GPU spend.
+- **`docs/WEEK2_PRE_GPU_AUDIT.md`** — the pre-GPU audit trail: what the
+  2026-08-17 audit found, and how each finding was closed.
+- **`docs/WEEK2_REMEDIATION_REPORT.md`** — what was changed on 2026-08-18 and
+  what it proved, including the Linux scheduler-spin calibration result and the
+  hard-stop verdict.
 
 Work proceeds in blocks separated by **hard stops** — blocking gates where the
 agent produces evidence and a human renders the verdict. The summary table at
