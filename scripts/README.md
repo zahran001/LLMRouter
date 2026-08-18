@@ -14,6 +14,23 @@ Operational scripts for benchmark infrastructure.
 - `compute_point_metrics.py` — recompute per-point metrics offline from the
   committed raw log + samples sidecar, at the warmup N Block F resolves.
 
+## `hooks/` — repo hooks
+
+`pre-commit` blocks staged changes that would publish GCP billing-account or
+project identifiers. This repo is public and the pre-flight docs are written
+by pasting real `gcloud` transcripts into them, so shipping an account ID
+alongside the proof is a routine mistake, not an exotic one.
+
+```bash
+git config core.hooksPath scripts/hooks
+```
+
+It scans added lines only, so pre-existing text elsewhere in a file never
+blocks an unrelated edit. Thresholds are tuned against this repo's real
+content: the 12-digit project-number rule clears the 11-digit CI run IDs in
+`BENCHMARKS.md` and the 10-digit unix timestamps in the fixtures. Bypass a
+deliberate false positive with `git commit --no-verify`.
+
 ## `gpu_session/` — the metered session (human-run only)
 
 In session order:

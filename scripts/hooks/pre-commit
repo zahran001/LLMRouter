@@ -1,0 +1,62 @@
+#!/bin/sh
+#
+# pre-commit -- block staged changes that would publish GCP account or
+# project identifiers. This repo is public, and the pre-flight docs are
+# written by pasting real `gcloud` transcripts into them, so the failure
+# mode is routine rather than exotic: run a command, paste the proof, ship
+# the account ID with it.
+#
+# Install:
+#     git config core.hooksPath scripts/hooks
+#
+# Bypass for a deliberate false positive:
+#     git commit --no-verify
+#
+# Scans ADDED lines only (`+` in a zero-context staged diff), so existing
+# occurrences elsewhere in a file do not block unrelated edits.
+
+set -u
+
+added=$(git diff --cached --unified=0 --no-color | grep '^+' | grep -v '^+++' || true)
+[ -z "$added" ] && exit 0
+
+status=0
+
+flag() {
+  pattern="$1"
+  label="$2"
+  hits=$(printf '%s\n' "$added" | grep -nE "$pattern" || true)
+  if [ -n "$hits" ]; then
+    if [ "$status" -eq 0 ]; then
+      echo "pre-commit: refusing to commit -- staged changes contain infrastructure identifiers." >&2
+      echo "This is a public repo. Replace them with <REDACTED>; the command itself is the evidence," >&2
+      echo "not the account it ran against." >&2
+      echo >&2
+    fi
+    echo "  [$label]" >&2
+    printf '%s\n' "$hits" | sed 's/^/    /' >&2
+    echo >&2
+    status=1
+  fi
+}
+
+# GCP billing account ID: six-six-six uppercase alphanumerics, either bare
+# or in the resource/flag forms gcloud prints and accepts.
+flag '[0-9A-F]{6}-[0-9A-F]{6}-[0-9A-F]{6}' 'billing account ID'
+flag 'billingAccounts/[A-Za-z0-9][A-Za-z0-9-]*' 'billingAccounts/ resource'
+flag 'billing-account=[A-Za-z0-9][A-Za-z0-9-]*' '--billing-account= flag'
+
+# GCP project number (12+ digits; CI run IDs here are 11 and unix
+# timestamps 10, so this threshold does not collide with them) and the
+# numeric projects/ resource form.
+flag '(^|[^0-9])[0-9]{12,}([^0-9]|$)' 'project number (12+ digit literal)'
+flag 'projects/[0-9]{8,}' 'projects/<number> resource'
+
+# Auto-generated GCP project IDs, e.g. project-1234abcd-....
+flag 'project-[0-9a-f]{8}-[0-9a-f]{4}-' 'generated project ID'
+
+if [ "$status" -ne 0 ]; then
+  echo "If a hit is a false positive, commit with --no-verify and say why in the message." >&2
+fi
+
+exit "$status"

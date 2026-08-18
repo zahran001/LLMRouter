@@ -213,7 +213,7 @@ force-adding like the Stage A schedules were.
 ## 7. Stage A schedules pre-generated and committed
 
 `scripts/generate_stage_a_schedules.py` → `benchmarks/schedules/stage_a/`
-(committed `b4a43d1`): 8 Poisson schedules, RPS = [2, 5, 10,
+(committed `4d381fe`): 8 Poisson schedules, RPS = [2, 5, 10,
 20, 30, 40, 60, 80] (§6.2's example anchor + wide-step points), one
 continuous `duration_s=130s` each (`WARMUP_N_PLACEHOLDER=10s` — [CALIBRATE],
 deferred to Block F per Hard Stop 3 — `+ Y=120s`, confirmed Hard Stop 3),
@@ -343,7 +343,7 @@ same class as `--enforce-eager` and not resolved here.
 | `--max-model-len` | ✅ computed (20000), your confirmation welcome |
 | Teardown dry-run | ✅ verified against Week 2 instance name |
 | TTFT reaches disk | ✅ fixed 2026-08-17 (§6) — **was a hard blocker**; controls confirmed biting, your Hard Stop 2-class read still owed |
-| Stage A schedules | ✅ generated, committed `b4a43d1` |
+| Stage A schedules | ✅ generated, committed `4d381fe` |
 | Concurrency cap value | ✅ **resolved 3000** 2026-08-17 — above Block C's uncapped peak (2380); provenance in `WEEK2_PLAN.md` §3.3 |
 | `ulimit -n` on the driving host | ✅ enforced in `remote_loadgen.sh` — raises to 65535 and refuses to drive below 4000 (§8, §9) |
 | Loadgen drives on-instance | ✅ scripted — `run_on_instance.sh` / `remote_loadgen.sh` / `pull_artifacts.sh` (§9) |
