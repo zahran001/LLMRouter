@@ -141,8 +141,10 @@ cmd_stage_a() {
     cmd_run "$schedule"
     echo
   done
-  echo "Stage A sweep issued. Pull the artifacts before teardown:"
+  echo "Stage A sweep issued. Pull the artifacts BEFORE teardown:"
   echo "    bash scripts/gpu_session/pull_artifacts.sh"
+  echo "then tear down with the Week 2 wrapper (never bare scripts/teardown.sh):"
+  echo "    bash scripts/gpu_session/teardown_week2.sh"
 }
 
 cmd_shell() {

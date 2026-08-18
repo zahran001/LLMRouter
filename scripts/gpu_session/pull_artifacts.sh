@@ -102,6 +102,7 @@ if problems:
     print("while re-driving is cheap, rather than discovering it after teardown.")
     raise SystemExit(1)
 print(f"{len(tags)} point(s) pulled and complete.")
-print("Next: bash scripts/teardown.sh, then verify deletion in the console (not just exit code).")
+print("Next: bash scripts/gpu_session/teardown_week2.sh   (owns the Week 2 instance name;")
+print("      bare scripts/teardown.sh would target Week 1's name and silently no-op)")
 print(f"Then: python scripts/compute_point_metrics.py --run-dir {dest} --warmup-n <resolved N>")
 PYEOF

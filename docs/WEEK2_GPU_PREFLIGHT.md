@@ -11,8 +11,15 @@ past what I can actually verify.
 ## 1. §4 hard gate — all five mock validations green, controls confirmed biting
 
 Re-affirms Hard Stop 2. Status: **confirmed** (2026-08-16 review, `ec1063f`
-+ carry-forwards recorded `a0c4b97`). `pytest tests/loadgen -v` — 23/23
-green (19 original + 4 replay, `c5813c9`), stable across repeated runs.
++ carry-forwards recorded `a0c4b97`). `pytest tests/loadgen -v` — **63/63
+green** as of 2026-08-18, stable across repeated runs.
+
+*The count has grown as the gate was extended, and the earlier figures are
+kept here as history rather than overwritten: 19 at the original Hard Stop 2
+review, 23 with replay (`c5813c9`), 35 with the TTFT-persistence set (§6), and
+63 now that the schedule-generator CLI (§10) and scheduler-spin configuration
+(§11) are covered. Any doc still quoting one of the older numbers is stale, not
+describing a different suite.*
 
 ## 2. Quota + billing
 
@@ -54,11 +61,14 @@ values.
 Three things to know about what these actually give you, none of them
 blocking:
 
-1. **The thresholds are $75 / $135 / $150, not the $50 / $100 / $150 §6.1
-   named.** Same shape — escalating warnings with the hard line at $150 —
-   and the $150 stop is exactly covered. Recording the difference rather
-   than calling the item green against a number it doesn't match; your call
-   whether to adjust.
+1. **The thresholds are $10 / $75 / $135 / $150 — and that is now the
+   authoritative policy** (resolved 2026-08-18; `WEEK2_PLAN.md` §6.1,
+   `WEEK2_EXECUTION.md` Hard Stop 4). *Historically §6.1 named
+   $50 / $100 / $150 and this item recorded the mismatch rather than
+   claiming green against a number it didn't match; the decision went the
+   other way — the docs were changed to match the live ladder, because the
+   live ladder is the better one (see 2).* The $150 hard line, the only rung
+   that actually bounds spend, was never in question.
 2. **The $10 budget is the one that will actually fire.** A g2-standard-8 +
    L4 spot runs roughly $0.40–0.50/hr, so a single session lands in the
    $5–15 range and `warn-at-150`'s first threshold ($75) is unlikely to be
@@ -126,14 +136,45 @@ concurrency.
 
 ## 5. Teardown staged, dry-run verified
 
+**Use `scripts/gpu_session/teardown_week2.sh`. Never bare `scripts/teardown.sh`.**
+
+`teardown.sh` is the *generic* deletion primitive and still defaults to Week 1's
+`llmrouter-vllm-l4`. Run bare against a Week 2 session it describes an instance
+that does not exist, prints "nothing to tear down" and exits **0** — while the
+Week 2 L4 keeps billing. That is §6.1's named failure mode ("a silent no-op
+teardown is how a forgotten L4 runs all weekend"), and the earlier version of
+this section hid it: the dry-run below was originally recorded with an explicit
+`INSTANCE_NAME=` prefix, so the item read green while every runbook path around
+it invoked the bare form.
+
+*Historical note, kept deliberately — the original evidence line for this item was:*
+
 ```
 $ INSTANCE_NAME=llmrouter-vllm-l4-week2 ZONE=us-central1-a bash scripts/teardown.sh
 No instance named 'llmrouter-vllm-l4-week2' in zone 'us-central1-a' — nothing to tear down.
 ```
 
-Confirms `teardown.sh` (unchanged from Week 1, already parameterized via
-env vars) correctly targets the Week 2 instance name/zone and exits clean
-when nothing exists yet — exactly the state before Block E starts.
+*Correct as typed, and it is why the item was recorded green; misleading as a
+checklist item, because nothing else in the runbook typed that prefix.*
+
+The wrapper owns Week 2's target, prints it before deleting, and **verifies the
+instance is gone afterwards** rather than trusting the delete's exit code (§6.4):
+
+```
+$ DRY_RUN=1 bash scripts/gpu_session/teardown_week2.sh
+=== Week 2 teardown ===
+  instance: llmrouter-vllm-l4-week2
+  zone:     us-central1-a
+  project:  <REDACTED>
+
+DRY RUN: no instance named 'llmrouter-vllm-l4-week2' in zone 'us-central1-a' -- nothing would be deleted.
+```
+
+Correct target, correct zone, clean exit with nothing standing — exactly the
+state before Block E starts. Target resolution is also pinned by
+`tests/gpu_session/test_teardown_target.py`, which fails if the wrapper and
+`create_instance.sh` ever drift apart or if any Week 2 runbook path starts
+recommending the bare primitive again.
 
 ## 6. TTFT actually reaches disk (added 2026-08-17 — was a hard blocker)
 
@@ -204,7 +245,7 @@ confirmed to bite, not just to pass:
 
 These are my reds, produced on demand. **Hard Stop 2's standard says you
 confirm them personally** — `pytest tests/loadgen/test_sample_persistence.py`
-is green (35/35 for the full loadgen suite), but the reds are the proof.
+is green (63/63 for the full loadgen suite as of 2026-08-18), but the reds are the proof.
 
 **One operational note:** `benchmarks/runs/` is gitignored. If the session's
 sidecars are to be reproducible evidence for `BASELINE.md`, they need
@@ -288,7 +329,8 @@ of it is improvised on the meter:
 
 Session order: `create_instance.sh` → `setup_and_launch_vllm.sh` →
 `run_on_instance.sh bootstrap` → `check` → `stage-a` →
-`pull_artifacts.sh` → `teardown.sh`.
+`pull_artifacts.sh` → `teardown_week2.sh` (§5 — the Week 2 wrapper, never the
+bare generic primitive).
 
 **Three guards worth knowing about, because each blocks rather than warns:**
 
@@ -330,6 +372,67 @@ same class as `--enforce-eager` and not resolved here.
 
 ---
 
+## 10. Stage B schedules are a command, not a source edit
+
+`scripts/generate_schedules.py` takes the RPS points as arguments, in either
+style, both routing through the same implementation:
+
+```
+$ python scripts/generate_schedules.py --rps 32 34 36 38 --out-dir benchmarks/schedules/stage_b
+$ python scripts/generate_schedules.py --rps-start 32 --rps-stop 38 --rps-step 2 --out-dir benchmarks/schedules/stage_b
+```
+
+Verified byte-identical output between the two modes, and
+`generate_stage_a_schedules.py` is now a thin wrapper over the same function —
+regenerating Stage A reproduces the eight committed artifacts **byte for byte**,
+so going generic did not perturb a frozen input.
+
+Why this is a pre-flight item at all: Stage B's bracket is only known
+mid-session, and the previous generator hard-coded its RPS list. Producing Stage
+B would have meant editing tracked source *on the meter* — and
+`run_on_instance.sh bootstrap` pins the instance to a commit and refuses a dirty
+tree, so that edit would either block the session or cost the "which code drove
+this sweep" answer `BASELINE.md` owes. Covered by
+`tests/loadgen/test_schedule_cli.py` (18 cases, including that every workload
+lock — RNG scheme, corpus pinning, provenance, replay round-trip — survives).
+
+## 11. Loadgen scheduler spin margin — Linux-calibrated
+
+`loadgen/scheduler.py:SPIN_MARGIN_S` was Windows-tuned at 5ms, and `WEEK2_PLAN.md`
+§8 forbade shipping it onto the Linux vLLM runs unverified. Resolved 2026-08-18
+by an A/B on a dedicated CPU-only `e2-standard-4` (`us-central1-a`), 0ms vs 5ms,
+at 20 and 80 RPS, 5 runs per cell — same machine, seed, schedule, client and
+repetition count, one variable.
+
+The margin is now **per platform, from measurement**: `WINDOWS_SPIN_MARGIN_S` /
+`LINUX_SPIN_MARGIN_S`, resolvable per host via `--spin-margin-s` or
+`LOADGEN_SPIN_MARGIN_S` (no source edit, so `bootstrap`'s dirty-tree guard is not
+in tension with re-tuning). Every point record now carries
+`provenance.spin_margin_s` and `provenance.platform`, so a Linux sweep can never
+be silently mistaken for one driven with the Windows value.
+
+Evidence: `benchmarks/calibration/scheduler_spin/`; reading and decision in
+`BENCHMARKS.md`. Harness: `scripts/calibrate_scheduler_spin.py`. Configuration
+behaviour is pinned by `tests/loadgen/test_scheduler_spin_config.py`, including
+that `_sleep_until` never returns early at **either** margin — the V5 property
+the spin exists to protect.
+
+**Two methodology traps this run hit, recorded because they generalise:**
+
+1. **The in-process mock's own busy-wait contends for the GIL.** The harness
+   runs the mock in a thread of the driving process, so `mock/timing.py`'s 20ms
+   spin — 5 sleeps per request at 80 RPS — burns seconds of CPU per second and
+   inflates measured scheduling lag for *both* arms. Block 0 already established
+   that spin is unnecessary on Linux, so the calibration run passes
+   `--mock-spin-margin-s 0`. The real GPU run has no such coupling: driver and
+   vLLM are separate processes in separate venvs.
+2. **The `ulimit -n` precondition applies to the calibration too.** The first
+   attempt at 80 RPS hit `OSError: [Errno 24] Too many open files` — §8's exact
+   failure mode, from the same default soft limit of 1024, in a script that had
+   not raised it. `remote_loadgen.sh` enforces the raise for the GPU run; the
+   calibration runner now does too. Any harness that drives at Stage A rates
+   needs it, not just the session path.
+
 ## Summary
 
 | Item | Status |
@@ -337,7 +440,7 @@ same class as `--enforce-eager` and not resolved here.
 | §4 gate (Hard Stop 2) | ✅ confirmed |
 | L4/GPUS_ALL_REGIONS quota | ✅ verified live, 0 in use |
 | Billing enabled | ✅ verified |
-| Budget alerts | ✅ verified live 2026-08-17 — $150 budget @ 50/90/100% + a $10 canary; thresholds land at $75/$135/$150 rather than $50/$100/$150 (§2) |
+| Budget alerts | ✅ verified live 2026-08-17; policy resolved 2026-08-18 as **$10 canary / $75 / $135 / $150 hard line** — docs now match the live ladder (§2) |
 | Launch staged | ✅ `scripts/gpu_session/*.sh` |
 | `--enforce-eager` on/off | ⚠️ **your call at session start** — staged safe default |
 | `--max-model-len` | ✅ computed (20000), your confirmation welcome |
@@ -347,5 +450,5 @@ same class as `--enforce-eager` and not resolved here.
 | Concurrency cap value | ✅ **resolved 3000** 2026-08-17 — above Block C's uncapped peak (2380); provenance in `WEEK2_PLAN.md` §3.3 |
 | `ulimit -n` on the driving host | ✅ enforced in `remote_loadgen.sh` — raises to 65535 and refuses to drive below 4000 (§8, §9) |
 | Loadgen drives on-instance | ✅ scripted — `run_on_instance.sh` / `remote_loadgen.sh` / `pull_artifacts.sh` (§9) |
-| Branch pushed to `origin` | ⚠️ **required before the session** — `bootstrap` pins the instance to a SHA and refuses an unpushed HEAD (§9) |
+| Branch pushed to `origin` | ✅ `week2/loadgen-baseline` is on `origin`; `bootstrap` pins the instance to that SHA and refuses an unpushed HEAD (§9). Re-confirm after any new commit — the guard is per-commit, not per-branch |
 | Output-token policy (`EXTRA_BODY`) | ⚠️ **your call at session start** — unset means generate-to-EOS (§9) |

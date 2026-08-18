@@ -21,6 +21,7 @@ from loadgen.log import RunLogger, read_log
 from loadgen.schedule import build_poisson_schedule, build_steady_schedule
 from loadgen.scheduler import OpenLoopScheduler
 from tests.loadgen._assertions import (
+    assert_achieved_rps_invariant,
     assert_all_prompts_valid,
     assert_cap_respected,
     assert_fits_exponential,
@@ -118,6 +119,15 @@ async def test_v2_closed_loop_diverges_but_open_loop_is_invariant(mock_base_url,
         "so closed-loop throughput should differ by close to that ratio)"
     )
 
+    # The control proper: feed the deliberately closed-loop driver's own
+    # fast/slow numbers to the SAME helper the positive V2 test uses, and
+    # require it to go RED. Structurally identical to V1/V3/V4/V5's controls
+    # -- before this, V2 demonstrated the divergence numerically but never
+    # routed the bad variant through the real check, so the check itself was
+    # never proven to bite.
+    with pytest.raises(AssertionError):
+        assert_achieved_rps_invariant(closed_fast, closed_slow, context="V2 control/closed-loop: ")
+
     open_fast = await _open_loop_run(mock_base_url, "fast", corpus, tmp_path / "v2c_fast.raw_log.jsonl")
     open_slow = await _open_loop_run(mock_base_url, "slow", corpus, tmp_path / "v2c_slow.raw_log.jsonl")
     open_divergence = abs(open_fast.achieved_rps - open_slow.achieved_rps) / open_fast.achieved_rps
@@ -126,9 +136,9 @@ async def test_v2_closed_loop_diverges_but_open_loop_is_invariant(mock_base_url,
         f"open-loop achieved RPS: fast={open_fast.achieved_rps:.2f} slow={open_slow.achieved_rps:.2f} "
         f"divergence={open_divergence:.1%}"
     )
-    assert open_divergence < 0.2, (
-        f"open-loop fast vs slow achieved RPS diverged {open_divergence:.1%} -- "
-        "response time is leaking into send timing (hidden closed-loop dependency)"
+    # ...and the real implementation passes that same helper.
+    assert_achieved_rps_invariant(
+        open_fast.achieved_rps, open_slow.achieved_rps, context="V2 control/real open-loop: "
     )
 
     # achieved_rps alone is not sufficient here: it divides by the FIXED

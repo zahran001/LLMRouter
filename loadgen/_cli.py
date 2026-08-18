@@ -16,7 +16,13 @@ from pathlib import Path
 from loadgen.corpus import DEFAULT_CORPUS_PATH, load_corpus
 from loadgen.log import RunLogger, SampleLogger, read_log, read_samples
 from loadgen.schedule import Schedule, build_poisson_schedule, build_steady_schedule
-from loadgen.scheduler import OpenLoopScheduler
+from loadgen.scheduler import (
+    LINUX_SPIN_MARGIN_S,
+    SPIN_MARGIN_ENV,
+    WINDOWS_SPIN_MARGIN_S,
+    OpenLoopScheduler,
+    default_spin_margin_s,
+)
 from metrics.point import DEFAULT_BAND_PCT, MIN_TAIL_SAMPLES, point_metrics
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -59,6 +65,11 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
                               f"a point that sheds at all is cap-shaped, not server-shaped")
     parser.add_argument("--model", default="mock")
     parser.add_argument("--timeout-s", type=float, default=60.0)
+    parser.add_argument("--spin-margin-s", type=float, default=None, dest="spin_margin_s",
+                         help=f"scheduler busy-wait margin in seconds; omit for this platform's "
+                              f"calibrated default (currently {default_spin_margin_s()}s here -- "
+                              f"Windows {WINDOWS_SPIN_MARGIN_S}s / Linux {LINUX_SPIN_MARGIN_S}s, see "
+                              f"BENCHMARKS.md). Env {SPIN_MARGIN_ENV} also overrides")
     parser.add_argument("--no-capture-samples", action="store_true",
                          help="skip per-chunk TTFT/TPOT capture (metrics.consume_stream) -- request-pattern-only "
                               "run. NOTE: this also disables the sample sidecar and the per-point metrics record, "
@@ -145,6 +156,7 @@ async def run_and_report(schedule: Schedule, corpus, args: argparse.Namespace, a
         model=args.model,
         timeout_s=args.timeout_s,
         capture_samples=capture_samples,
+        spin_margin_s=args.spin_margin_s,
         **build_request_kwargs(args),
     )
 
@@ -231,6 +243,13 @@ def write_point_metrics(
             "arrival_process": arrival_process,
             "schedule_provenance": schedule.provenance,
             "concurrency_cap": args.concurrency_cap,
+            # The scheduler timing knob the point actually ran with, recorded
+            # per point so a Linux sweep can never be mistaken for one driven
+            # with the Windows-tuned margin (WEEK2_PLAN.md §8).
+            "spin_margin_s": (
+                default_spin_margin_s() if args.spin_margin_s is None else args.spin_margin_s
+            ),
+            "platform": sys.platform,
             "base_url": args.base_url,
             "model": args.model,
             "raw_log_path": str(log_path),

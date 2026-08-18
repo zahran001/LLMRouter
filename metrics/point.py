@@ -33,7 +33,14 @@ SEVERE_TTFT_MS = 2000.0
 # post-warmup sample count clears this floor.
 MIN_TAIL_SAMPLES = 100
 
-# §2.5: offered-vs-achieved divergence band. [CALIBRATE] -- 5% placeholder.
+# §2.5: offered-vs-achieved divergence band. RESOLVED 2026-08-18 at 5.0 --
+# no longer [CALIBRATE]. Block C's low-load tracking measured 0.0/0.0/0.0/-0.67%
+# divergence at 0.5/1/2/5 RPS, i.e. the driver tracks essentially perfectly
+# where any divergence would be a bug rather than saturation. Deliberately NOT
+# tightened to that measured 0.67% max: the band's job is to catch material
+# under-delivery, and a band with no headroom would flag healthy points near
+# the breach -- the worst place to lose data (Option Y below exists for the
+# same reason). Full provenance in WEEK2_PLAN.md §2.5/§8.
 DEFAULT_BAND_PCT = 5.0
 
 ISSUED_STATUSES = ("sent", "errored")

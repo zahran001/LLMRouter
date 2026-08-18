@@ -54,6 +54,45 @@ def gaps_from_schedule(schedule: Schedule) -> list[float]:
 
 
 # ---------------------------------------------------------------------------
+# V2 -- open-loop fidelity
+# ---------------------------------------------------------------------------
+
+# The band the fast-vs-slow comparison must stay inside. Generous on purpose:
+# the failure this catches is a closed-loop dependency, which moves achieved
+# RPS by roughly the ratio of the two configs' response times (~5x between the
+# fast and slow mock), not by a few percent. Tightening it would start
+# catching sampling noise instead.
+OPEN_LOOP_INVARIANCE_TOL = 0.2
+
+
+def assert_achieved_rps_invariant(
+    fast_achieved_rps: float,
+    slow_achieved_rps: float,
+    tol: float = OPEN_LOOP_INVARIANCE_TOL,
+    context: str = "",
+) -> None:
+    """WEEK2_PLAN.md §4 V2, "the single most important validation in §4":
+    achieved RPS must not move when the server gets slower.
+
+    An open-loop generator fires on a schedule, so its achieved rate is a
+    property of the schedule, not of the server. If achieved RPS *drops* when
+    the mock switches fast->slow, response time is feeding back into send
+    timing -- a hidden closed-loop dependency, and the design is compromised.
+
+    Shared by the positive test and its negative control, so the control
+    proves something about the check the positive test actually runs (a
+    control asserting a lookalike condition would prove nothing).
+    """
+    assert fast_achieved_rps > 0, f"{context}fast-config achieved RPS is {fast_achieved_rps} -- nothing was sent"
+    divergence = abs(fast_achieved_rps - slow_achieved_rps) / fast_achieved_rps
+    assert divergence < tol, (
+        f"{context}fast vs slow achieved RPS diverged {divergence:.1%} "
+        f"(fast={fast_achieved_rps:.2f}, slow={slow_achieved_rps:.2f}, tol={tol:.0%}) -- "
+        "response time is leaking into send timing (hidden closed-loop dependency)"
+    )
+
+
+# ---------------------------------------------------------------------------
 # V3 / V5 -- reconciliation
 # ---------------------------------------------------------------------------
 

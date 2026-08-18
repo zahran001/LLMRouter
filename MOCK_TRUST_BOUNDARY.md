@@ -70,8 +70,8 @@ variable:
 | TPOT bias vs configured | +0.59ms | +0.23ms |
 | TPOT max abs deviation | 0.66ms | 0.28ms |
 
-Full results: `benchmarks/noise_floor_fast_linux_nospin.json`,
-`benchmarks/noise_floor_fast_linux_spin.json`.
+Full results: `benchmarks/calibration/noise_floor/noise_floor_fast_linux_nospin.json`,
+`benchmarks/calibration/noise_floor/noise_floor_fast_linux_spin.json`.
 
 **Reading it:** the spin buys under 1ms on Linux (5.97ms -> 5.26ms TTFT bias),
 nothing like the ~10-30ms bare-`asyncio.sleep()` overshoot it corrects on

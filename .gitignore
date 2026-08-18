@@ -20,6 +20,19 @@ Thumbs.db
 # --- Local tool config ---
 .claude/
 
-# --- Benchmark outputs ---
-benchmarks/*
-!benchmarks/README.md
+# --- Benchmark artifacts ---
+# Explicit split (see benchmarks/README.md, "What is committed and what is not").
+# Tracked, because published claims have to be reproducible from them:
+#   benchmarks/schedules/    frozen workload INPUTS (replay's source of truth, §5)
+#   benchmarks/calibration/  the evidence behind every resolved [CALIBRATE] value
+#   benchmarks/evidence/     accepted results supporting BASELINE.md
+# Ignored, because they are working output rather than evidence:
+benchmarks/scratch/
+benchmarks/runs/
+# Raw per-request logs are large and are scratch by default. Promoting a
+# point into benchmarks/evidence/ is the deliberate act that makes it
+# evidence -- so the negation below is scoped to that subtree only.
+benchmarks/**/*.raw_log.jsonl
+benchmarks/**/*.samples.jsonl
+!benchmarks/evidence/**/*.raw_log.jsonl
+!benchmarks/evidence/**/*.samples.jsonl

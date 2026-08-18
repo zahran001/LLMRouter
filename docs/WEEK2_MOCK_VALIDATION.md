@@ -83,7 +83,17 @@ feed responses back into scheduling; V2 proves it *doesn't*, empirically.
   throughput *is* `1/response_time`), which is demonstrated first as a sanity
   check (ratio > 2x). Then the *real* `OpenLoopScheduler` is driven at the
   same target RPS against both configs, and its achieved RPS must stay
-  **invariant** (within 20%). A second, independent assertion checks max
+  **invariant** (within 20%).
+
+  Both sides go through **one shared helper**,
+  `_assertions.py:assert_achieved_rps_invariant`: the real open-loop run must
+  pass it, and the closed-loop driver's own fast/slow numbers are fed to the
+  *same* helper under `pytest.raises(AssertionError)`. That matches how
+  V1/V3/V4/V5 are built, and was tightened on 2026-08-18 — before then V2
+  demonstrated the divergence numerically but never routed the bad variant
+  through the real check, so the check itself had never been proven to bite.
+
+  A second, independent assertion checks max
   scheduling lag stays small for *both* configs — added because `achieved_rps`
   alone divides by the fixed offered window, so a hypothetical leak that
   delayed every send but still eventually issued all of them would leave
@@ -232,7 +242,9 @@ precise enough.
 pytest tests/loadgen -v
 ```
 
-All 19 tests (5 V-checks' worth of positive assertions + 5 negative controls)
+All 63 tests as of 2026-08-18 (the 5 V-checks' positive assertions + the 5
+negative controls, plus the TTFT-persistence set, replay, the schedule-generator
+CLI and the scheduler-spin configuration; it was 19 when this doc was written)
 must be green, and — per `WEEK2_EXECUTION.md` Hard Stop 2 — **the human
 verifies each control actually bites**, not just that "all tests pass." The
 reds are the proof: temporarily breaking any of the five `assert_*` calls in

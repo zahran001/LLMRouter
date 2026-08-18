@@ -16,7 +16,7 @@ from __future__ import annotations
 # fast config (100ms TTFT / 20ms TPOT -- floor-dominated: 10% of TPOT is only
 # 2ms, so this config's tolerance is governed by the floor, not the
 # percentage), 200 sequential runs (DRIVE_CONCURRENCY=1) x 110 requests/run,
-# post-timing-fix (benchmarks/noise_floor_fast.json):
+# post-timing-fix (benchmarks/calibration/noise_floor/noise_floor_fast.json):
 #
 #   TTFT p50 across runs: mean=105.67ms stdev=0.88ms range=4.20ms
 #                          max |p50 - 100ms configured| = 7.56ms

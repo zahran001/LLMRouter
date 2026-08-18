@@ -20,6 +20,8 @@ Mechanism (all LOCKED, see WEEK2_PLAN.md §3.3):
 from __future__ import annotations
 
 import asyncio
+import os
+import sys
 import time
 from dataclasses import dataclass, field
 
@@ -32,17 +34,60 @@ from metrics.consume import consume_stream
 from metrics.types import RequestSample
 
 # Same pattern as mock/timing.py:precise_sleep, applied to absolute-target
-# scheduling instead of a fixed duration: bare `asyncio.sleep` on this
-# platform doesn't guarantee waking at-or-after its target -- it can
-# occasionally return a few/several ms EARLY (observed ~13-15ms, in the
-# neighborhood of Windows' ~15.6ms timer tick), which would violate the
-# "send_time >= scheduled_offset always -- late allowed, early impossible"
-# contract (WEEK2_PLAN.md §3.1, §4 V5). Coarse-sleep for the bulk of the
-# wait, then spin the last SPIN_MARGIN_S against the monotonic clock.
-SPIN_MARGIN_S = 0.005
+# scheduling instead of a fixed duration: bare `asyncio.sleep` on Windows
+# doesn't guarantee waking at-or-after its target -- it can occasionally
+# return a few/several ms EARLY (observed ~13-15ms, in the neighborhood of
+# Windows' ~15.6ms timer tick), which would violate the "send_time >=
+# scheduled_offset always -- late allowed, early impossible" contract
+# (WEEK2_PLAN.md §3.1, §4 V5). Coarse-sleep for the bulk of the wait, then
+# spin the last spin margin against the monotonic clock.
+#
+# PLATFORM-SPECIFIC, from measurement -- not one constant for both.
+# The 5ms was tuned on the Windows dev box and shipping it unverified onto
+# the Linux vLLM benchmark was an explicit pre-GPU blocker (WEEK2_PLAN.md §8;
+# WEEK2_EXECUTION.md Block C). The A/B that closed it is
+# `scripts/calibrate_scheduler_spin.py`; the evidence is
+# `benchmarks/calibration/scheduler_spin/`, and the reading is written up in
+# `BENCHMARKS.md`. Provenance for each value is on its own line below.
+#
+# Windows: keep the spin. It is the platform whose bare `asyncio.sleep`
+# actually returns early, which is the *correctness* failure the spin exists
+# to prevent (V5's `send_time >= scheduled_offset`).
+WINDOWS_SPIN_MARGIN_S = 0.005
+# Linux: NO spin. Set from the A/B (2026-08-18, dedicated e2-standard-4),
+# not assumed. Zero early sends were observed at 0ms in every cell -- the
+# correctness property the spin exists to protect holds without it here --
+# and where the measurement was clean the 5ms arm bought nothing that matters
+# against a 50ms inter-arrival gap while its worst case was 6x worse. It also
+# has a real cost in this project's topology: Week 2 drives the loadgen ON the
+# GPU instance, so a 5ms busy-wait per send would burn ~40% of a core at 80 RPS
+# on the same box as vLLM.
+LINUX_SPIN_MARGIN_S = 0.0
+
+# Escape hatch for the calibration harness and for a machine that turns out
+# to need something else -- an env var rather than an edit, so a GPU-session
+# host can be re-tuned without touching tracked source.
+SPIN_MARGIN_ENV = "LOADGEN_SPIN_MARGIN_S"
 
 
-async def _sleep_until(target: float, spin_margin_s: float = SPIN_MARGIN_S) -> None:
+def default_spin_margin_s() -> float:
+    """Resolve this host's spin margin: env override, else per-platform."""
+    override = os.environ.get(SPIN_MARGIN_ENV)
+    if override is not None and override.strip():
+        return float(override)
+    return WINDOWS_SPIN_MARGIN_S if sys.platform == "win32" else LINUX_SPIN_MARGIN_S
+
+
+# Module-level default, resolved at import. Read through the `None` sentinel
+# below rather than bound as an argument default, so a test or the
+# calibration harness can monkeypatch this module attribute and have it
+# actually take effect (same pattern as mock/timing.py:SPIN_MARGIN_S).
+SPIN_MARGIN_S = default_spin_margin_s()
+
+
+async def _sleep_until(target: float, spin_margin_s: float | None = None) -> None:
+    if spin_margin_s is None:
+        spin_margin_s = SPIN_MARGIN_S
     coarse = target - time.monotonic() - spin_margin_s
     if coarse > 0:
         await asyncio.sleep(coarse)
@@ -78,7 +123,12 @@ class OpenLoopScheduler:
         timeout_s: float = 60.0,
         capture_samples: bool = True,
         sample_logger: SampleLogger | None = None,
+        spin_margin_s: float | None = None,
     ):
+        # None => this host's resolved default. An explicit value lets the
+        # calibration harness drive both A/B arms in one process, on one
+        # machine, with everything else held identical.
+        self.spin_margin_s = default_spin_margin_s() if spin_margin_s is None else spin_margin_s
         self.schedule = schedule
         self.corpus = corpus
         self.base_url = base_url.rstrip("/")
@@ -124,7 +174,7 @@ class OpenLoopScheduler:
             for request_id, entry in enumerate(self.schedule.entries):
                 target = t_start + entry.scheduled_offset
                 if time.monotonic() < target:
-                    await _sleep_until(target)
+                    await _sleep_until(target, self.spin_margin_s)
 
                 # Fire-and-forget: create the task and move straight to the
                 # next scheduled send. Never `await task` here.

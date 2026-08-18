@@ -8,9 +8,19 @@ fixed here and marked **LOCKED**; every value that needs empirical calibration
 is marked **[CALIBRATE]** with a named source; every expansion of a prior
 artifact carries a provenance note.
 
-**Status of this document:** The baseline-semantics block (§2) is fully locked.
-Sections §3–§7 are scoped but not yet fully designed — they will be closed out
-next. Do not implement §3–§7 against this draft; implement §2.
+**Status of this document: every design section (§2–§7) is LOCKED and
+implemented.** See §9 for the closeout. The `[CALIBRATE]` values are tracked in
+§8; all are resolved except the per-point warmup N, which is resolved from Stage
+A's GPU transient data in Block F **by design** and is not an open design
+question.
+
+> *Historical note.* This line previously read "Sections §3–§7 are scoped but not
+> yet fully designed… Do not implement §3–§7 against this draft; implement §2."
+> That was accurate while §2 was being locked, and was left stale after §3–§7
+> closed — so the preamble told a fresh reader not to implement work that was
+> already built, locked and shipped. Recorded rather than quietly deleted,
+> because "which sections were locked when" is part of this document's own
+> provenance.
 
 ---
 
@@ -129,10 +139,14 @@ appear in `BASELINE.md`.
 - **Measurement window is fixed duration:** measure for **Y seconds** per point,
   same Y across all points. Fixed duration (not fixed request count) keeps every
   point comparable and the run legible.
-  - **Y = 120s placeholder.** Confirm once the lowest coarse RPS is known to clear
-    the sample floor with margin. A 120s window at any RPS ≥ ~1 clears the ≥100
-    floor comfortably; the p99 over a 120s window cannot be moved by a single
-    transient spike (sustained-ness is inherent — see §2.6).
+  - **Y = 120s — RESOLVED 2026-08-18** (was a placeholder pending the coarse
+    sweep's lowest RPS). Stage A's lowest offered point is **2 RPS**
+    (`scripts/generate_stage_a_schedules.py: STAGE_A_RPS_POINTS`), so the
+    measurement window carries `2 × 120 = 240` scheduled requests — **2.4×** the
+    ≥100 achieved-sample validity floor, leaving room for material
+    under-delivery before a point becomes tail-invalid. Every higher point
+    clears it by more. The p99 over a 120s window also cannot be moved by a
+    single transient spike (sustained-ness is inherent — see §2.6).
 - **≥100-sample rule carries forward as a post-hoc validity check on *achieved*
   samples:** require `achieved_RPS × window ≥ 100` before reporting a point's
   tail percentile. A point that fails (e.g. offered high but achieved collapsed
@@ -149,10 +163,22 @@ offered rate.
   (`t0`/`send_time` captured) within the measurement window, divided by window
   duration. NOT completions — offered-vs-achieved is a question about whether the
   *driver kept up*, and the driver's job ends at send.
-- **Divergence band: ±5% [CALIBRATE].** If achieved is within ±5% of offered, the
-  point is clean and plotted against offered RPS. Beyond ±5%, the point is
-  flagged. Tighten the 5% once loadgen tracking at low load is observed
-  (divergence at low load would indicate a loadgen bug, not saturation).
+- **Divergence band: ±5% — RESOLVED 2026-08-18** (was `[CALIBRATE]`). If achieved
+  is within ±5% of offered, the point is clean and plotted against offered RPS.
+  Beyond ±5%, the point is flagged.
+  - *Provenance.* Block C's low-load tracking sweep against the slow mock
+    (`benchmarks/calibration/block_c/calibration_reads.json` → `low_load_tracking`)
+    measured divergence at rates far below anything that could saturate a single
+    client, where any divergence would be a loadgen bug rather than saturation:
+    **0.5 RPS → 0.0%, 1 RPS → 0.0%, 2 RPS → 0.0%, 5 RPS → −0.67%.**
+  - *Why ±5% is kept rather than tightened to the measured 0.67% maximum.* The
+    band's job is to detect **material driver under-delivery**, not to certify
+    that the driver is perfect at trivial load. Tightening to the observed
+    maximum would leave no headroom for legitimate scheduler/client jitter and
+    for Poisson's own realized-count variance at short windows, and would flag
+    healthy points near the breach — the exact region where Option Y says losing
+    data is worst. ±5% sits well above the noise and well below any divergence
+    that would change a conclusion.
 - **Flagged-point handling — Option Y (plot against achieved):** a flagged point
   is **kept** and plotted at the rate the server actually saw (achieved), not the
   intended rate (offered). Both values are logged; the divergence is recorded as
@@ -211,11 +237,15 @@ later. That seam is removed.
 
 ---
 
-## 3. Load generator design (LOCKED — mechanism; two [CALIBRATE] values)
+## 3. Load generator design (LOCKED — mechanism and both calibrated values)
 
-Fully specified except two calibrated values (concurrency-cap value, §3.2;
-offered-vs-achieved band, §2.5), both with named mock-based sources. Three
-generators: `loadgen/steady.py`, `loadgen/poisson.py`, `loadgen/adversarial.py`.
+Fully specified. Both calibrated values it once carried are resolved: the
+**concurrency cap (§3.3) = 3000** and the **offered-vs-achieved band (§2.5) =
+±5%**, each from a named mock-based source (§8). Three generators:
+`loadgen/steady.py`, `loadgen/poisson.py`, `loadgen/adversarial.py`.
+
+*(The cap lives in §3.3. An earlier version of this line cross-referenced it as
+§3.2, which is the seed→schedule mapping.)*
 
 ### 3.1 Open-loop core (LOCKED)
 
@@ -558,7 +588,25 @@ treat as a guide, not a ceiling.)
   the mock (arrival shape, open-loop fidelity, cap/shedding, corpus, logging). An
   unvalidated loadgen makes a bad GPU number ambiguous (server or driver?).
 - **Quota + billing:** confirm L4 quota live in target region (`us-central1`,
-  fallback `us-east4`); pay-as-you-go active; budget alerts at $50/$100/$150.
+  fallback `us-east4`); pay-as-you-go active; budget alerts at **$10 canary /
+  $75 warning / $135 near-cap / $150 hard line** (resolved 2026-08-18 — see the
+  note below).
+
+  **Provenance — the alert ladder was changed from $50/$100/$150.** The live
+  budgets are a `$150` budget firing at 50/90/100% (= $75/$135/$150) plus a
+  separate `$10` canary. The $150 hard line, which is the one that matters, is
+  unchanged. The `$10` canary was added because it is the threshold that will
+  *actually fire*: a g2-standard-8 + L4 spot runs roughly $0.40–0.50/hr, so a
+  single session lands in the $5–15 range and a $50 first-warning would never
+  trigger at all — an alert ladder whose lowest rung is above the expected spend
+  is decorative. $75/$135 keep the same escalating shape above it. Recorded here
+  rather than left as a doc-vs-reality mismatch (`docs/WEEK2_GPU_PREFLIGHT.md`
+  §2 carries the live `gcloud` evidence).
+
+  These are a **tripwire, not a stop** — nothing here halts an instance, GCP
+  budget evaluation is not real-time, and the alerts are email-only. Verified
+  teardown (§6.4, `scripts/gpu_session/teardown_week2.sh`) remains the actual
+  control.
 - **Launch staged** from `docs/GPU_SESSION_NOTES.md` (working `gcloud` + vLLM
   sequence, environment-specific bugs already worked around).
 - **`--max-model-len` sized to actual test traffic** (longest corpus prompt + max
@@ -656,11 +704,15 @@ read the ~3ms CI number as settling this; it is a prior, not an answer.
 
 ## 8. Open [CALIBRATE] values (Week 2)
 
-| Value | Placeholder | Source |
+**One row remains open: the per-point warmup N, which is resolved from GPU
+transient data in Block F by design (§2.4/§6.3) and is not a pre-GPU gap.**
+Everything else is resolved with named evidence.
+
+| Value | Status | Source |
 |---|---|---|
-| Per-point warmup N | 10s | Stage A transient plot (TTFT vs wall-clock, find flatten point) |
-| Measurement window Y | 120s | Confirm lowest coarse RPS clears ≥100-sample floor with margin |
-| Offered-vs-achieved band | ±5% | Observed loadgen tracking at low load |
+| Per-point warmup N | **10s placeholder — OPEN BY DESIGN** | Stage A transient plot (TTFT vs wall-clock, find flatten point). Resolved in Block F, post-teardown. Applying the real N is a **re-filter over the committed sidecars, never a GPU re-run**: the warmup filter is metrics-side and time-based (§2.4), so `scripts/compute_point_metrics.py --warmup-n <N>` re-derives every point |
+| ~~Measurement window Y~~ | **RESOLVED: 120s** (2026-08-18) | Stage A's lowest offered point is 2 RPS, so the window carries `2 × 120 = 240` scheduled requests — 2.4× the ≥100 achieved-sample floor, with headroom for under-delivery before a point goes tail-invalid. Full reasoning in §2.4 |
+| ~~Offered-vs-achieved band~~ | **RESOLVED: ±5%** (2026-08-18) | Block C low-load tracking (`benchmarks/calibration/block_c/calibration_reads.json` → `low_load_tracking`): 0.0% / 0.0% / 0.0% / −0.67% at 0.5/1/2/5 RPS. Deliberately **not** tightened to the measured 0.67% max — the band detects material driver under-delivery, and a band with no headroom would flag healthy points near the breach. Reasoning in §2.5. Constant: `metrics/point.py: DEFAULT_BAND_PCT` |
 | ~~Concurrency cap value~~ | **RESOLVED: 3000** (2026-08-17) | Set above Block C's uncapped peak concurrency (2380 @ 300 RPS; 651 @ 100 RPS) — cannot bite below a 37.5s mean response time at Stage A's 80 RPS ceiling. Full provenance + the `ulimit -n` precondition in §3.3. Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP` |
 | ~~Loadgen capability target~~ | **RESOLVED with the cap** (2026-08-17) | Same measurement (see note below). Verified per point rather than assumed: `shed > 0` at any swept point means the cap bit and that point is cap-shaped — flagged automatically by `scripts/compute_point_metrics.py` |
 | Loadgen scheduler spin margin (`loadgen/scheduler.py:SPIN_MARGIN_S`) | 5ms | **Windows-tuned, not yet Linux-calibrated.** Carried forward from Hard Stop 2 review (2026-08-16): same class of A/B as Block 0's mock-timing spin (`mock/timing.py:SPIN_MARGIN_S`) — run it on the Linux e2 VM, same session if convenient. Do not ship the Windows-tuned 5ms onto Linux vLLM runs unverified. |
@@ -675,21 +727,22 @@ referenced from two sections.
 ## 9. What remains to close out Week 2 planning
 
 Locked: baseline semantics (§2, all seven knobs), loadgen design (§3, mechanism
-fully locked; cap value + offered-vs-achieved band are [CALIBRATE] with named
-mock-based sources), mock validation (§4, five validations + hard pre-GPU gate),
-trace/replay (§5, Option M frozen-schedule + schedule-plus-corpus contract), and
-the GPU session runbook (§6, single continuous session, durable-on-produce
-recording, adversarial-last).
+and both calibrated values), mock validation (§4, five validations + hard pre-GPU
+gate), trace/replay (§5, Option M frozen-schedule + schedule-plus-corpus
+contract), and the GPU session runbook (§6, single continuous session,
+durable-on-produce recording, adversarial-last).
 
-**All design sections are now locked.** §7 (Linux spin-disabled calibration) is
-already scoped and needs no further design — it is the first *executable* action,
-GPU-free, run in parallel with loadgen development.
+**All design sections are locked, and every `[CALIBRATE]` value is resolved
+except the one that is deliberately post-GPU:**
 
-The two remaining [CALIBRATE] resolutions both have named, concrete procedures:
-- **Warmup N** — offline from the §6.3 transient data (TTFT vs wall-clock flatten-
-  point).
-- **Concurrency cap value** — from §4 V3's shed-onset RPS against the slow mock.
-- (Window Y and the ±5% band confirm against their §8 sources.)
+| Value | State |
+|---|---|
+| Concurrency cap | **3000** — resolved 2026-08-17 from Block C's uncapped concurrency sweep (§3.3) |
+| Offered-vs-achieved band | **±5%** — resolved 2026-08-18 from Block C's low-load tracking (§2.5) |
+| Measurement window Y | **120s** — resolved 2026-08-18 against the ≥100-sample floor at Stage A's 2 RPS anchor (§2.4) |
+| Mock timing spin (Block 0, §7) | **Resolved 2026-08-16** — Windows-only fix; A/B in `benchmarks/calibration/noise_floor/`, read-up in `MOCK_TRUST_BOUNDARY.md` |
+| Loadgen scheduler spin | **Resolved 2026-08-18** — platform-specific defaults in `loadgen/scheduler.py`; A/B in `benchmarks/calibration/scheduler_spin/`, read-up in `BENCHMARKS.md` |
+| **Per-point warmup N** | **OPEN BY DESIGN** — offline from the §6.3 transient data (TTFT vs wall-clock flatten-point), resolved in Block F. Applying it is a metrics-side re-filter over the committed sidecars, never a GPU re-run (§2.4) |
 
 Nothing further to design. Execution order: §7 Linux calibration → loadgen build →
 §4 mock validations (the gate) → §6 GPU session → offline analysis → `BASELINE.md`.

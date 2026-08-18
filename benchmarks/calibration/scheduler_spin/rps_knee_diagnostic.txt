@@ -1,0 +1,25 @@
+  25.5% loadgen | 9.8% mock | load=0.21
+  19.8% loadgen | 9.3% mock | load=0.18
+  18.7% loadgen | 9.1% mock | load=0.15
+rps=20 p50=    0.92 p95=     2.20 p99=     3.09 max=    23.99 achieved= 20.97 errored=0 shed=0
+  20.4% loadgen | 9.8% mock | load=0.21
+  23.1% loadgen | 11.2% mock | load=0.25
+  24.3% loadgen | 11.9% mock | load=0.21
+rps=40 p50=    0.97 p95=     2.48 p99=     3.77 max=    34.74 achieved= 41.83 errored=0 shed=0
+rps=60 p50=    1.04 p95=     4.56 p99=     7.74 max=    69.81 achieved= 59.67 errored=0 shed=0
+rps=80 p50=  673.34 p95=  4634.92 p99=  4940.74 max=  5073.39 achieved= 79.87 errored=5 shed=0
+
+--- peak concurrency / response duration, reconstructed from each run's raw log ---
+rps= 20 n=  629 peak_concurrency=   30 resp_p50=  0.911s resp_p99=   0.917s resp_max=   0.926s errored=0
+rps= 40 n= 1255 peak_concurrency=   53 resp_p50=  0.912s resp_p99=   0.920s resp_max=   0.948s errored=0
+rps= 60 n= 1790 peak_concurrency=   78 resp_p50=  0.913s resp_p99=   0.933s resp_max=   0.997s errored=0
+rps= 80 n= 2396 peak_concurrency= 1323 resp_p50= 10.838s resp_p99=  50.062s resp_max=  57.037s errored=5
+
+Reading: the mock holds a flat 0.911s response (its configured slow-config
+duration) with concurrency scaling linearly through 60 RPS, then collapses at
+80 -- response time 12x, concurrency 17x. Client CPU stays at ~20-25% of one
+core throughout (see the samples above), so the driver is NOT the thing that
+saturated. The 80-RPS scheduling lag is downstream of that collapse: 1323
+concurrent open streams is what delays task starts, and MOCK_TRUST_BOUNDARY.md
+explicitly does not trust the mock for saturation behaviour or latency under
+concurrency (the deferred Week 1 mock concurrency bug).

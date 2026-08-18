@@ -22,6 +22,7 @@ from loadgen.corpus import load_corpus
 from loadgen.log import RunLogger
 from loadgen.schedule import build_poisson_schedule, build_steady_schedule
 from loadgen.scheduler import OpenLoopScheduler
+from tests.loadgen._assertions import assert_achieved_rps_invariant
 
 pytestmark = [pytest.mark.loadgen, pytest.mark.integration]
 
@@ -91,3 +92,23 @@ async def test_achieved_rps_tracks_offered(mock_base_url, tmp_path):
     assert result.n_shed == 0, "cap should not bite here"
     divergence = abs(result.achieved_rps - RPS) / RPS
     assert divergence < 0.1, f"achieved RPS {result.achieved_rps:.2f} diverges >10% from offered {RPS}"
+
+
+async def test_achieved_rps_invariant_across_fast_and_slow(mock_base_url, tmp_path):
+    """V2's load-bearing property, asserted through the shared helper that
+    `test_negative_controls.py` feeds a closed-loop driver to under
+    `pytest.raises`. Same helper on both sides: the control proves the check
+    can fail, this proves the real implementation passes it.
+
+    An open-loop generator's achieved rate is a property of the schedule, not
+    of the server, so making the server ~5x slower must not move it.
+    """
+    fast = await _run(mock_base_url, tmp_path / "v2inv_fast.raw_log.jsonl", "fast")
+    slow = await _run(mock_base_url, tmp_path / "v2inv_slow.raw_log.jsonl", "slow")
+
+    print(
+        f"\nV2 invariance: fast={fast.achieved_rps:.2f} slow={slow.achieved_rps:.2f} "
+        f"divergence={abs(fast.achieved_rps - slow.achieved_rps) / fast.achieved_rps:.1%}"
+    )
+    assert fast.n_shed == 0 and slow.n_shed == 0, "cap must not bite -- would confound V2 with V3"
+    assert_achieved_rps_invariant(fast.achieved_rps, slow.achieved_rps, context="V2 real: ")

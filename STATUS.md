@@ -52,33 +52,53 @@ prevents.
 500ms p99 TTFT SLO*, fully sourced and reproducible from the committed
 schedule and corpus artifacts.
 
-### Open `[CALIBRATE]` values
+### `[CALIBRATE]` values
 
-Tracked with their named sources in `WEEK2_PLAN.md` §8. The warmup N is
-resolved post-GPU-session from the Stage A transient plot; because the warmup
-filter is metrics-side and time-based, applying it is a re-filter over the
-committed sidecars rather than another GPU run.
+Tracked with their named sources in `WEEK2_PLAN.md` §8. **All resolved except
+the per-point warmup N**, which is open *by design*:
+
+| Value | State |
+|---|---|
+| Concurrency cap | **3000** (2026-08-17) |
+| Offered-vs-achieved band | **±5%** (2026-08-18) |
+| Measurement window Y | **120s** (2026-08-18) |
+| Mock timing spin (Block 0) | **Resolved** — Windows-only fix (2026-08-16) |
+| Loadgen scheduler spin | **Resolved** — platform-specific defaults (2026-08-18) |
+| Per-point warmup N | **Open by design** — from Stage A's GPU transient, in Block F |
+
+The warmup N is resolved post-GPU-session from the Stage A transient plot;
+because the warmup filter is metrics-side and time-based, applying it is a
+re-filter over the committed sidecars rather than another GPU run.
 
 ## Known issues
 
-**`tests/faithfulness/test_real_fixture.py::test_real_stream_key_set_matches_mock`
-fails.** The mock's role chunk omits four keys real vLLM sends —
-`choices[0].delta.content`, `choices[0].logprobs`, `prompt_token_ids`,
-`prompt_text` — so the Layer 3 faithfulness check (mock chunk shape vs. a
-captured real-vLLM fixture) goes red. The fix is named in the assertion
-message: add them to `mock/app.py:_make_chunk`.
+**None blocking.** The mock/vLLM faithfulness regression
+(`test_real_stream_key_set_matches_mock`) is **fixed** as of 2026-08-18 — the
+mock's three chunk kinds now carry the same key sets real vLLM 0.27.1 sends,
+verified in both directions against the captured fixture, with the parser
+contract untouched (`metrics/parse.py` still classifies an empty
+`delta.content` as a non-content chunk).
 
-This was latent rather than new. `pytest tests` previously died during
-collection — two test files shared the basename `test_negative_controls.py`
-with no package markers — so the documented command never reached this suite.
-Adding `__init__.py` to the test packages fixed collection and surfaced it.
-The affected files were last touched in the Week 1 closeout (`67a62b1`).
+*Historical note:* that failure was latent rather than new. `pytest tests`
+previously died during collection — two test files shared the basename
+`test_negative_controls.py` with no package markers — so the documented command
+never reached the suite. Adding `__init__.py` to the test packages fixed
+collection and surfaced it.
 
-Everything else passes: 105 of 106 tests green in a single `pytest tests` run.
+**One environment-only flake, not a regression:**
+`tests/integration/test_end_to_end.py::test_end_to_end_fast_config` asserts the
+mock delivers its configured 100ms TTFT within ±10ms. It passes standalone and
+can exceed the band under full-suite contention on the Windows dev box, because
+`mock_base_url` is session-scoped (`tests/conftest.py`) — one single-process
+mock serves all tiers, including the loadgen tier's high-RPS sweeps. This is the
+machine-drift signal `WEEK2_PLAN.md` §7 defers, and mock latency is outside the
+trusted set (`MOCK_TRUST_BOUNDARY.md`) — it is not a Week 2 measurement input.
+The tolerance has deliberately **not** been widened to hide it.
 
 ### Session-start decisions
 
 Items deliberately left open for the human at the start of the metered GPU
-session, rather than defaulted silently — `--enforce-eager`, the output-token
-policy, and the budget-alert thresholds. Each is listed with its trade-off in
-`docs/WEEK2_GPU_PREFLIGHT.md`.
+session, rather than defaulted silently — `--enforce-eager` and the
+output-token policy. Each is listed with its trade-off in
+`docs/WEEK2_GPU_PREFLIGHT.md`. (The budget-alert ladder was previously on this
+list; it is now resolved as $10 / $75 / $135 / $150.)

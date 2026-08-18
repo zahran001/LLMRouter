@@ -91,7 +91,10 @@ async def _run_point(base_url, corpus, rps, duration_s, cap, config, log_path):
 async def main_async() -> dict:
     base_url, server, thread = _start_mock()
     corpus = load_corpus()
-    out_dir = Path(__file__).resolve().parent.parent / "benchmarks" / "block_c"
+    # Raw per-sweep logs are working output, not evidence -- they go to the
+    # ignored scratch subtree (benchmarks/README.md). Only the distilled
+    # calibration_reads.json below is committed.
+    out_dir = Path(__file__).resolve().parent.parent / "benchmarks" / "scratch" / "block_c"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -153,7 +156,11 @@ async def main_async() -> dict:
 def main() -> None:
     result = asyncio.run(main_async())
 
-    out_path = Path(__file__).resolve().parent.parent / "benchmarks" / "block_c" / "calibration_reads.json"
+    out_path = (
+        Path(__file__).resolve().parent.parent
+        / "benchmarks" / "calibration" / "block_c" / "calibration_reads.json"
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2))
     print(f"\nWrote {out_path}", file=sys.stderr)
 

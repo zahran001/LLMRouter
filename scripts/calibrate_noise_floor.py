@@ -148,7 +148,7 @@ def main() -> None:
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--min-samples", type=int, default=100, dest="min_samples")
     parser.add_argument("--num-tokens", type=int, default=5, dest="num_tokens")
-    parser.add_argument("--out", default=None, help="path to write the JSON result (default: benchmarks/noise_floor_<config>.json)")
+    parser.add_argument("--out", default=None, help="path to write the JSON result (default: benchmarks/calibration/noise_floor/noise_floor_<config>.json)")
     parser.add_argument(
         "--spin-margin-s", type=float, default=None, dest="spin_margin_s",
         help="override mock.timing.SPIN_MARGIN_S for this run (e.g. 0 to disable the "
@@ -185,7 +185,14 @@ def main() -> None:
     print("the two metrics' max_abs_deviation_from_configured, add a small safety margin,")
     print("and document the choice in BENCHMARKS.md per WEEK1_MEASUREMENT_SPEC.md #4.")
 
-    out_path = Path(args.out) if args.out else Path(__file__).resolve().parent.parent / "benchmarks" / f"noise_floor_{args.config}.json"
+    # Lands in the tracked calibration subtree (benchmarks/README.md's split),
+    # so a noise-floor measurement is committable with a plain `git add`.
+    out_path = (
+        Path(args.out) if args.out
+        else Path(__file__).resolve().parent.parent
+        / "benchmarks" / "calibration" / "noise_floor" / f"noise_floor_{args.config}.json"
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(spread, indent=2))
     print(f"\nWrote {out_path}")

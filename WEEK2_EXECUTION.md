@@ -260,7 +260,10 @@ A schedules).
 **Human verifies (the actual gate):**
 - **All five §4 validations green AND their controls confirmed biting** (re-affirm Hard
   Stop 2 — this is the §4 hard gate).
-- L4 quota live in target region; pay-as-you-go active; budget alerts $50/$100/$150.
+- L4 quota live in target region; pay-as-you-go active; budget alerts
+  **$10 canary / $75 / $135 / $150 hard line** (resolved 2026-08-18; was
+  $50/$100/$150 — the $10 canary is the rung that actually fires at a ~$5–15
+  session, see `WEEK2_PLAN.md` §6.1).
 - Launch + teardown staged; teardown dry-run confirmed to target the right
   instance/zone.
 - Stage A schedules committed.

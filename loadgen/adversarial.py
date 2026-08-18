@@ -2,16 +2,24 @@
 """Open-loop long-context flood generator (WEEK2_PLAN.md §2.1) -- a separate
 Week 2 scenario, NOT part of the baseline breach number. Its breach is driven
 by per-request cost (long prompts), not arrival rate, so it draws only from
-the corpus's long-context tail (default: char_len >= 90th percentile) rather
-than the natural-spread baseline sampling.
+the corpus's long-context tail rather than the natural-spread baseline
+sampling.
+
+**The tail cut is a fixed Week 2 constant, not a knob.** It is the 90th
+char_len percentile, set in `loadgen.corpus.draw_prompt_id_long_context` and
+applied by `loadgen.schedule`, which never passes an override. There is
+deliberately no `--long-context-percentile` flag: §2.1 defines adversarial as
+one scenario, and a sweepable cut would make it a length sweep -- which §2.2
+puts out of scope for Week 2 (it belongs to Week 3, where prompt length
+becomes the independent variable). Changing the cut means changing the
+constant and re-freezing the schedules, which is the point.
 
 Run LAST in the GPU session runbook (§6.2) -- it deliberately drives the
 replica toward saturation and may leave KV cache / scheduler degraded.
 
 Usage:
     python -m loadgen.adversarial --rps 5 --duration 130 --seed 42 \
-        --concurrency-cap 50 --mock-config slow --num-tokens 20 \
-        --long-context-percentile 90
+        --concurrency-cap 50 --mock-config slow --num-tokens 20
 """
 
 from __future__ import annotations
