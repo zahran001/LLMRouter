@@ -1,0 +1,21 @@
+# Line-ending policy for artifacts whose BYTES are a contract.
+#
+# Why this file exists (found the hard way, 2026-08-18, on the meter):
+# `core.autocrlf=true` on Windows checks the corpus out as CRLF while the
+# committed blob is LF. Every Stage A schedule pins `corpus_sha256` in its
+# provenance, and those hashes were generated against the Windows working-tree
+# form -- so replay worked on Windows and failed on Linux with "corpus drift
+# detected". The frozen workload was only reproducible on the platform that
+# froze it, which defeats the point of freezing it.
+#
+# `-text` means git never translates line endings in either direction: the
+# working tree gets the blob's bytes verbatim on every platform. For a file
+# whose SHA-256 is a reproducibility contract, that is the only safe setting.
+
+# The pinned prompt corpus -- hashed into every schedule's provenance.
+corpus/*.jsonl -text
+
+# Benchmark evidence: raw request logs and TTFT/TPOT sample sidecars promoted
+# into benchmarks/evidence/. These are the durable record BASELINE.md cites,
+# and they are read back by scripts/compute_point_metrics.py offline.
+benchmarks/**/*.jsonl -text
