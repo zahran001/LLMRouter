@@ -235,7 +235,7 @@ raw log alone cannot carry TTFT, so a fresh-context read finds the reason
 instead of re-flagging the contradiction. Block F now reads "from the raw
 log + samples sidecar."
 
-**Tests:** `tests/loadgen/test_sample_persistence.py`, 12 cases. Controls
+**Tests:** `tests/loadgen/test_sample_persistence.py`, 13 cases. Controls
 confirmed to bite, not just to pass:
 - dropped sample-write → sidecar reconciliation goes RED (`missing=`);
 - flush removed from the writer → the durable-on-produce test goes RED
@@ -243,13 +243,27 @@ confirmed to bite, not just to pass:
 - warmup filter fed a 9000ms pre-warmup transient → p99 stays at 100ms
   with the filter, jumps above 1000ms without it.
 
-These are my reds, produced on demand. **Hard Stop 2's standard says you
-confirm them personally** — `pytest tests/loadgen/test_sample_persistence.py`
-is green (63/63 for the full loadgen suite as of 2026-08-18), but the reds are the proof.
+These were my reds, produced on demand. **Hard Stop 2-class read: confirmed by
+you, 2026-08-18.** The four reds re-verified at that review:
 
-**One operational note:** `benchmarks/runs/` is gitignored. If the session's
-sidecars are to be reproducible evidence for `BASELINE.md`, they need
-force-adding like the Stage A schedules were.
+- a dropped sidecar row → `sidecar rows (4) != issued requests (5) -- missing=[2]`;
+- a shed request wrongly carrying a sample → `unexpected=[99]` (a shed request
+  never opened a stream and cannot have one);
+- a sidecar/raw-log `send_time` disagreement → caught, because it would desync
+  the time-based warmup filter that the whole deferred-N plan rests on;
+- the warmup filter holding p99 TTFT at **100.0ms** where disabling it gives
+  **9000.0ms** over the same rows.
+
+`pytest tests/loadgen/test_sample_persistence.py` → 13 passed; full loadgen
+suite 63/63. Per Hard Stop 2's standard the reds are the proof, not the green —
+and they were confirmed personally rather than accepted as my summary.
+
+**One operational note:** `benchmarks/runs/` is still gitignored — that is where
+a point lands as it is produced. Promoting a point to evidence is a deliberate
+copy into `benchmarks/evidence/week2/`, which **is** tracked, so its sidecar and
+raw log then commit with a **plain `git add`** (`benchmarks/README.md`).
+Force-adding is no longer the mechanism, and deliberately so: a `-f` leaves no
+trace in history that a promotion decision was ever made.
 
 ## 7. Stage A schedules pre-generated and committed
 
@@ -445,7 +459,7 @@ the spin exists to protect.
 | `--enforce-eager` on/off | ⚠️ **your call at session start** — staged safe default |
 | `--max-model-len` | ✅ computed (20000), your confirmation welcome |
 | Teardown dry-run | ✅ verified against Week 2 instance name |
-| TTFT reaches disk | ✅ fixed 2026-08-17 (§6) — **was a hard blocker**; controls confirmed biting, your Hard Stop 2-class read still owed |
+| TTFT reaches disk | ✅ fixed 2026-08-17 (§6) — **was a hard blocker**; controls confirmed biting, Hard Stop 2-class read **confirmed by you 2026-08-18** |
 | Stage A schedules | ✅ generated, committed `4d381fe` |
 | Concurrency cap value | ✅ **resolved 3000** 2026-08-17 — above Block C's uncapped peak (2380); provenance in `WEEK2_PLAN.md` §3.3 |
 | `ulimit -n` on the driving host | ✅ enforced in `remote_loadgen.sh` — raises to 65535 and refuses to drive below 4000 (§8, §9) |
