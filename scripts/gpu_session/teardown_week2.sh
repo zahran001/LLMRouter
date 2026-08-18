@@ -18,12 +18,26 @@
 
 set -euo pipefail
 
-# Week 2's target, owned here. Overridable for an unusual session, but the
-# point of the wrapper is that the default is already correct.
-INSTANCE_NAME="${INSTANCE_NAME:-llmrouter-vllm-l4-week2}"
-ZONE="${ZONE:-us-central1-a}"
-
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# What create_instance.sh ACTUALLY created, if it left a record. This closes
+# the zone axis of the very bug this wrapper exists for: owning the instance
+# NAME is not enough if a capacity stockout moves the session to another zone
+# (hit for real 2026-08-18 -- us-central1-a had no g2-standard-8+L4). Teardown
+# pointed at the wrong zone prints "nothing to tear down" and exits 0 while the
+# meter runs.
+SESSION_FILE="${SESSION_FILE:-$REPO_ROOT/.gpu_session_target}"
+if [ -f "$SESSION_FILE" ]; then
+  # The recorded names are deliberately SESSION_-prefixed: sourcing this must
+  # not be able to clobber an explicit INSTANCE_NAME=/ZONE= the operator typed.
+  # shellcheck disable=SC1090
+  . "$SESSION_FILE"
+fi
+
+# Week 2's target, owned here. Precedence, most specific first:
+#   explicit env  >  what was actually created  >  the Week 2 default.
+INSTANCE_NAME="${INSTANCE_NAME:-${SESSION_INSTANCE_NAME:-llmrouter-vllm-l4-week2}}"
+ZONE="${ZONE:-${SESSION_ZONE:-us-central1-a}}"
 
 exists() {
   gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" &>/dev/null
@@ -59,6 +73,9 @@ echo "=== verifying deletion (not trusting the delete's exit code) ==="
 for attempt in $(seq 1 12); do
   if ! exists; then
     echo "VERIFIED: '$INSTANCE_NAME' no longer exists in '$ZONE'. Meter stopped."
+    # The session record described a live instance; it no longer does. Leaving
+    # it would point a later teardown at an instance that is already gone.
+    rm -f "$SESSION_FILE"
     echo "Console cross-check (6.4 asks for a human eyeball too):"
     echo "  https://console.cloud.google.com/compute/instances?project=$(gcloud config get-value project 2>/dev/null)"
     exit 0

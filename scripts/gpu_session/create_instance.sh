@@ -27,6 +27,8 @@ IMAGE_PROJECT="${IMAGE_PROJECT:-deeplearning-platform-release}"
 # silently coming back and restarting the meter unattended.
 PROVISIONING_MODEL="${PROVISIONING_MODEL:-SPOT}"
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 echo "Creating $INSTANCE_NAME in $ZONE"
 echo "  machine:      $MACHINE_TYPE"
 echo "  image:        $IMAGE_PROJECT/$IMAGE_FAMILY"
@@ -48,6 +50,30 @@ echo
 echo "=== resolved provisioning (read back, not assumed) ==="
 gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" \
   --format="value(scheduling.provisioningModel,scheduling.preemptible,scheduling.onHostMaintenance,status)"
+
+# Record what was ACTUALLY created, so teardown cannot target the wrong thing.
+# The wrapper's defaults are only correct while a session lands in the default
+# ZONE -- and a single-zone capacity stockout is routine, hit for real on
+# 2026-08-18 when us-central1-a had no g2-standard-8+L4 to give. The moment a
+# session moves to -b or -c, a default teardown describes an instance that does
+# not exist, prints "nothing to tear down" and exits 0 while the L4 keeps
+# billing. That is WEEK2_PLAN.md 6.1's money leak with the instance NAME fixed
+# and the ZONE still open.
+#
+# Gitignored on purpose: this is local session state, and `run_on_instance.sh
+# bootstrap` refuses a dirty tree, so creating an instance must not dirty it.
+SESSION_FILE="${SESSION_FILE:-$REPO_ROOT/.gpu_session_target}"
+cat > "$SESSION_FILE" <<SESSION_EOF
+# Written by create_instance.sh; read by teardown_week2.sh. Local session
+# state, not evidence -- safe to delete once the instance is gone.
+SESSION_INSTANCE_NAME=$INSTANCE_NAME
+SESSION_ZONE=$ZONE
+SESSION_CREATED_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+SESSION_EOF
+echo
+echo "session target recorded -> $SESSION_FILE"
+echo "  teardown_week2.sh will read this, so it targets $INSTANCE_NAME in $ZONE"
+echo "  even though its built-in default zone is us-central1-a."
 
 echo
 echo "Instance created. Next: scripts/gpu_session/setup_and_launch_vllm.sh (scp + ssh --command)."

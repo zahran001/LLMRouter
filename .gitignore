@@ -20,6 +20,13 @@ Thumbs.db
 # --- Local tool config ---
 .claude/
 
+# --- GPU session state ---
+# Written by scripts/gpu_session/create_instance.sh, read by
+# teardown_week2.sh so teardown targets the instance/zone actually
+# created. Ignored deliberately: `run_on_instance.sh bootstrap` refuses a
+# dirty tree, so standing up an instance must not dirty it.
+.gpu_session_target
+
 # --- Benchmark artifacts ---
 # Explicit split (see benchmarks/README.md, "What is committed and what is not").
 # Tracked, because published claims have to be reproducible from them:

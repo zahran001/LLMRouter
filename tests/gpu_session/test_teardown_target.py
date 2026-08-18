@@ -15,7 +15,10 @@ around it.
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -36,8 +39,18 @@ def _read(path: Path) -> str:
 
 
 def _default_of(script: Path, var: str) -> str | None:
-    m = re.search(rf'^{var}="\$\{{{var}:-([^}}]*)\}}"', _read(script), re.MULTILINE)
-    return m.group(1) if m else None
+    """Innermost fallback of `VAR="${VAR:-...}"`.
+
+    Tolerates an intermediate session-file layer --
+    `VAR="${VAR:-${SESSION_VAR:-default}}"` -- because the wrapper now prefers
+    the instance/zone `create_instance.sh` actually created over its own
+    built-in default. The built-in default is still what this returns: it is
+    the value that applies when no session record exists.
+    """
+    m = re.search(rf'^{var}="(\$\{{{var}:-.*)"$', _read(script), re.MULTILINE)
+    if not m:
+        return None
+    return m.group(1).rsplit(":-", 1)[1].rstrip("}")
 
 
 def test_wrapper_exists():
@@ -121,3 +134,116 @@ def test_no_week2_runbook_path_recommends_the_bare_generic_teardown(path):
             continue
         offenders.append(f"{path.name}:{i}: {line.strip()}")
     assert not offenders, "Week 2 path recommends bare teardown.sh:\n" + "\n".join(offenders)
+
+
+# --- the zone axis: target what was created, not what was assumed ------------
+#
+# Owning the instance NAME is not enough. A single-zone capacity stockout is
+# routine -- us-central1-a had no g2-standard-8+L4 to give on 2026-08-18 -- and
+# a session that moves to -b or -c leaves the wrapper's default zone pointing at
+# nothing: "no instance named ... nothing would be deleted", exit 0, meter still
+# running. Same money leak as SS6.1, one field over.
+
+SESSION_FILE_NAME = ".gpu_session_target"
+NL_REAL = chr(10)
+
+
+def test_create_records_the_session_target():
+    body = _read(CREATE)
+    assert SESSION_FILE_NAME in body, "create_instance.sh must record what it created"
+    assert "SESSION_INSTANCE_NAME=$INSTANCE_NAME" in body
+    assert "SESSION_ZONE=$ZONE" in body, (
+        "the zone actually created in must be recorded -- that is the whole point"
+    )
+
+
+def test_wrapper_prefers_the_recorded_target_over_its_default():
+    body = _read(WRAPPER)
+    assert SESSION_FILE_NAME in body, "the wrapper must read the session record"
+    for var, session_var in (
+        ("INSTANCE_NAME", "SESSION_INSTANCE_NAME"),
+        ("ZONE", "SESSION_ZONE"),
+    ):
+        m = re.search(rf'^{var}="(.*)"$', body, re.MULTILINE)
+        assert m, f"{var} is not resolved in the wrapper"
+        expr = m.group(1)
+        assert expr.index("${" + var + ":-") < expr.index(session_var), (
+            f"an explicit {var}= must win over the session record, not the reverse"
+        )
+
+
+def test_session_record_is_gitignored():
+    """`run_on_instance.sh bootstrap` refuses a dirty tree. If creating an
+    instance dirtied the tree, the next runbook step would fail.
+
+    Matched as a whole line, not a substring: `.gpu_session_target_TYPO`
+    contains the name but ignores nothing, and a substring check calls that
+    green. (Found by mutating this very test -- it was blind as first written.)
+    """
+    entries = {
+        line.strip()
+        for line in _read(REPO_ROOT / ".gitignore").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    assert SESSION_FILE_NAME in entries, (
+        f"{SESSION_FILE_NAME} is not an active .gitignore rule; entries={sorted(entries)}"
+    )
+
+
+def test_wrapper_clears_the_record_after_verified_deletion():
+    body = _read(WRAPPER)
+    after = body[_invocation_index(body):]
+    assert "rm -f" in after and "SESSION_FILE" in after, (
+        "a stale record would point the next teardown at an instance already gone"
+    )
+
+
+@pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash to run the wrapper")
+def test_recorded_zone_actually_wins_at_runtime(tmp_path):
+    """Behavioural rather than textual -- and still cloud-free: `gcloud` is
+    stubbed to a failing no-op, and DRY_RUN returns before anything is deleted.
+
+    The textual checks above would pass on plumbing that resolves in the wrong
+    order; this one only passes if the resolution really happens.
+    """
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    gcloud = stub / "gcloud"
+    gcloud.write_text("#!/bin/sh@exit 1@".replace("@", NL_REAL), encoding="utf-8")
+    gcloud.chmod(0o755)
+
+    session = tmp_path / SESSION_FILE_NAME
+    session.write_text(
+        "SESSION_INSTANCE_NAME=llmrouter-vllm-l4-week2@SESSION_ZONE=us-central1-c@".replace(
+            "@", NL_REAL
+        ),
+        encoding="utf-8",
+    )
+
+    env = {
+        **os.environ,
+        "PATH": f"{stub}{os.pathsep}{os.environ['PATH']}",
+        "DRY_RUN": "1",
+        "SESSION_FILE": str(session),
+    }
+    env.pop("ZONE", None)
+    env.pop("INSTANCE_NAME", None)
+
+    out = subprocess.run(
+        ["bash", str(WRAPPER)], capture_output=True, text=True, env=env, timeout=120
+    ).stdout
+    assert "us-central1-c" in out, f"the recorded zone was ignored; wrapper said:@{out}".replace(
+        "@", NL_REAL
+    )
+
+    # ...and an explicit override still beats the record.
+    out2 = subprocess.run(
+        ["bash", str(WRAPPER)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env={**env, "ZONE": "us-central1-b"},
+    ).stdout
+    assert "us-central1-b" in out2, f"explicit ZONE= lost to the record:@{out2}".replace(
+        "@", NL_REAL
+    )
