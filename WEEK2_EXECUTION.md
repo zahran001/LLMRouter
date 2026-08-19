@@ -44,10 +44,81 @@ Block C  Calibration reads            (delegable data-gen; human reads values)
          ── HARD STOP 3: [CALIBRATE] resolution ──
 Block D  Trace/replay + pre-flight    (delegable prep)
          ── HARD STOP 4: pre-GPU pre-flight (money about to burn) ──
-Block E  GPU session                  (HUMAN-RUN; agent assists)
+Block E  GPU session #1               (HUMAN-RUN) -- ran 2026-08-18
          ── HARD STOP 5: mid-session Stage A bracket / escape hatch ──
+         >>> ESCAPE HATCH TAKEN. See "The redesign arc" below. <<<
+```
+
+**Blocks 0–E completed and the first GPU session ran.** It produced **no
+defensible breach RPS**: the escape hatch at Hard Stop 5 fired, the session was
+torn down, and the experiment moved offline. Block F never ran as designed, and
+**must not** — see the warning under Block F.
+
+### The redesign arc (added 2026-08-19)
+
+```
+GPU session #1 findings          (diagnostic evidence; no breach RPS)
+         ↓
+Block R0 Preserve first-session evidence      (GPU-free)
+Block R1 Corpus histogram + candidate strata  (GPU-free)
+Block R2 p99-vs-N bootstrap, both sources     (GPU-free)
+Block R3 Joint k/L/N + evidence-ceiling report
+         ── HARD STOP R3: human locks k, L, N, N_max ── DONE 2026-08-19
+Block R3.5 Provenance closeout + the locks R3 exposed as missing
+Block R4  Freeze canonical workload  (gated on tokenizer capacity proof)
+Block R5  Matched repeat-family schedule generation
+Block R6  Exact-N open-loop schedule semantics
+Block R7  Nominal λ vs materialized vs actual-send metrics
+Block R8  Censoring-aware validity
+Block R9  Drain-separated independent-repeat orchestration
+Block R10 Repeat-level classification + bounded-UNCERTAIN fallback
+Block R11 Natural-random secondary workload
+         ── Regression + negative controls (every new control must bite) ──
+         ── HARD STOP R-PREGPU: new pre-GPU audit + human approval ──
+Block E2 GPU session #2              (HUMAN-RUN; scout tier then confirm tier)
 Block F  Offline analysis + BASELINE.md
 ```
+
+**Authority for the redesign blocks:** `WEEK2_PLAN.md` §10 (what was superseded
+and why), `docs/WEEK2_GPU_SESSION_FINDINGS.md` (what the session found), and
+`benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md` (the calibration
+the locks were read off). The precedence rule at the top of this document is
+unchanged: `WEEK2_PLAN.md` remains authoritative on *what was decided and why*,
+this document on *order and gating*.
+
+### ── HARD STOP R3 — canonical workload locks (CLEARED 2026-08-19) ──
+
+**Why this was human-gated:** `k`, `L`, `N` and `N_max` set both the workload and
+the size of the GPU spend that follows. They are judgment reads off calibration
+data, in the same class as Hard Stop 3 — the agent plots, the human reads the
+number off the plot.
+
+**Locked:** `k` = 6 strata (0/50/90/95/99/99.5/100); `L` = corpus q99 = 11,471
+chars; `N` = 4,000 post-warmup scheduled arrivals per run; `N_max` = 5,000
+(structural corpus ceiling). Plus two locks the R3 evidence showed were
+*missing* rather than merely unset: **nearest-rank p99** and **prefix caching
+disabled for the controlled headline**.
+
+### ── HARD STOP R-PREGPU — pre-GPU audit for session #2 ──
+
+**Why this is human-gated:** the same reason as Hard Stop 4, plus one more. The
+first session spent its money discovering that its own design was unsound. The
+second session must execute an experiment that is already fully specified, so
+everything discoverable offline must have been discovered before the meter
+starts.
+
+**Agent produces, then halts:** the §12 evidence package from the R4 continuation
+README — doc supersession diffs, canonical workload provenance, tokenizer
+capacity report and proposed `--max-model-len`, prefix-cache-disabled preflight
+evidence, exact-N open-loop proof, nearest-rank metric proof, censoring-state
+proof, repeat/drain proof, `N_max`/interval proof, full regression results, every
+new negative control shown red-then-green, confirmation that historical hashes
+are unchanged, and a proposed two-tier session plan with runtime and cost.
+
+**Human verifies:** every item above, plus the standing Hard Stop 4 checklist
+(quota, budget ladder, launch and teardown staged, schedules committed).
+
+**The human — not the agent — proceeds to Block E2 and stands up the instance.**
 
 ---
 
@@ -309,6 +380,21 @@ improvising on the meter.
 
 ## Block F — Offline analysis + BASELINE.md (delegable)
 
+> **⚠ Block F cannot run against the first session's artifacts (2026-08-19).**
+> Nothing below is wrong as a *procedure*, and it is what Block F will do after
+> GPU session #2. But re-reading it as "we already have the artifacts, so just
+> recompute the breach offline" would produce a number with no evidence behind
+> it. The first session's points cannot support a breach RPS: the 2-RPS
+> classification flips on one extreme prompt and flips again on the choice of
+> percentile convention; the 1.5-RPS point is prefix-cache confounded and is not
+> a clean UNDER anchor; and 10/20/30 RPS are 33–81% censored by client timeouts.
+> The breach is not recoverable by better arithmetic over that data — it needs
+> the redesigned workload and a second session. See `WEEK2_PLAN.md` §10.
+>
+> Two mechanical changes also apply when Block F does run: the percentile is
+> **nearest-rank** (§10.5), and the warmup-N read is against session #2's
+> transient, not session #1's.
+
 **Ref:** §2.6, §6.4, §8. All post-teardown, free.
 
 **Build:**
@@ -343,6 +429,8 @@ the plot, let the human read the value, don't self-assign it.*
 | 3 | C | [CALIBRATE] values read from data with provenance | Guessed constants; delegated calibration |
 | 4 | D | Pre-flight green incl. §4 gate; meter ownership | Burning money on an unvalidated loadgen |
 | 5 | E (mid) | Breach bracketed / escape-hatch decision | Mid-session improvisation on the meter |
+| R3 | R2 | `k`, `L`, `N`, `N_max` read off calibration evidence | A workload and a GPU budget chosen by the agent's own judgment |
+| R-PREGPU | R11 | Full redesign evidence package + every new control biting | Paying for a second session that rediscovers its own design flaws |
 
 **The through-line:** the agent builds the plumbing fast between stops; the stops are
 where the project's *trustworthiness* is established, and those are unskippable and

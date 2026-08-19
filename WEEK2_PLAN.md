@@ -8,6 +8,12 @@ fixed here and marked **LOCKED**; every value that needs empirical calibration
 is marked **[CALIBRATE]** with a named source; every expansion of a prior
 artifact carries a provenance note.
 
+> **⚠ Read §10 first (added 2026-08-19).** The first GPU session falsified
+> several of this document's statistical and workload assumptions. §10 records
+> every supersession with its evidence; the superseded sections carry pointers
+> and keep their original text. Nothing in §10 reopens the infrastructure or the
+> 500ms SLO — see §10.9 for the explicit list of what did *not* change.
+
 **Status of this document: every design section (§2–§7) is LOCKED and
 implemented.** See §9 for the closeout. The `[CALIBRATE]` values are tracked in
 §8; all are resolved except the per-point warmup N, which is resolved from Stage
@@ -89,7 +95,16 @@ Poisson bursts breach at a lower mean RPS than steady arrivals. This is the
 *honest* number for the thesis. Recorded here so nobody later "fixes" it by
 quietly switching the headline to steady for a friendlier figure.
 
-### 2.2 Prompt distribution (LOCKED)
+### 2.2 Prompt distribution (LOCKED — **headline SUPERSEDED 2026-08-19, see §10.1**)
+
+> **Read §10.1 before implementing this section.** The first GPU session
+> falsified the load-bearing claim below — that feeding every RPS point the same
+> seeded distribution holds the prompt-length contribution constant. It holds the
+> *population* constant and lets the *realized* tail move, which is what a
+> small-sample p99 actually reads. The headline workload is now a controlled
+> stratified canonical multiset; the natural spread described here survives as
+> the **secondary** workload. The text is kept intact because the reasoning it
+> records is why the confound was invisible.
 
 - **Fixed distribution, natural ShareGPT spread, pinned seed.** Every RPS point
   draws from the *same* seeded ShareGPT sample with its natural length spread
@@ -123,7 +138,14 @@ appear in `BASELINE.md`.
 - Stage A output determines Stage B's points; Stage B is staged (not spent)
   before it runs.
 
-### 2.4 Warmup + measurement window (LOCKED; N [CALIBRATE])
+### 2.4 Warmup + measurement window (LOCKED; N [CALIBRATE] — **headline window and sample floor SUPERSEDED 2026-08-19, see §10.2 and §10.3**)
+
+> **Read §10.2/§10.3 before implementing this section.** Two of its three parts
+> are superseded for the headline: the fixed `Y = 120s` window (replaced by an
+> exact post-warmup arrival count) and the `≥100 achieved samples` tail-validity
+> floor (replaced by the R3 evidence policy). The **time-based per-point warmup**
+> is *not* superseded and carries forward unchanged — including into the
+> redesigned repeat boundaries.
 
 - **Warmup is per-point and time-based:** discard the first **N seconds** at each
   RPS step. A sustained-RPS run has a wall-clock transient (queue filling, KV
@@ -152,7 +174,14 @@ appear in `BASELINE.md`.
   tail percentile. A point that fails (e.g. offered high but achieved collapsed
   under load) is **tail-invalid and flagged, not reported.** Ties into §2.5.
 
-### 2.5 Offered-vs-achieved validity gate (LOCKED)
+### 2.5 Offered-vs-achieved validity gate (LOCKED — **semantics SUPERSEDED 2026-08-19, see §10.4**)
+
+> **Read §10.4 before implementing this section.** The gate's *purpose* — catch
+> the driver failing to deliver its schedule — is unchanged and still correct.
+> What changed is what it compares against: measuring achieved sends against
+> `λ × window` folds finite-Poisson realization variance into a driver-fidelity
+> verdict, which is how both first-session low-RPS points came to be `flagged`
+> for a stochastic property of their own schedules.
 
 This is the Week 2 analog of Week 1's negative controls: a guard against the
 measurement instrument silently lying about its own input. Week 1 caught the mock
@@ -197,7 +226,16 @@ nothing can be claimed about the server above ~42 RPS, and if the client saturat
 single client.** This makes loadgen capability a **hard requirement**, not an
 assumption (see §3 and §4).
 
-### 2.6 Breach definition (LOCKED)
+### 2.6 Breach definition (LOCKED — **percentile definition and point validity EXTENDED 2026-08-19, see §10.5 and §10.6**)
+
+> **Read §10.5/§10.6 before implementing this section.** The metric (p99 TTFT),
+> the threshold (500ms) and the secondary line (2s) are **unchanged and remain
+> locked**. Two things this section left implicit are now explicit: *which* p99
+> (nearest-rank, because on a small near-boundary sample the interpolation
+> convention alone flips the verdict), and what happens when a point's TTFT
+> sample is materially censored by timeouts (it cannot report an ordinary p99 at
+> all). "Lowest swept RPS whose p99 ≥ 500ms" also becomes a repeat-level verdict
+> with four states rather than a single-run boolean.
 
 - **Breach metric: p99 TTFT.** TTFT (not TPOT) because first-token latency is what
   interactive users feel first and what queueing attacks first — a backed-up queue
@@ -392,7 +430,17 @@ satisfies):**
   region without the cap ever biting? If not, that is the evidence-based trigger to
   escalate to multi-process.
 
-### 3.4 Corpus sampling mechanics (LOCKED)
+### 3.4 Corpus sampling mechanics (LOCKED — **headline sampling SUPERSEDED 2026-08-19, see §10.1**)
+
+> **Read §10.1 before implementing this section.** Its "random sample, no length
+> stratification" and "with-replacement i.i.d. draws" rules are superseded **for
+> the headline workload only** and survive verbatim for the secondary
+> natural-random workload. Everything else here — the pinned committed corpus,
+> the validity-only junk filter, never drawing from live ShareGPT,
+> prompt assignment at materialization time, and the logged realized histogram —
+> is **unchanged and still binding**.
+
+
 
 - **Pinned ShareGPT subset — versioned artifact** (e.g.
   `corpus/baseline_prompts.jsonl`), committed with a provenance header: ShareGPT
@@ -711,7 +759,9 @@ Everything else is resolved with named evidence.
 | Value | Status | Source |
 |---|---|---|
 | Per-point warmup N | **10s placeholder — OPEN BY DESIGN** | Stage A transient plot (TTFT vs wall-clock, find flatten point). Resolved in Block F, post-teardown. Applying the real N is a **re-filter over the committed sidecars, never a GPU re-run**: the warmup filter is metrics-side and time-based (§2.4), so `scripts/compute_point_metrics.py --warmup-n <N>` re-derives every point |
-| ~~Measurement window Y~~ | **RESOLVED: 120s** (2026-08-18) | Stage A's lowest offered point is 2 RPS, so the window carries `2 × 120 = 240` scheduled requests — 2.4× the ≥100 achieved-sample floor, with headroom for under-delivery before a point goes tail-invalid. Full reasoning in §2.4 |
+| ~~Measurement window Y~~ | **RESOLVED: 120s** (2026-08-18) — **SUPERSEDED for the headline 2026-08-19 (§10.2)** | Stage A's lowest offered point is 2 RPS, so the window carries `2 × 120 = 240` scheduled requests — 2.4× the ≥100 achieved-sample floor, with headroom for under-delivery before a point goes tail-invalid. Full reasoning in §2.4. *Superseded because its justification rested on the ≥100 floor, which the first session falsified, and because a fixed duration is the mechanism of the prompt-tail confound. Headline basis is now `N = 4,000` exact post-warmup scheduled arrivals* |
+| **Canonical workload `k` / `L` / `N`** | **RESOLVED: k6 (0/50/90/95/99/99.5/100), L = q99 = 11,471 chars, N = 4,000** (2026-08-19) | Read off the R3 evidence package by the human at Hard Stop R3: `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md`. `N` from the ≤5% classification-flip criterion on the conservative 2-RPS bootstrap source; `L` from the measured unloaded TTFT-vs-length relation (§10.1/§10.3) |
+| **Evidence ceiling `N_max`** | **RESOLVED: 5,000** (2026-08-19) | Structural: the pinned corpus holds 5,000 prompts, so that is the largest canonical multiset with no prompt reuse. Not an escalation target (§10.3) |
 | ~~Offered-vs-achieved band~~ | **RESOLVED: ±5%** (2026-08-18) | Block C low-load tracking (`benchmarks/calibration/block_c/calibration_reads.json` → `low_load_tracking`): 0.0% / 0.0% / 0.0% / −0.67% at 0.5/1/2/5 RPS. Deliberately **not** tightened to the measured 0.67% max — the band detects material driver under-delivery, and a band with no headroom would flag healthy points near the breach. Reasoning in §2.5. Constant: `metrics/point.py: DEFAULT_BAND_PCT` |
 | ~~Concurrency cap value~~ | **RESOLVED: 3000** (2026-08-17) | Set above Block C's uncapped peak concurrency (2380 @ 300 RPS; 651 @ 100 RPS) — cannot bite below a 37.5s mean response time at Stage A's 80 RPS ceiling. Full provenance + the `ulimit -n` precondition in §3.3. Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP` |
 | ~~Loadgen capability target~~ | **RESOLVED with the cap** (2026-08-17) | Same measurement (see note below). Verified per point rather than assumed: `shed > 0` at any swept point means the cap bit and that point is cap-shaped — flagged automatically by `scripts/compute_point_metrics.py` |
@@ -739,10 +789,321 @@ except the one that is deliberately post-GPU:**
 |---|---|
 | Concurrency cap | **3000** — resolved 2026-08-17 from Block C's uncapped concurrency sweep (§3.3) |
 | Offered-vs-achieved band | **±5%** — resolved 2026-08-18 from Block C's low-load tracking (§2.5) |
-| Measurement window Y | **120s** — resolved 2026-08-18 against the ≥100-sample floor at Stage A's 2 RPS anchor (§2.4) |
+| Measurement window Y | **120s** — resolved 2026-08-18 (§2.4); **superseded for the headline 2026-08-19 by `N = 4,000` exact post-warmup scheduled arrivals** (§10.2) |
+| Canonical workload k / L / N | **k6 / q99 = 11,471 chars / 4,000** — resolved 2026-08-19 at Hard Stop R3 (§10.1, §10.3) |
+| Evidence ceiling N_max | **5,000** — structural corpus-cardinality ceiling, resolved 2026-08-19 (§10.3) |
+| Headline percentile definition | **nearest-rank** — locked 2026-08-19; interpolation convention alone flipped the near-boundary verdict (§10.5) |
+| Headline prefix-cache policy | **disabled, preflight-enforced** — locked 2026-08-19 (§10.8) |
 | Mock timing spin (Block 0, §7) | **Resolved 2026-08-16** — Windows-only fix; A/B in `benchmarks/calibration/noise_floor/`, read-up in `MOCK_TRUST_BOUNDARY.md` |
 | Loadgen scheduler spin | **Resolved 2026-08-18** — platform-specific defaults in `loadgen/scheduler.py`; A/B in `benchmarks/calibration/scheduler_spin/`, read-up in `BENCHMARKS.md` |
 | **Per-point warmup N** | **OPEN BY DESIGN** — offline from the §6.3 transient data (TTFT vs wall-clock flatten-point), resolved in Block F. Applying it is a metrics-side re-filter over the committed sidecars, never a GPU re-run (§2.4) |
 
 Nothing further to design. Execution order: §7 Linux calibration → loadgen build →
 §4 mock validations (the gate) → §6 GPU session → offline analysis → `BASELINE.md`.
+
+> *Historical note (2026-08-19).* "Nothing further to design" was true of the
+> plan as written and false of the experiment. The first GPU session ran that
+> design and falsified three of its statistical assumptions; §10 records what
+> replaced them. The sentence is kept because a plan that believed itself
+> finished, and was not, is part of this document's own provenance — the same
+> reason the stale §3–§7 preamble note above was kept rather than deleted.
+
+---
+
+## 10. Redesign supersessions — falsification-driven (2026-08-19)
+
+The first real GPU session ran on 2026-08-18. It did **not** invalidate the load
+generator, the replay model, the GPU plumbing, the open-loop architecture, or the
+500ms p99 TTFT objective — all of those worked. It falsified the **statistical
+and workload assumptions** underneath the breach experiment, and produced **no
+defensible breach RPS**.
+
+Full narrative: `docs/WEEK2_GPU_SESSION_FINDINGS.md`. Calibration evidence:
+`benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md`. Session
+artifacts, promoted as diagnostic evidence:
+`benchmarks/evidence/week2/first_session/`.
+
+**Scope rule for this section.** Every supersession below applies to the
+**controlled headline workload**. The natural-random **secondary** workload
+(§10.7) keeps the original sampling rules deliberately, because its job is to
+show that the knee survives unconstrained traffic. Where a rule is unchanged,
+this section says so rather than staying silent — an unlisted rule is still
+binding.
+
+### 10.1 — Prompt distribution and corpus sampling (supersedes §2.2, §3.4 for the headline)
+
+**Was:**
+
+```text
+natural ShareGPT random draws
+no length stratification
+with-replacement i.i.d. draws
+same seeded population distribution holds prompt cost fixed
+```
+
+**Falsified by:** a fixed 120s window makes the number of requests a function of
+λ, so each RPS point drew a different number of prompts and therefore a different
+*realized* tail. Measured across the Stage A schedules: 1.0 RPS drew ~116
+requests with **zero** prompts over 10k chars; 10 RPS drew ~1316 with
+**fourteen**. The population was constant; the empirical tail — the only part a
+p99 reads — was not. At 2 RPS, excluding essentially one extreme prompt moved p99
+from ~552.9ms to ~434.8ms, which **flips the breach verdict**.
+
+A second finding compounds it. Because every Stage A schedule shared one master
+seed, the shorter schedules are strict *prefixes* of the longer ones, and vLLM
+ran with `enable_prefix_caching=True` (a default, never a decision). Exact prompt
+replay is therefore not free: the 1.5-RPS point, driven last, served a
+14,960-char prompt in **103.9ms** that cost **523.3ms** at concurrency 1. Load
+cannot make prefill five times faster; cache state was the missing variable. See
+§10.8.
+
+**Now, for the headline:**
+
+```text
+controlled stratified canonical ShareGPT multiset
+  k = 6 strata at corpus quantiles 0/50/90/95/99/99.5/100
+  L = tail boundary at corpus q99 = 11,471 chars
+  N = 4,000 unique prompt IDs, selected WITHOUT replacement
+  membership frozen once, identical across every RPS point and every repeat
+```
+
+Allocation is **proportional to each stratum's natural population share**, so the
+canonical multiset reproduces the corpus's natural shape *deterministically*
+instead of approximately. This is controlled representative tail coverage, not
+tail inflation — and it serves §3.4's original stated intent ("measuring the
+corpus's natural mix") more faithfully than a random draw did, because the mix is
+now exact rather than sampled.
+
+`L = q99` is chosen on measured grounds, not roundness: a q99-length prompt costs
+~370ms of TTFT **with no load at all**, i.e. ~74% of the SLO, so it is where
+prompt length starts deciding the verdict. Prompt length alone explains 91% of
+unloaded TTFT variance (`benchmarks/calibration/week2_redesign/prompt_cost_analysis.json`).
+
+**Unchanged and still binding from §3.4:** pinned committed corpus, never live
+ShareGPT, validity-only junk filter, prompt assignment at schedule-materialization
+time, logged realized length histogram, independent arrival/corpus RNG streams.
+
+### 10.2 — Headline measurement basis (supersedes the `Y = 120s` window in §2.4)
+
+**Was:** `Y = 120s` fixed measurement window per point, justified by clearing the
+≥100-sample floor at Stage A's 2 RPS anchor.
+
+**Falsified by:** the justification depended on the ≥100 rule (§10.3), and the
+fixed window is the direct mechanism of the §10.1 tail confound — holding
+*duration* fixed is what makes *count* vary with λ.
+
+**Now:**
+
+```text
+N = exactly 4,000 post-warmup SCHEDULED arrivals per run
+schedule duration = the stochastic outcome of the frozen Poisson realization
+```
+
+`N` is a **schedule-generation constraint enforced offline, never a runtime stop
+condition.** Runtime loads the frozen schedule and drives every scheduled
+arrival, stopping only when issuance is exhausted. Completions, TTFT
+observations, successful-sample count, errors, censoring rate and current p99 may
+all change a point's *measurement validity*; none of them may change the
+*offered workload*. A build that stops after N completions is closed-loop and
+must fail its negative control.
+
+`N / λ` is the expected duration and must not be used as the runtime duration —
+using it would reintroduce exactly the finite-Poisson count variance that fixing
+`N` exists to remove.
+
+**Unchanged from §2.4:** warmup remains per-point and **time-based**, applied
+metrics-side by send timestamp. Warmup traffic is excluded from `N`, comes from
+the pinned corpus with recorded derived-RNG provenance, and is fully
+pre-materialized. The warmup value itself remains `[CALIBRATE]`, now resolved
+from the *second* session's transient data.
+
+`Y = 120s` remains documented for the historical first-session artifacts and may
+be used for secondary/legacy comparisons. It is no longer the headline validity
+basis.
+
+### 10.3 — Tail validity (supersedes `n >= 100` in §2.4/§8)
+
+**Was:** report a point's tail percentile once `achieved_RPS × window ≥ 100`.
+
+**Falsified by:** the rule makes a p99 *computable*; it does not make it
+*reliable* on a heavy-tailed workload. A nonparametric bootstrap over the
+first session's own 2-RPS TTFT array (n=225, the near-boundary point) measured:
+
+| candidate N | p99 median | 95% interval | classification flip rate |
+|---:|---:|---|---:|
+| 250 | 495.0ms | [366.0, 656.8] | **51.8%** |
+| 1,000 | 552.9ms | [421.7, 574.8] | 22.1% |
+| 2,500 | 552.9ms | [434.8, 574.8] | 8.0% |
+| 4,000 | 552.9ms | [436.0, 574.8] | 3.0% |
+| 7,500 | 552.9ms | [552.9, 574.8] | 0.6% |
+
+At the sample size the session actually had, the point flipped its own
+under/over verdict in **roughly half** of resamples. `n ≥ 100` cannot tell that
+apart from a measurement.
+
+**Now:**
+
+- `N = 4,000` per run — the smallest grid candidate reaching a ≤5% per-run flip
+  rate on the conservative source. At N=4,000 the empirical top 1% carries ~40
+  observations rather than ~2.
+- `N` is a **run-sizing calibration, not a repeatability proof.** The bootstrap
+  cannot invent tail mass the source never observed, and concurrent request
+  latencies are not iid, so it is a lower bound on real variability.
+- The final UNDER/OVER/UNCERTAIN verdict comes from **independent GPU repeats**
+  (new membership-identical, seed-independent runs), never from bootstrap slices
+  of one run and never from blocks of one continuous run.
+- `N_max = 5,000` is a **structural** evidence ceiling: the pinned corpus holds
+  5,000 prompts, so that is the largest canonical multiset selectable without
+  repeating a prompt — and repeating prompts is not neutral on a prefix-caching
+  server (§10.8). A ≤1% flip rate would need N≈7,500, **above the ceiling and
+  therefore unreachable with this corpus.** Interval-valued breach reporting is
+  consequently a live possible result, not a theoretical fallback.
+
+*Provenance for `[CALIBRATE]` bookkeeping:* the `Measurement window Y` and
+`≥100 samples` rows in §8 and §9 are superseded for the headline by this section.
+`N = 4,000`, `N_max = 5,000`, `k`, and `L` are new locked values, read off the R3
+evidence by the human at Hard Stop R3 — the same discipline as every other
+calibrated value in this document.
+
+### 10.4 — Offered-vs-achieved semantics (supersedes §2.5's comparison basis)
+
+**Was:** achieved sends within the window compared against offered λ; beyond ±5%
+the point is flagged and plotted at achieved (Option Y).
+
+**Falsified by:** a materialized finite-Poisson schedule does not contain exactly
+`λ × duration` arrivals, and it is not supposed to. The 2-RPS schedule
+materialized 248 arrivals over 130s and the point was flagged at −6.25%; the
+1.5-RPS point at −7.8%. Both were flagged for a stochastic property of their own
+frozen schedules, not for anything the driver did.
+
+**Now, three quantities recorded separately:**
+
+```text
+nominal_lambda_rps          workload parameter and headline x-axis
+materialized_schedule_rps   the finite Poisson realization the driver was handed
+actual_send_rps             what the driver actually issued
+```
+
+- **Driver fidelity** compares actual sends against the **materialized
+  schedule**. This is the gate; it still fails loudly.
+- **`nominal_realization_delta_pct`** — materialized vs nominal λ — is
+  descriptive stochastic metadata and **must never fail the driver**.
+- The ±5% band and per-send scheduling-lag instrumentation are **unchanged**;
+  only the denominator of the fidelity comparison changes.
+- Option Y's plot-at-achieved rule is retired for the headline: the x-axis is
+  nominal λ, which is now a well-defined workload parameter rather than a target
+  the schedule may miss.
+
+**The legacy `flagged: true` records are not rewritten.** They are correct under
+the semantics of their own time and are pinned as such.
+
+### 10.5 — Percentile definition (makes §2.6 explicit; new lock)
+
+The first session's artifacts contain **two** percentile conventions, and on the
+near-boundary point the choice alone decides the verdict. Same 225 samples:
+
+| method | p99 | verdict |
+|---|---:|---|
+| nearest-rank | 552.9ms | OVER |
+| linear (numpy default) | 524.6ms | OVER |
+| midpoint | 493.9ms | **UNDER** |
+| lower | 434.8ms | **UNDER** |
+
+**Now — locked for all redesigned measurements:**
+
+```text
+samples = sorted(valid_ttft_samples)
+rank    = ceil(0.99 * n)      # one-indexed
+p99     = samples[rank - 1]
+```
+
+Nearest-rank, from **one shared implementation** used by both the live session
+path and offline recomputation, with the method and its version persisted in
+point provenance. Library interpolation defaults must not be inherited
+implicitly. Nearest-rank is chosen because it returns an **actually observed
+latency** rather than an interpolation between two of them — at the tail, where
+the neighbouring order statistics are far apart, the interpolated value is a
+number no request ever experienced.
+
+**Historical metrics are not recomputed under this convention.** The Stage A
+records stay linear, the unloaded-floor record stays nearest-rank, and readers
+distinguish them by explicit provenance version — never by assuming.
+
+### 10.6 — Censoring-aware point validity (extends §2.6)
+
+**Falsified by:** at 10/20/30 RPS the 60s client timeout removed 33%/70%/81% of
+requests from the TTFT sample, and the survivors' p99 clustered near 60s. The
+existing validity gate blessed those points because enough *surviving* samples
+remained. A survivor-only percentile at a materially censored point is not a
+latency measurement.
+
+**Now — four point states:** `UNDER`, `OVER`, `UNCERTAIN`, `CENSORED`.
+
+```text
+TTFT censoring rate > 5%  ->  CENSORED, ordinary p99 verdict suppressed
+0 < rate <= 5%            ->  p99 eligible, tail-censoring warning persisted
+```
+
+Eligible is **not** the same as tail-valid. A point with sub-5% censoring that
+could determine the final UNDER/OVER boundary requires a recorded
+tail-sensitivity review before it may finalize the crossing; without that record
+the aggregate stays `UNCERTAIN`. Timeout/error count and rate are always
+reported. Deep-saturation points remain valid evidence of saturation and are
+never reported as ordinary latency percentiles.
+
+### 10.7 — Two workloads (new)
+
+- **Headline (controlled).** The canonical stratified multiset above. Answers:
+  at what nominal λ does p99 TTFT breach 500ms *for this documented controlled
+  workload*, with prompt-cost composition held fixed by construction.
+- **Secondary (natural-random).** Pinned corpus, natural random draws,
+  independent seeds, same server/output policy, same percentile and censoring
+  semantics, separate artifact namespace. Answers: does the same general
+  knee/degradation behaviour survive unconstrained natural traffic.
+
+They are never collapsed. Secondary points never define the headline breach RPS,
+and the secondary is not expected to reproduce the headline crossing exactly.
+
+### 10.8 — Prefix-cache policy for the controlled headline (new)
+
+**Finding:** exact prompt replay is the experimental control introduced by
+§10.1. If prefix caching recognizes those replays, the control changes the cost
+it is controlling — and it does so as a function of **run order**, making later
+points and later repeats systematically cheaper. Measured: a 14,960-char prompt
+at 523.3ms cold and 103.9ms on a warm replay of the same prompt.
+
+**Now:** prefix caching is **disabled** for the controlled headline benchmark.
+The **effective runtime configuration** is verified — not merely the CLI string —
+persisted in run/session provenance, and preflight **fails** if a controlled
+headline run finds prefix caching enabled. Week 4+ controlled routing
+comparisons use the same prefix-cache-disabled configuration so the comparison
+stays apples-to-apples.
+
+Run-order randomization, prompt permutation, and back-to-back repeats do **not**
+neutralize accumulated cache state and are not substitutes. If prefix caching is
+ever studied enabled, that is a separate declared configuration experiment, never
+mixed into the headline comparison.
+
+*Consequence for the first session's unloaded floor:* it was measured with
+caching enabled, after the same prompts had been served by the sweep, and is
+classified `CACHE_INFLUENCED_DIAGNOSTIC`
+(`benchmarks/calibration/week2_redesign/unloaded_floor_cache_audit.json`). The
+402.3ms figure is no longer citable as *the* unloaded floor. The thesis-level
+conclusion it supported is weakened rather than overturned: cache influence
+biases a floor **low**, so the true cold floor is at or above 402.3ms and may sit
+closer to the SLO. A new clean floor is collected next session with caching
+disabled.
+
+### 10.9 — What did NOT change
+
+Recorded explicitly so nothing is quietly reopened under cover of the redesign:
+p99 TTFT as headline metric; 500ms SLO; 2s secondary line; Poisson as the
+headline arrival process; steady as secondary reference; adversarial as a
+separate scenario; open-loop scheduling; absolute-time targets; fire-and-forget
+send-task spawn; per-send scheduling-lag logging; fail-fast shedding;
+concurrency cap 3000; the cap never shaping the characterized region; Linux
+scheduler spin 0ms; on-instance loopback load generation; `ulimit -n 65535`;
+pinned corpus content; frozen materialized schedule as replay source of truth;
+raw log + sidecar durability model; the raw log's six-field schema; exact
+benchmark-SHA pinning; human-owned GPU lifecycle; the mock trust boundary; and
+per-point **time-based** warmup.

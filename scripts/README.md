@@ -28,6 +28,77 @@ Operational scripts for benchmark infrastructure.
 - `compute_point_metrics.py` — recompute per-point metrics offline from the
   committed raw log + samples sidecar, at the warmup N Block F resolves.
 
+## Week 2 redesign — offline calibration (GPU-free)
+
+Blocks R0–R3 of the redesign README. Run in this order; each writes a
+machine-readable JSON beside the last, and the last one assembles them into the
+package the human reads at Hard Stop R3.
+
+- `promote_first_session_evidence.py` — **R0.** Copy the first GPU session's
+  artifacts out of gitignored `benchmarks/runs/` into tracked
+  `benchmarks/evidence/week2/first_session/`, byte-for-byte, with a SHA-256
+  manifest. Refuses to overwrite a promoted artifact whose bytes differ;
+  `--verify` re-checks a promotion made months ago.
+- `capture_legacy_fixtures.py` — **R0.6.** Pin the two R2 source points as
+  immutable fixtures: the bytes *and* what today's readers derive from them, so
+  a reader change that silently reinterprets first-session evidence fails a test
+  instead of rewriting history.
+- `analyze_corpus_tail.py` — **R1.** Corpus length quantiles, histogram, eCDF,
+  candidate `k`/`L` constructions and their tail support per candidate `N`.
+- `analyze_prompt_cost.py` — **R1 support.** The measured TTFT-vs-prompt-length
+  relation from the unloaded floor, which is what makes a tail boundary `L`
+  mean something in latency rather than only in quantiles.
+- `analyze_run_order_effects.py` — the prefix-cache finding: joins each loaded
+  point against the unloaded floor on `prompt_id` to show whether a point read a
+  warm cache. Unplanned, and it bears on whether D2+D4 are jointly workable.
+- `calibrate_p99_sample_size.py` — **R2.** Bootstrap p99 stability vs candidate
+  `N`, independently over the 1.5-RPS and 2-RPS arrays, never averaged.
+- `report_kln_candidates.py` — **R3.** Joins the above into
+  `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md`.
+- `audit_floor_cache_state.py` — **P1.** Classifies the first session's
+  unloaded floor for cache-state trustworthiness. Verdict:
+  `CACHE_INFLUENCED_DIAGNOSTIC`, so 402.3ms is no longer citable as *the*
+  unloaded floor.
+- `show_control_bites.py` — runs every redesign control against a deliberately
+  broken input first and prints the red, then the green. Hard Stop 2's rule is
+  that the reds are the proof; this makes them legible instead of implied.
+
+## Week 2 redesign — canonical workload and schedules (GPU-free)
+
+Blocks R4–R11. The order below is enforced in code, not just documented: the
+freeze refuses until the capacity proof exists, covers the same membership, and
+says PASS (R4C).
+
+`fetch_tokenizer.py` and `check_tokenizer_capacity.py` need
+`requirements-preflight.txt`, which is deliberately **not** part of
+`requirements.txt`: the GPU instance installs the latter, and these two run only
+on the dev box before the session.
+
+- `fetch_tokenizer.py` — fetch the pinned model's tokenizer and **prove** it is
+  the pinned model's. `meta-llama/Llama-3.2-3B-Instruct` is gated, but the
+  public metadata API reports the git blob id of every file in it, so an
+  ungated mirror's copy can be hash-verified against the gated repo without
+  needing access to it. `--verify-only` re-checks the cache.
+- `build_canonical_workload.py --emit-candidate` — **R4A.** Select the
+  canonical membership: k6 strata, proportional allocation, without
+  replacement, hash-keyed selection (stable across NumPy versions in a way
+  `Generator` streams are not). `--scout` builds the smaller Tier A workload
+  into its own namespace.
+- `check_tokenizer_capacity.py` — **R4B.** Renders every canonical prompt
+  through the model's own chat template and counts real tokens. Replaces the
+  old char-estimate sizing, which was only safe because the extremes were
+  unlikely to be drawn — the canonical construction guarantees them.
+- `build_canonical_workload.py --freeze` / `--verify` — **R4C.** Freeze after
+  the capacity proof passes; `--verify` re-derives the membership from the
+  recorded seed and compares byte-for-byte.
+- `generate_headline_schedules.py` — **R5/R6/R11.** The repeat family (exactly
+  `N` post-warmup arrivals per schedule, duration an outcome), the
+  natural-random secondary family (`--secondary`), and the Tier A scout family
+  (`--scout`).
+- `gpu_session/verify_prefix_cache_disabled.py` — **L6.** Runs on the instance
+  and refuses the session if a replayed long prompt comes back faster than its
+  first serving. The CLI flag is not accepted as evidence.
+
 ## `hooks/` — repo hooks
 
 `pre-commit` blocks staged changes that would publish GCP billing-account or

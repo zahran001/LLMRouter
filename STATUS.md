@@ -30,6 +30,52 @@ when the router regresses and when the eval loses its teeth
 
 ## Week 2 — in progress
 
+**The first GPU session ran on 2026-08-18 and produced diagnostic evidence, not
+a final breach RPS.** The infrastructure worked — vLLM served, the open-loop
+driver tracked its schedules with zero shed and zero errors at low load, the
+corpus-drift guard fired correctly, and artifacts were pulled and verified
+before a clean teardown. What failed was the *experimental design*: a fixed
+120s window let each RPS point realize a different prompt tail, `n ≥ 100` is far
+too weak a floor for a p99 on this workload, and a 60s client timeout censored
+every saturated point. Week 2 is therefore **not** near closeout; it is mid-
+redesign.
+
+**Do not cite any first-session number as a baseline result.** In particular:
+the 2-RPS point is not the breach RPS (its verdict flips on one extreme prompt,
+and again on the choice of percentile convention); the 1.5-RPS point is **not** a
+clean under-SLO anchor (it was driven last against a warm prefix cache and served
+a 14,960-char prompt in 104ms that cost 523ms at concurrency 1); the ~402ms
+unloaded floor is classified `CACHE_INFLUENCED_DIAGNOSTIC` and is no longer
+citable as *the* unloaded floor; and the 10/20/30-RPS p99 values near 60s are
+survivorship artifacts, valid only as evidence of severe saturation.
+
+### Where the redesign stands
+
+| Stage | State |
+|---|---|
+| R0 preserve first-session evidence | **Done** — 24 artifacts promoted with hashes to `benchmarks/evidence/week2/first_session/` |
+| R1 corpus strata / R2 p99-vs-N bootstrap / R3 joint report | **Done** — `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md` |
+| Hard Stop R3 — human locks `k`, `L`, `N`, `N_max` | **Cleared 2026-08-19** |
+| R3.5 provenance closeout + missing locks | **In progress** |
+| R4–R11 implementation, regression + controls | Not started |
+| Hard Stop R-PREGPU | Not reached |
+| GPU session #2 (human-owned) | Not scheduled |
+
+### Locks added at Hard Stop R3
+
+| Value | Locked | Why |
+|---|---|---|
+| `k` | 6 strata at corpus quantiles 0/50/90/95/99/99.5/100 | Fixes the canonical multiset's shape against the corpus |
+| `L` | corpus q99 = 11,471 chars | A q99-length prompt already costs ~370ms TTFT *unloaded* — 74% of the SLO |
+| `N` | 4,000 post-warmup scheduled arrivals per run | Smallest candidate with a ≤5% per-run classification-flip rate |
+| `N_max` | 5,000 | Structural: the pinned corpus holds 5,000 prompts, so no reuse is possible past it |
+| p99 definition | nearest-rank, one shared implementation | On the near-boundary sample the convention alone flips UNDER/OVER |
+| prefix caching | **disabled** for the controlled headline, preflight-enforced | Exact prompt replay is the control; caching changes the cost it controls, as a function of run order |
+
+`Y = 120s` and `n ≥ 100` are **historical locks, superseded for the redesigned
+headline** — see `WEEK2_PLAN.md` §10.2/§10.3. They remain documented for the
+first-session artifacts, which are still read under their original semantics.
+
 Authoritative documents, which take precedence over this summary:
 
 - **`WEEK2_PLAN.md`** — the decision record: what was decided and why, what is
@@ -45,6 +91,11 @@ Authoritative documents, which take precedence over this summary:
 - **`docs/WEEK2_REMEDIATION_REPORT.md`** — what was changed on 2026-08-18 and
   what it proved, including the Linux scheduler-spin calibration result and the
   hard-stop verdict.
+- **`docs/WEEK2_GPU_SESSION_FINDINGS.md`** — the permanent record of GPU session
+  #1: what it set out to measure, what it falsified, which conclusions are
+  trusted and which are invalid.
+- **`WEEK2_PLAN.md` §10** — every redesign supersession with its evidence, and
+  the explicit list of locks that did *not* change.
 
 Work proceeds in blocks separated by **hard stops** — blocking gates where the
 agent produces evidence and a human renders the verdict. The summary table at
@@ -66,14 +117,16 @@ the per-point warmup N**, which is open *by design*:
 |---|---|
 | Concurrency cap | **3000** (2026-08-17) |
 | Offered-vs-achieved band | **±5%** (2026-08-18) |
-| Measurement window Y | **120s** (2026-08-18) |
+| Measurement window Y | **120s** (2026-08-18) — superseded for the headline by `N = 4,000` (§10.2) |
 | Mock timing spin (Block 0) | **Resolved** — Windows-only fix (2026-08-16) |
 | Loadgen scheduler spin | **Resolved** — platform-specific defaults (2026-08-18) |
 | Per-point warmup N | **Open by design** — from Stage A's GPU transient, in Block F |
 
 The warmup N is resolved post-GPU-session from the Stage A transient plot;
 because the warmup filter is metrics-side and time-based, applying it is a
-re-filter over the committed sidecars rather than another GPU run.
+re-filter over the committed sidecars rather than another GPU run. It is now
+resolved from **session #2's** transient: session #1's is confounded by the same
+prefix-cache accumulation as its measurement points.
 
 ## Known issues
 
