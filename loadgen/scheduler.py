@@ -161,6 +161,14 @@ class OpenLoopScheduler:
         self._n_errored = 0
         self._samples: dict[int, RequestSample] = {}
 
+    @property
+    def open_streams(self) -> int:
+        """Streams currently open. The drain gate in `loadgen/repeat_runner.py`
+        polls this to decide whether the previous repeat has finished; without
+        an observable count, "wait for the drain" could only ever be a sleep.
+        """
+        return self._open_streams
+
     async def run(self) -> RunResult:
         limits = httpx.Limits(
             max_connections=None,

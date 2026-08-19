@@ -43,3 +43,9 @@ benchmarks/**/*.raw_log.jsonl
 benchmarks/**/*.samples.jsonl
 !benchmarks/evidence/**/*.raw_log.jsonl
 !benchmarks/evidence/**/*.samples.jsonl
+
+# Verified tokenizer files fetched by scripts/fetch_tokenizer.py for the R4B
+# capacity check. A 9MB build input, not evidence -- the hash proof that it is
+# the pinned model's tokenizer lives in its PROVENANCE.json, which is what
+# makes re-fetching cheap and committing it pointless.
+.tokenizer_cache/

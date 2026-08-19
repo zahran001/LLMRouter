@@ -28,16 +28,40 @@ set -euo pipefail
 
 MODEL="${MODEL:-meta-llama/Llama-3.2-3B-Instruct}"
 PORT="${PORT:-8000}"
-# Longest pinned corpus prompt is 44445 chars (corpus/baseline_prompts.provenance.json).
-# char->token estimate uses 3 chars/token (conservative -- lower than the
-# ~4 chars/token English-text rule of thumb, so this errs toward MORE
-# estimated tokens, not fewer) => ceil(44445/3) = 14815 prompt tokens.
-# Add headroom for output tokens (not yet locked -- placeholder 512) plus a
-# ~15% safety margin on the char->token heuristic itself (WEEK2_PLAN.md
-# §3.4: prompt_len is char count for now, token count is a Week 3 revisit --
-# this is a deliberately conservative stand-in, not a real tokenizer count).
-# (14815 + 512) * 1.15 ~= 17626 -> rounded up to a clean value.
+# 20000 is now backed by an EXACT tokenizer measurement over the frozen
+# canonical workload, not the char->token estimate this line used to carry
+# (benchmarks/workloads/week2_headline/tokenizer_capacity_report.json,
+# R4 README R4B):
+#
+#   max input   10,482 tokens  (prompt_id 790, 44,445 chars, chars/token 4.25)
+#   + output       512 tokens  (locked policy)
+#   + margin     1,099 tokens  (10%, floor 512)
+#   = required  12,093 tokens   <=  20000   PASS
+#
+# The old estimate assumed 3 chars/token uniformly and happened to be safe.
+# It needed replacing because the canonical construction GUARANTEES the
+# corpus's longest prompts appear at every point of every repeat -- in the
+# first session that prompt was never drawn at all.
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-20000}"
+
+# --- Prefix caching: OFF for the controlled headline (R4 README L6) ---------
+#
+# vLLM enables prefix caching by default, and the first session inherited that
+# without ever deciding it. Exact prompt replay is the experimental control
+# the redesign introduces, so a cache that recognizes those replays changes
+# the very cost being controlled -- and does it as a function of run order,
+# making later points and later repeats systematically cheaper. Measured on
+# the first session's own data: a 14,960-char prompt cost 523.3ms cold and
+# 103.9ms on a warm replay.
+#
+# 1 (default) = --no-enable-prefix-caching, the controlled headline config.
+# 0 = leave vLLM's default on. ONLY for a deliberate, declared configuration
+#     experiment -- never for a headline or Week 4+ routing comparison.
+DISABLE_PREFIX_CACHING="${DISABLE_PREFIX_CACHING:-1}"
+prefix_cache_flag=()
+if [ "$DISABLE_PREFIX_CACHING" = "1" ]; then
+  prefix_cache_flag=(--no-enable-prefix-caching)
+fi
 
 if [ ! -d ~/vllm-env ]; then
   sudo apt-get update -qq
@@ -63,8 +87,15 @@ fi
 # Echo the RESOLVED mode, not the requested one: every benchmark point in a
 # Week 2 baseline has to run the same mode, and this line is the record of
 # which one this server actually came up in.
-echo "Launching vLLM: model=$MODEL max_model_len=$MAX_MODEL_LEN port=$PORT enforce_eager=$ENFORCE_EAGER"
+echo "Launching vLLM: model=$MODEL max_model_len=$MAX_MODEL_LEN port=$PORT" \
+     "enforce_eager=$ENFORCE_EAGER disable_prefix_caching=$DISABLE_PREFIX_CACHING"
+echo
+echo "The CLI flag is NOT the evidence. Before driving any headline point, run:"
+echo "    python scripts/gpu_session/verify_prefix_cache_disabled.py"
+echo "which probes the EFFECTIVE runtime behaviour and refuses the run if caching is live."
+echo
 VLLM_USE_FLASHINFER_SAMPLER=0 ~/vllm-env/bin/vllm serve "$MODEL" \
   --port "$PORT" \
   "${eager_flag[@]}" \
+  "${prefix_cache_flag[@]}" \
   --max-model-len "$MAX_MODEL_LEN"

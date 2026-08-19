@@ -38,7 +38,12 @@ usage: remote_loadgen.sh <command> [args]
 
   setup                     apt deps + venv + pip install -r requirements.txt
   env-check                 report python/deps/ulimit/GPU/vLLM-health/commit
+  verify-cache              REFUSE the session if prefix caching is live (L6)
   run <schedule.json> <tag> drive one committed schedule against local vLLM
+                            (session #1 format; still the way to drive a
+                            single scout or secondary point)
+  headline <tag> <lambdas>  drive the frozen headline repeat family through
+                            the drain-gated runner (session #2, R9)
   list-artifacts            list what is currently under the artifact root
 EOF
 }
@@ -150,6 +155,51 @@ cmd_run() {
     "$@"
 }
 
+cmd_verify_cache() {
+  # L6: the CLI flag is not evidence. This probes the running server.
+  cd "$REPO_DIR"
+  mkdir -p "$REPO_DIR/benchmarks/runs/preflight"
+  py scripts/gpu_session/verify_prefix_cache_disabled.py \
+    --base-url "$VLLM_URL" \
+    --model "${LOADGEN_MODEL:-meta-llama/Llama-3.2-3B-Instruct}" \
+    --out "$REPO_DIR/benchmarks/runs/preflight/prefix_cache_verdict.json"
+}
+
+cmd_headline() {
+  local tag="$1"
+  shift
+  [ -n "$tag" ] || { echo "usage: remote_loadgen.sh headline <tag> <lambda> [lambda...]" >&2; exit 1; }
+  [ "$#" -gt 0 ] || { echo "FATAL: give at least one lambda point" >&2; exit 1; }
+
+  # Same fd guard as cmd_run: EMFILE would land as `errored` sends and
+  # corrupt the censoring rate rather than tripping the shed check.
+  ulimit -n "$FD_LIMIT" 2>/dev/null || true
+  local soft
+  soft="$(ulimit -Sn)"
+  if [ "$soft" -lt 4000 ]; then
+    echo "FATAL: fd soft limit is $soft, below the concurrency cap + headroom." >&2
+    exit 1
+  fi
+
+  local out_dir="$ARTIFACT_ROOT/$tag"
+  mkdir -p "$out_dir"
+
+  # Nothing about the workload is passed here: lambda selects which frozen
+  # schedules to drive, and every other parameter comes from their own
+  # provenance. The driver refuses if the prefix-cache verdict is missing or
+  # not DISABLED, and if the schedules do not share one canonical membership.
+  cd "$REPO_DIR"
+  py scripts/gpu_session/drive_headline_family.py \
+    --schedule-dir "$REPO_DIR/benchmarks/schedules/week2_redesign/headline" \
+    --lambdas "$@" \
+    --out-dir "$out_dir" \
+    --base-url "$VLLM_URL" \
+    --model "${LOADGEN_MODEL:-meta-llama/Llama-3.2-3B-Instruct}" \
+    --prefix-cache-verdict "$REPO_DIR/benchmarks/runs/preflight/prefix_cache_verdict.json" \
+    ${REPEAT_IDS:+--repeats $REPEAT_IDS} \
+    ${EXTRA_BODY:+--extra-body "$EXTRA_BODY"}
+}
+
 cmd_list_artifacts() {
   find "$ARTIFACT_ROOT" -type f \( -name '*.raw_log.jsonl' -o -name '*.samples.jsonl' -o -name '*.metrics.json' \) \
     -printf '%10s  %p\n' 2>/dev/null | sort -k2 || echo "(nothing yet under $ARTIFACT_ROOT)"
@@ -158,7 +208,9 @@ cmd_list_artifacts() {
 case "${1:-}" in
   setup)          shift; cmd_setup "$@" ;;
   env-check)      shift; cmd_env_check "$@" ;;
+  verify-cache)   shift; cmd_verify_cache "$@" ;;
   run)            shift; cmd_run "$@" ;;
+  headline)       shift; cmd_headline "$@" ;;
   list-artifacts) shift; cmd_list_artifacts "$@" ;;
   *)              usage; exit 1 ;;
 esac

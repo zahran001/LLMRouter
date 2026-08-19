@@ -37,12 +37,18 @@ usage: run_on_instance.sh <command> [args]
 
   bootstrap          clone/fetch the repo on the instance at THIS commit, then setup
   check              run the remote env-check (deps, fd limit, GPU, vLLM health)
-  run <schedule>     drive one schedule, repo-relative path
-                     (e.g. benchmarks/schedules/stage_a/poisson_rps20.schedule.json)
-  stage-a            drive all 8 committed Stage A schedules, low RPS first
+  verify-cache       REFUSE the session if prefix caching is live (L6) -- run
+                     this BEFORE any headline point
+  run <schedule>     drive one schedule, repo-relative path. The way to drive a
+                     Tier A scout or a secondary point
+                     (e.g. benchmarks/schedules/week2_redesign/scout/headline_r1_rps2.schedule.json)
+  headline <lambda>... drive the frozen headline repeat family through the
+                     drain-gated runner (session #2, R9). Repeat-major.
+  stage-a            SESSION #1 ONLY -- drives the superseded fixed-duration
+                     Stage A sweep. See the warning it prints.
   shell              open an interactive ssh session on the instance
 
-env: INSTANCE_NAME ZONE REPO_URL SESSION_TAG EXTRA_BODY LOADGEN_MODEL
+env: INSTANCE_NAME ZONE REPO_URL SESSION_TAG EXTRA_BODY LOADGEN_MODEL REPEAT_IDS
 EOF
 }
 
@@ -127,7 +133,74 @@ cmd_run() {
   ssh_cmd "${env_prefix}bash $remote_repo/scripts/gpu_session/remote_loadgen.sh run $remote_repo/$schedule $SESSION_TAG"
 }
 
+cmd_verify_cache() {
+  local home
+  home="$(remote_home)"
+  ssh_cmd "bash $home/LLMRouter/scripts/gpu_session/remote_loadgen.sh verify-cache"
+}
+
+cmd_headline() {
+  [ "$#" -gt 0 ] || {
+    echo "usage: run_on_instance.sh headline <lambda> [lambda...]" >&2
+    echo "  e.g. run_on_instance.sh headline 1.5 2 2.5" >&2
+    echo "  env: REPEAT_IDS='1 2 3' (default), SESSION_TAG (default headline)" >&2
+    exit 1
+  }
+  # Guard the same locally-checkable thing the driver guards remotely: the
+  # schedules have to be committed, or the instance's clone will not have
+  # them and the failure surfaces as a confusing "missing schedules" list.
+  local first_missing=""
+  for lam in "$@"; do
+    local probe="benchmarks/schedules/week2_redesign/headline/headline_r1_rps${lam}.schedule.json"
+    [ -f "$REPO_ROOT/$probe" ] || first_missing="$probe"
+  done
+  [ -z "$first_missing" ] || {
+    echo "FATAL: $first_missing not found locally -- generate and COMMIT the headline family" >&2
+    echo "first (scripts/generate_headline_schedules.py). The instance clones from git." >&2
+    exit 1
+  }
+
+  local home
+  home="$(remote_home)"
+  local tag="${SESSION_TAG:-headline}"
+  # REPEAT_IDS travels as an env assignment rather than an interpolated flag,
+  # keeping the --command one simple string (GPU_SESSION_NOTES.md).
+  local env_prefix=""
+  [ -n "${REPEAT_IDS:-}" ] && env_prefix="REPEAT_IDS='$REPEAT_IDS' "
+  [ -n "${EXTRA_BODY:-}" ] && env_prefix="${env_prefix}EXTRA_BODY='$EXTRA_BODY' "
+  [ -n "${LOADGEN_MODEL:-}" ] && env_prefix="${env_prefix}LOADGEN_MODEL='$LOADGEN_MODEL' "
+
+  echo "Headline family: lambdas [$*], repeats [${REPEAT_IDS:-1 2 3}], tag '$tag'."
+  echo "Repeat-major ordering, drain-gated between every point. The driver refuses to"
+  echo "start unless the prefix-cache verdict says DISABLED -- run 'verify-cache' first."
+  echo
+  ssh_cmd "${env_prefix}bash $home/LLMRouter/scripts/gpu_session/remote_loadgen.sh headline $tag $*"
+
+  echo
+  echo "Pull the artifacts BEFORE teardown:"
+  echo "    SESSION_TAG=$tag bash scripts/gpu_session/pull_artifacts.sh"
+}
+
 cmd_stage_a() {
+  # SESSION #1 ONLY. The fixed-duration Stage A design this drives was
+  # superseded on 2026-08-19 (WEEK2_PLAN.md 10.1/10.2): a fixed 120s window
+  # makes request count a function of lambda, so each point realizes a
+  # different prompt tail -- the confound that cost the first session its
+  # breach number. Kept because those schedules are still the historical
+  # workload for replaying session #1, not because it is the way to run
+  # session #2.
+  cat >&2 <<'WARN'
+WARNING: `stage-a` drives the SUPERSEDED fixed-duration Stage A sweep.
+
+  Session #2's headline curve uses the exact-N canonical family instead:
+      run_on_instance.sh verify-cache
+      run_on_instance.sh headline 1.5 2 2.5
+
+  Continue only if you are deliberately replaying session #1's workload.
+WARN
+  read -r -p "Type 'replay-session-1' to continue: " confirm
+  [ "$confirm" = "replay-session-1" ] || { echo "aborted." >&2; exit 1; }
+
   # Ascending RPS deliberately: the low anchor characterizes the unloaded
   # TTFT floor before any queueing exists (WEEK2_PLAN.md 2.6), and if the
   # session dies partway the points you kept are the cheap informative ones.
@@ -152,10 +225,12 @@ cmd_shell() {
 }
 
 case "${1:-}" in
-  bootstrap) shift; cmd_bootstrap "$@" ;;
-  check)     shift; cmd_check "$@" ;;
-  run)       shift; cmd_run "$@" ;;
-  stage-a)   shift; cmd_stage_a "$@" ;;
-  shell)     shift; cmd_shell "$@" ;;
-  *)         usage; exit 1 ;;
+  bootstrap)    shift; cmd_bootstrap "$@" ;;
+  check)        shift; cmd_check "$@" ;;
+  verify-cache) shift; cmd_verify_cache "$@" ;;
+  run)          shift; cmd_run "$@" ;;
+  headline)     shift; cmd_headline "$@" ;;
+  stage-a)      shift; cmd_stage_a "$@" ;;
+  shell)        shift; cmd_shell "$@" ;;
+  *)            usage; exit 1 ;;
 esac
