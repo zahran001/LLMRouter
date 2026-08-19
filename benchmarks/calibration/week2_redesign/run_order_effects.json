@@ -1,0 +1,1086 @@
+{
+  "what": "Run-order / prefix-cache contamination in the first GPU session.",
+  "status": "FINDING -- affects the validity of the 1.5-RPS R2 source array and the feasibility of README D2+D4 as written",
+  "generated_at": "2026-08-19T02:22:27+00:00",
+  "server_config": {
+    "enable_prefix_caching": true,
+    "enable_chunked_prefill": true,
+    "source": "session_logs/vllm.log, EngineCore config line (vLLM v0.27.1)",
+    "note": "Both are vLLM defaults and neither was set by the runbook. Prefix caching was therefore never a decision -- it was inherited."
+  },
+  "schedule_nesting": {
+    "master_seeds": [
+      20260817
+    ],
+    "all_streams_nested": true,
+    "stream_lengths": {
+      "poisson_rps1.5": 182,
+      "poisson_rps1": 116,
+      "poisson_rps10": 1316,
+      "poisson_rps2": 248,
+      "poisson_rps20": 2597,
+      "poisson_rps30": 3847,
+      "poisson_rps40": 5146,
+      "poisson_rps5": 643,
+      "poisson_rps60": 7658,
+      "poisson_rps80": 10330
+    },
+    "note": "One master seed for every point means one corpus_rng draw sequence, so a shorter schedule is a strict prefix of a longer one. That was intended as matching (WEEK2_PLAN.md 2.2) and is also what makes prefix-cache reuse track run order."
+  },
+  "method": "Join each loaded point's post-warmup requests against the unloaded floor (concurrency 1, same prompts) on prompt_id, and take loaded/unloaded TTFT per prompt. Restricted to prompts >= 4566 chars (corpus q95), where prefill cost is large enough to see.",
+  "comparisons": [
+    {
+      "tag": "poisson_rps1.5",
+      "n_joined": 166,
+      "all_prompts": {
+        "n": 166,
+        "median_ratio": 1.0734047456344342,
+        "min_ratio": 0.1984791641812578,
+        "max_ratio": 1.3887879770117018,
+        "fraction_faster_than_unloaded": 0.3313253012048193
+      },
+      "long_prompts_only": {
+        "n": 7,
+        "median_ratio": 0.45892404444211193,
+        "min_ratio": 0.1984791641812578,
+        "max_ratio": 0.7811049345693136,
+        "fraction_faster_than_unloaded": 1.0
+      },
+      "long_prompt_detail": [
+        {
+          "prompt_id": 458,
+          "char_len": 14960.0,
+          "unloaded_ttft_ms": 523.3469590002642,
+          "loaded_ttft_ms": 103.87346699917543,
+          "ratio": 0.1984791641812578
+        },
+        {
+          "prompt_id": 3255,
+          "char_len": 9446.0,
+          "unloaded_ttft_ms": 324.5304739994026,
+          "loaded_ttft_ms": 95.79289200064522,
+          "ratio": 0.2951737962235915
+        },
+        {
+          "prompt_id": 4902,
+          "char_len": 6890.0,
+          "unloaded_ttft_ms": 227.49551099968812,
+          "loaded_ttft_ms": 104.40316000040184,
+          "ratio": 0.45892404444211193
+        },
+        {
+          "prompt_id": 4739,
+          "char_len": 6718.0,
+          "unloaded_ttft_ms": 259.17072300035215,
+          "loaded_ttft_ms": 82.37842000016826,
+          "ratio": 0.31785388043253765
+        },
+        {
+          "prompt_id": 1985,
+          "char_len": 5338.0,
+          "unloaded_ttft_ms": 186.99987299987697,
+          "loaded_ttft_ms": 105.4617359995973,
+          "ratio": 0.5639668856869581
+        },
+        {
+          "prompt_id": 1903,
+          "char_len": 4992.0,
+          "unloaded_ttft_ms": 140.7931510002527,
+          "loaded_ttft_ms": 106.6263489992707,
+          "ratio": 0.7573262494784234
+        },
+        {
+          "prompt_id": 1903,
+          "char_len": 4992.0,
+          "unloaded_ttft_ms": 140.7931510002527,
+          "loaded_ttft_ms": 109.97422499985987,
+          "ratio": 0.7811049345693136
+        }
+      ],
+      "verdict": "CONTAMINATED: long prompts served FASTER under load than at concurrency 1. Load cannot reduce prefill cost, so this point read a warm prefix cache left by an earlier run. Its p99 is not a clean low-load measurement."
+    },
+    {
+      "tag": "poisson_rps2",
+      "n_joined": 225,
+      "all_prompts": {
+        "n": 225,
+        "median_ratio": 1.3307109789954699,
+        "min_ratio": 0.8807929371491642,
+        "max_ratio": 4.4685504179938995,
+        "fraction_faster_than_unloaded": 0.013333333333333334
+      },
+      "long_prompts_only": {
+        "n": 12,
+        "median_ratio": 1.1810320703276198,
+        "min_ratio": 0.8807929371491642,
+        "max_ratio": 3.297633673361777,
+        "fraction_faster_than_unloaded": 0.08333333333333333
+      },
+      "long_prompt_detail": [
+        {
+          "prompt_id": 2350,
+          "char_len": 16781.0,
+          "unloaded_ttft_ms": 506.9109189998926,
+          "loaded_ttft_ms": 574.8112599999331,
+          "ratio": 1.133949257068686
+        },
+        {
+          "prompt_id": 458,
+          "char_len": 14960.0,
+          "unloaded_ttft_ms": 523.3469590002642,
+          "loaded_ttft_ms": 552.9167889999371,
+          "ratio": 1.0565013887845254
+        },
+        {
+          "prompt_id": 863,
+          "char_len": 11327.0,
+          "unloaded_ttft_ms": 373.08492200008914,
+          "loaded_ttft_ms": 656.7720409998401,
+          "ratio": 1.7603821603910415
+        },
+        {
+          "prompt_id": 4322,
+          "char_len": 10034.0,
+          "unloaded_ttft_ms": 367.12838799940073,
+          "loaded_ttft_ms": 421.5686340003231,
+          "ratio": 1.1482866696786498
+        },
+        {
+          "prompt_id": 3255,
+          "char_len": 9446.0,
+          "unloaded_ttft_ms": 324.5304739994026,
+          "loaded_ttft_ms": 408.1871220000721,
+          "ratio": 1.257777480708402
+        },
+        {
+          "prompt_id": 737,
+          "char_len": 7430.0,
+          "unloaded_ttft_ms": 402.2692119997373,
+          "loaded_ttft_ms": 434.81387200017707,
+          "ratio": 1.080902686632804
+        },
+        {
+          "prompt_id": 4902,
+          "char_len": 6890.0,
+          "unloaded_ttft_ms": 227.49551099968812,
+          "loaded_ttft_ms": 276.1289259997284,
+          "ratio": 1.2137774709765896
+        },
+        {
+          "prompt_id": 4739,
+          "char_len": 6718.0,
+          "unloaded_ttft_ms": 259.17072300035215,
+          "loaded_ttft_ms": 287.6919700001963,
+          "ratio": 1.1100481052399016
+        },
+        {
+          "prompt_id": 520,
+          "char_len": 5951.0,
+          "unloaded_ttft_ms": 81.98618699952931,
+          "loaded_ttft_ms": 270.3604110001834,
+          "ratio": 3.297633673361777
+        },
+        {
+          "prompt_id": 1985,
+          "char_len": 5338.0,
+          "unloaded_ttft_ms": 186.99987299987697,
+          "loaded_ttft_ms": 237.64376500002982,
+          "ratio": 1.2708231358006652
+        },
+        {
+          "prompt_id": 1903,
+          "char_len": 4992.0,
+          "unloaded_ttft_ms": 140.7931510002527,
+          "loaded_ttft_ms": 230.35122999999658,
+          "ratio": 1.6360968439408188
+        },
+        {
+          "prompt_id": 1903,
+          "char_len": 4992.0,
+          "unloaded_ttft_ms": 140.7931510002527,
+          "loaded_ttft_ms": 124.00961299999835,
+          "ratio": 0.8807929371491642
+        }
+      ],
+      "verdict": "CONSISTENT: long prompts cost more under load than at concurrency 1, which is the direction load can move them."
+    }
+  ],
+  "prefix_cache_hit_rate_summary": {
+    "n_samples": 138,
+    "first_time": "18:55:19",
+    "last_time": "20:06:39",
+    "first_pct": 0.0,
+    "last_pct": 27.4,
+    "max_pct": 30.6,
+    "final_active_block": {
+      "from_time": "20:04:09",
+      "to_time": "20:06:19",
+      "from_pct": 17.4,
+      "to_pct": 27.4,
+      "peak_running": 24,
+      "note": "low peak concurrency identifies this as the last low-RPS point, driven after the sweep and after the unloaded floor"
+    }
+  },
+  "prefix_cache_hit_rate_timeline": [
+    {
+      "time": "18:55:19",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 0.0
+    },
+    {
+      "time": "18:55:29",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 0.0
+    },
+    {
+      "time": "19:15:39",
+      "running": 8,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 5.3
+    },
+    {
+      "time": "19:15:49",
+      "running": 35,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 8.9
+    },
+    {
+      "time": "19:15:59",
+      "running": 23,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 10.9
+    },
+    {
+      "time": "19:16:09",
+      "running": 27,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 11.9
+    },
+    {
+      "time": "19:16:19",
+      "running": 23,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 13.4
+    },
+    {
+      "time": "19:16:29",
+      "running": 26,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.8
+    },
+    {
+      "time": "19:16:39",
+      "running": 32,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.2
+    },
+    {
+      "time": "19:16:49",
+      "running": 26,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.9
+    },
+    {
+      "time": "19:16:59",
+      "running": 25,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 16.3
+    },
+    {
+      "time": "19:17:09",
+      "running": 25,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.1
+    },
+    {
+      "time": "19:17:19",
+      "running": 31,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.8
+    },
+    {
+      "time": "19:17:29",
+      "running": 38,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.6
+    },
+    {
+      "time": "19:17:39",
+      "running": 29,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.7
+    },
+    {
+      "time": "19:17:49",
+      "running": 8,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.7
+    },
+    {
+      "time": "19:17:59",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.7
+    },
+    {
+      "time": "19:18:09",
+      "running": 24,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 12.9
+    },
+    {
+      "time": "19:18:19",
+      "running": 60,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.3
+    },
+    {
+      "time": "19:18:29",
+      "running": 75,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.6
+    },
+    {
+      "time": "19:18:39",
+      "running": 96,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 22.7
+    },
+    {
+      "time": "19:18:49",
+      "running": 94,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 29.5
+    },
+    {
+      "time": "19:18:59",
+      "running": 115,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 30.6
+    },
+    {
+      "time": "19:19:09",
+      "running": 123,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 29.7
+    },
+    {
+      "time": "19:19:19",
+      "running": 145,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 28.3
+    },
+    {
+      "time": "19:19:29",
+      "running": 152,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 28.0
+    },
+    {
+      "time": "19:19:39",
+      "running": 153,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 27.4
+    },
+    {
+      "time": "19:19:49",
+      "running": 157,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 26.6
+    },
+    {
+      "time": "19:19:59",
+      "running": 168,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 25.5
+    },
+    {
+      "time": "19:20:09",
+      "running": 170,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 26.1
+    },
+    {
+      "time": "19:20:19",
+      "running": 144,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 25.2
+    },
+    {
+      "time": "19:20:29",
+      "running": 81,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 25.2
+    },
+    {
+      "time": "19:20:39",
+      "running": 15,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 25.2
+    },
+    {
+      "time": "19:20:49",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 25.2
+    },
+    {
+      "time": "19:20:59",
+      "running": 69,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 24.6
+    },
+    {
+      "time": "19:21:09",
+      "running": 136,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 24.5
+    },
+    {
+      "time": "19:21:19",
+      "running": 215,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 23.7
+    },
+    {
+      "time": "19:21:29",
+      "running": 255,
+      "waiting": 50,
+      "prefix_cache_hit_rate_pct": 24.7
+    },
+    {
+      "time": "19:21:39",
+      "running": 256,
+      "waiting": 116,
+      "prefix_cache_hit_rate_pct": 24.7
+    },
+    {
+      "time": "19:21:49",
+      "running": 256,
+      "waiting": 191,
+      "prefix_cache_hit_rate_pct": 24.6
+    },
+    {
+      "time": "19:21:59",
+      "running": 256,
+      "waiting": 237,
+      "prefix_cache_hit_rate_pct": 24.1
+    },
+    {
+      "time": "19:22:09",
+      "running": 237,
+      "waiting": 329,
+      "prefix_cache_hit_rate_pct": 24.3
+    },
+    {
+      "time": "19:22:19",
+      "running": 256,
+      "waiting": 360,
+      "prefix_cache_hit_rate_pct": 23.5
+    },
+    {
+      "time": "19:22:29",
+      "running": 254,
+      "waiting": 435,
+      "prefix_cache_hit_rate_pct": 19.9
+    },
+    {
+      "time": "19:22:39",
+      "running": 255,
+      "waiting": 473,
+      "prefix_cache_hit_rate_pct": 16.3
+    },
+    {
+      "time": "19:22:49",
+      "running": 256,
+      "waiting": 531,
+      "prefix_cache_hit_rate_pct": 15.9
+    },
+    {
+      "time": "19:22:59",
+      "running": 255,
+      "waiting": 606,
+      "prefix_cache_hit_rate_pct": 15.2
+    },
+    {
+      "time": "19:23:09",
+      "running": 254,
+      "waiting": 552,
+      "prefix_cache_hit_rate_pct": 15.3
+    },
+    {
+      "time": "19:23:19",
+      "running": 255,
+      "waiting": 454,
+      "prefix_cache_hit_rate_pct": 14.7
+    },
+    {
+      "time": "19:23:29",
+      "running": 252,
+      "waiting": 338,
+      "prefix_cache_hit_rate_pct": 14.6
+    },
+    {
+      "time": "19:23:39",
+      "running": 255,
+      "waiting": 233,
+      "prefix_cache_hit_rate_pct": 15.1
+    },
+    {
+      "time": "19:23:49",
+      "running": 255,
+      "waiting": 116,
+      "prefix_cache_hit_rate_pct": 15.0
+    },
+    {
+      "time": "19:23:59",
+      "running": 256,
+      "waiting": 21,
+      "prefix_cache_hit_rate_pct": 14.3
+    },
+    {
+      "time": "19:24:09",
+      "running": 190,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.6
+    },
+    {
+      "time": "19:24:19",
+      "running": 134,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.6
+    },
+    {
+      "time": "19:24:29",
+      "running": 67,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.6
+    },
+    {
+      "time": "19:24:39",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.6
+    },
+    {
+      "time": "19:24:49",
+      "running": 73,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.0
+    },
+    {
+      "time": "19:24:59",
+      "running": 247,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.4
+    },
+    {
+      "time": "19:25:09",
+      "running": 256,
+      "waiting": 168,
+      "prefix_cache_hit_rate_pct": 15.5
+    },
+    {
+      "time": "19:25:19",
+      "running": 256,
+      "waiting": 346,
+      "prefix_cache_hit_rate_pct": 15.3
+    },
+    {
+      "time": "19:25:29",
+      "running": 232,
+      "waiting": 535,
+      "prefix_cache_hit_rate_pct": 15.4
+    },
+    {
+      "time": "19:25:39",
+      "running": 207,
+      "waiting": 761,
+      "prefix_cache_hit_rate_pct": 15.4
+    },
+    {
+      "time": "19:25:49",
+      "running": 255,
+      "waiting": 863,
+      "prefix_cache_hit_rate_pct": 14.9
+    },
+    {
+      "time": "19:25:59",
+      "running": 256,
+      "waiting": 1016,
+      "prefix_cache_hit_rate_pct": 16.6
+    },
+    {
+      "time": "19:26:09",
+      "running": 253,
+      "waiting": 1136,
+      "prefix_cache_hit_rate_pct": 16.0
+    },
+    {
+      "time": "19:26:19",
+      "running": 245,
+      "waiting": 1215,
+      "prefix_cache_hit_rate_pct": 15.2
+    },
+    {
+      "time": "19:26:29",
+      "running": 254,
+      "waiting": 1200,
+      "prefix_cache_hit_rate_pct": 15.4
+    },
+    {
+      "time": "19:26:39",
+      "running": 255,
+      "waiting": 1177,
+      "prefix_cache_hit_rate_pct": 16.0
+    },
+    {
+      "time": "19:26:49",
+      "running": 251,
+      "waiting": 1167,
+      "prefix_cache_hit_rate_pct": 14.9
+    },
+    {
+      "time": "19:26:59",
+      "running": 251,
+      "waiting": 1094,
+      "prefix_cache_hit_rate_pct": 13.6
+    },
+    {
+      "time": "19:27:09",
+      "running": 248,
+      "waiting": 914,
+      "prefix_cache_hit_rate_pct": 12.8
+    },
+    {
+      "time": "19:27:19",
+      "running": 256,
+      "waiting": 704,
+      "prefix_cache_hit_rate_pct": 12.9
+    },
+    {
+      "time": "19:27:29",
+      "running": 252,
+      "waiting": 518,
+      "prefix_cache_hit_rate_pct": 12.1
+    },
+    {
+      "time": "19:27:39",
+      "running": 254,
+      "waiting": 329,
+      "prefix_cache_hit_rate_pct": 10.9
+    },
+    {
+      "time": "19:27:49",
+      "running": 251,
+      "waiting": 118,
+      "prefix_cache_hit_rate_pct": 11.2
+    },
+    {
+      "time": "19:27:59",
+      "running": 206,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 11.6
+    },
+    {
+      "time": "19:28:09",
+      "running": 107,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 11.6
+    },
+    {
+      "time": "19:28:19",
+      "running": 47,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 11.6
+    },
+    {
+      "time": "19:28:29",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 11.6
+    },
+    {
+      "time": "19:28:39",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 11.6
+    },
+    {
+      "time": "19:28:59",
+      "running": 216,
+      "waiting": 30,
+      "prefix_cache_hit_rate_pct": 11.8
+    },
+    {
+      "time": "19:29:09",
+      "running": 256,
+      "waiting": 273,
+      "prefix_cache_hit_rate_pct": 11.5
+    },
+    {
+      "time": "19:29:19",
+      "running": 255,
+      "waiting": 533,
+      "prefix_cache_hit_rate_pct": 11.7
+    },
+    {
+      "time": "19:29:29",
+      "running": 256,
+      "waiting": 842,
+      "prefix_cache_hit_rate_pct": 11.9
+    },
+    {
+      "time": "19:29:39",
+      "running": 209,
+      "waiting": 1171,
+      "prefix_cache_hit_rate_pct": 11.9
+    },
+    {
+      "time": "19:29:49",
+      "running": 205,
+      "waiting": 1423,
+      "prefix_cache_hit_rate_pct": 12.0
+    },
+    {
+      "time": "19:29:59",
+      "running": 250,
+      "waiting": 1615,
+      "prefix_cache_hit_rate_pct": 12.4
+    },
+    {
+      "time": "19:30:09",
+      "running": 237,
+      "waiting": 1759,
+      "prefix_cache_hit_rate_pct": 13.1
+    },
+    {
+      "time": "19:30:19",
+      "running": 251,
+      "waiting": 1808,
+      "prefix_cache_hit_rate_pct": 13.7
+    },
+    {
+      "time": "19:30:29",
+      "running": 245,
+      "waiting": 1769,
+      "prefix_cache_hit_rate_pct": 15.5
+    },
+    {
+      "time": "19:30:39",
+      "running": 232,
+      "waiting": 1762,
+      "prefix_cache_hit_rate_pct": 14.8
+    },
+    {
+      "time": "19:30:49",
+      "running": 256,
+      "waiting": 1769,
+      "prefix_cache_hit_rate_pct": 15.0
+    },
+    {
+      "time": "19:30:59",
+      "running": 255,
+      "waiting": 1745,
+      "prefix_cache_hit_rate_pct": 14.8
+    },
+    {
+      "time": "19:31:09",
+      "running": 254,
+      "waiting": 1508,
+      "prefix_cache_hit_rate_pct": 14.9
+    },
+    {
+      "time": "19:31:19",
+      "running": 247,
+      "waiting": 1181,
+      "prefix_cache_hit_rate_pct": 14.7
+    },
+    {
+      "time": "19:31:29",
+      "running": 248,
+      "waiting": 861,
+      "prefix_cache_hit_rate_pct": 14.8
+    },
+    {
+      "time": "19:31:39",
+      "running": 242,
+      "waiting": 582,
+      "prefix_cache_hit_rate_pct": 14.5
+    },
+    {
+      "time": "19:31:49",
+      "running": 239,
+      "waiting": 293,
+      "prefix_cache_hit_rate_pct": 14.3
+    },
+    {
+      "time": "19:31:59",
+      "running": 255,
+      "waiting": 22,
+      "prefix_cache_hit_rate_pct": 14.4
+    },
+    {
+      "time": "19:32:09",
+      "running": 160,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.3
+    },
+    {
+      "time": "19:32:19",
+      "running": 61,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.3
+    },
+    {
+      "time": "19:32:29",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.3
+    },
+    {
+      "time": "19:32:39",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 14.3
+    },
+    {
+      "time": "19:32:49",
+      "running": 256,
+      "waiting": 125,
+      "prefix_cache_hit_rate_pct": 15.2
+    },
+    {
+      "time": "19:32:59",
+      "running": 256,
+      "waiting": 483,
+      "prefix_cache_hit_rate_pct": 15.2
+    },
+    {
+      "time": "19:33:09",
+      "running": 256,
+      "waiting": 896,
+      "prefix_cache_hit_rate_pct": 15.0
+    },
+    {
+      "time": "19:33:19",
+      "running": 244,
+      "waiting": 1280,
+      "prefix_cache_hit_rate_pct": 15.0
+    },
+    {
+      "time": "19:33:29",
+      "running": 210,
+      "waiting": 1676,
+      "prefix_cache_hit_rate_pct": 15.2
+    },
+    {
+      "time": "19:33:39",
+      "running": 182,
+      "waiting": 2040,
+      "prefix_cache_hit_rate_pct": 15.2
+    },
+    {
+      "time": "19:33:49",
+      "running": 254,
+      "waiting": 2328,
+      "prefix_cache_hit_rate_pct": 15.7
+    },
+    {
+      "time": "19:33:59",
+      "running": 226,
+      "waiting": 2397,
+      "prefix_cache_hit_rate_pct": 15.5
+    },
+    {
+      "time": "19:34:09",
+      "running": 207,
+      "waiting": 2313,
+      "prefix_cache_hit_rate_pct": 16.7
+    },
+    {
+      "time": "19:34:19",
+      "running": 200,
+      "waiting": 2311,
+      "prefix_cache_hit_rate_pct": 15.1
+    },
+    {
+      "time": "19:34:29",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.7
+    },
+    {
+      "time": "19:34:39",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.7
+    },
+    {
+      "time": "19:50:59",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.7
+    },
+    {
+      "time": "19:51:09",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.7
+    },
+    {
+      "time": "19:51:19",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 15.8
+    },
+    {
+      "time": "19:51:29",
+      "running": 1,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 16.4
+    },
+    {
+      "time": "19:51:39",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 16.1
+    },
+    {
+      "time": "19:51:49",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 16.1
+    },
+    {
+      "time": "20:04:09",
+      "running": 15,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 17.4
+    },
+    {
+      "time": "20:04:19",
+      "running": 15,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 17.7
+    },
+    {
+      "time": "20:04:29",
+      "running": 15,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 19.2
+    },
+    {
+      "time": "20:04:39",
+      "running": 10,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 19.5
+    },
+    {
+      "time": "20:04:49",
+      "running": 24,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 20.4
+    },
+    {
+      "time": "20:04:59",
+      "running": 17,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 21.3
+    },
+    {
+      "time": "20:05:09",
+      "running": 15,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 21.1
+    },
+    {
+      "time": "20:05:19",
+      "running": 16,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 21.9
+    },
+    {
+      "time": "20:05:29",
+      "running": 18,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 22.8
+    },
+    {
+      "time": "20:05:39",
+      "running": 21,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 23.5
+    },
+    {
+      "time": "20:05:49",
+      "running": 17,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 25.2
+    },
+    {
+      "time": "20:05:59",
+      "running": 17,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 26.3
+    },
+    {
+      "time": "20:06:09",
+      "running": 12,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 27.3
+    },
+    {
+      "time": "20:06:19",
+      "running": 7,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 27.4
+    },
+    {
+      "time": "20:06:29",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 27.4
+    },
+    {
+      "time": "20:06:39",
+      "running": 0,
+      "waiting": 0,
+      "prefix_cache_hit_rate_pct": 27.4
+    }
+  ],
+  "implications": [
+    "The 1.5-RPS point's p99 of 113.6ms is a warm-cache artifact of being driven last, not evidence that 1.5 RPS is comfortably under the SLO. The handoff's 'clearly under' read for that point does not survive this join.",
+    "README D2 fixes one canonical prompt multiset across every RPS point and every repeat; D4 forbids restarting vLLM between repeats. Together they guarantee that every point and repeat after the first replays prompts the server has already cached -- a drift aligned with run order, which is exactly the class of confound the redesign exists to remove.",
+    "Prefix cache hit rate is currently not recorded per point. Whatever policy is chosen, it should become a recorded per-point covariate so a contaminated point is visible in its own artifact rather than reconstructed from a server log."
+  ],
+  "options_for_the_human": [
+    {
+      "option": "A -- disable prefix caching for headline runs",
+      "effect": "Removes the confound at the source; every request pays full prefill.",
+      "cost": "Changes the served configuration from the first session's, and moves the measured baseline away from how vLLM is normally deployed. The 500ms SLO and the breach location would both shift."
+    },
+    {
+      "option": "B -- keep prefix caching, randomize point order across repeats",
+      "effect": "Cache advantage no longer aligns with lambda, so it becomes noise across repeats instead of a monotone trend along the x-axis.",
+      "cost": "Needs more repeats to average out, and does not remove the advantage within a repeat."
+    },
+    {
+      "option": "C -- keep prefix caching, record hit rate per point and gate on it",
+      "effect": "Contamination becomes measurable and a point whose hit rate differs materially from its neighbours can be flagged or re-driven.",
+      "cost": "Needs a hit-rate scrape from /metrics per point, and a threshold that is itself a calibration."
+    },
+    {
+      "option": "D -- drain-and-flush between points/repeats",
+      "effect": "Restores a comparable cache state per point without restarting vLLM.",
+      "cost": "Requires a supported cache-reset path; D4's 'no restart' rule exists to avoid re-paying CUDA-graph/init variance, and a flush must not reintroduce it."
+    }
+  ],
+  "caveats": [
+    "The ratio uses the unloaded floor as the reference, and the floor itself ran after the main sweep with a ~16% hit rate. It is therefore not a fully cold reference; if anything that makes the 1.5-RPS contamination an UNDERSTATEMENT.",
+    "Hit rate is reported engine-wide, not per request, so a point's rate mixes its own requests with whatever preceded them.",
+    "No absolute timestamps exist in the raw logs; run ordering is inferred from the vLLM log timeline plus each point's schedule duration."
+  ]
+}
