@@ -20,12 +20,27 @@ set -u
 added=$(git diff --cached --unified=0 --no-color | grep '^+' | grep -v '^+++' || true)
 [ -z "$added" ] && exit 0
 
+# Same text with long hex tokens masked out. Content-addressed evidence is now
+# routinely committed -- MANIFEST.json carries a SHA-256 per promoted artifact,
+# and the workload/schedule provenance carries corpus and membership digests --
+# and a 64-char hex string contains a run of 12+ decimal digits often enough to
+# matter (roughly one in six). Those runs are not project numbers, and without
+# this every evidence commit would need --no-verify, which would skip the
+# billing-account checks too: strictly worse than masking. Same reasoning that
+# already narrowed the pattern for the calibration artifacts' timing floats.
+#
+# Masked ONLY for the digit-run rule below. The billing-account and
+# projects/<number> rules still see the raw text, because those patterns cannot
+# be produced by a hash.
+added_no_hashes=$(printf '%s\n' "$added" | sed -E 's/[0-9a-f]{32,}/<HASH>/g')
+
 status=0
 
 flag() {
   pattern="$1"
   label="$2"
-  hits=$(printf '%s\n' "$added" | grep -nE "$pattern" || true)
+  haystack="${3:-$added}"
+  hits=$(printf '%s\n' "$haystack" | grep -nE "$pattern" || true)
   if [ -n "$hits" ]; then
     if [ "$status" -eq 0 ]; then
       echo "pre-commit: refusing to commit -- staged changes contain infrastructure identifiers." >&2
@@ -58,7 +73,7 @@ flag 'billing-account=[A-Za-z0-9][A-Za-z0-9-]*' '--billing-account= flag'
 # --no-verify, which would skip the billing-account checks too -- a strictly
 # worse outcome than narrowing the pattern. A real project number is still
 # caught at line start, after a space, or after '/' (projects/<number>).
-flag '(^|[^0-9.])[0-9]{12,}([^0-9]|$)' 'project number (12+ digit literal)'
+flag '(^|[^0-9.])[0-9]{12,}([^0-9]|$)' 'project number (12+ digit literal)' "$added_no_hashes"
 flag 'projects/[0-9]{8,}' 'projects/<number> resource'
 
 # Auto-generated GCP project IDs, e.g. project-1234abcd-....
