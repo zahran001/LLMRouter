@@ -19,3 +19,30 @@ corpus/*.jsonl -text
 # into benchmarks/evidence/. These are the durable record BASELINE.md cites,
 # and they are read back by scripts/compute_point_metrics.py offline.
 benchmarks/**/*.jsonl -text
+
+# Promoted evidence -- EVERY file, not a list of extensions. MANIFEST.json
+# records a SHA-256 for each promoted artifact, so any file whose bytes git is
+# willing to rewrite on checkout breaks its own manifest entry. A hash recorded
+# on Windows against CRLF bytes and re-checked on Linux against LF bytes is the
+# corpus-drift bug wearing a different extension.
+#
+# It was written per-extension first (*.json, *.jsonl) and that missed the
+# session's .log files, which then failed their manifest check in a fresh
+# checkout. The lesson is the rule: in a tree where the bytes ARE the contract,
+# the default has to be "never translate", not "never translate the extensions
+# I remembered".
+#
+# Scoped to benchmarks/evidence/ deliberately: it holds only newly promoted
+# files, so no already-committed blob is renormalized.
+benchmarks/evidence/** -text
+
+# Week 2 redesign artifact formats (R4 README P2). New paths only: the
+# historical schedules under benchmarks/schedules/stage_a/ are deliberately
+# NOT listed, because adding a rule there would mark every committed blob as
+# modified and invite a renormalizing rewrite of evidence that must stay
+# byte-identical. Protection goes on the formats that do not exist yet.
+#
+# `metrics.artifacts.write_json_artifact` is the other half: it stops Python
+# translating newlines on write. This stops git translating them on checkout.
+benchmarks/workloads/**/*.json -text
+benchmarks/schedules/week2_redesign/**/*.json -text

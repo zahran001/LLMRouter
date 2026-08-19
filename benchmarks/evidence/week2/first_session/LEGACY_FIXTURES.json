@@ -1,0 +1,182 @@
+{
+  "what": "Immutable legacy fixtures from the first Week 2 GPU session (2026-08-18).",
+  "why": "The redesign changes schedule/metrics formats and readers. These fixtures pin both the bytes and today's interpretation of them, so a reader change that silently reinterprets first-session evidence fails a test instead of rewriting history.",
+  "classification": "diagnostic / failed-experiment evidence -- NOT baseline evidence",
+  "captured_at": "2026-08-19T02:00:59+00:00",
+  "hash_algorithm": "sha256",
+  "note_on_two_hashes": "sha256_worktree hashes the bytes on this disk; sha256_committed_blob hashes what git stores. They differ for any tracked text file that core.autocrlf rewrote on checkout -- the schedules are checked out CRLF on Windows while their blobs are LF. Regression tests must compare like with like.",
+  "points": [
+    {
+      "tag": "poisson_rps1.5",
+      "nominal_rps": 1.5,
+      "artifacts": {
+        "schedule": {
+          "kind": "frozen schedule (workload input)",
+          "path": "benchmarks/schedules/stage_a/poisson_rps1.5.schedule.json",
+          "bytes": 17651,
+          "sha256_worktree": "dde40c10ae511d816db1376afbbc9fc894b298154443415cdc81bd82453361cb",
+          "sha256_committed_blob": "6ffd15245d945180ed9b47cd970c8b443eef4878aafeaa2ffee95291bec79a74",
+          "worktree_matches_blob": false
+        },
+        "raw_log": {
+          "kind": "raw 6-field log (run record)",
+          "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps1.5.raw_log.jsonl",
+          "bytes": 25548,
+          "sha256_worktree": "36db733683ca0b01cc3b1968a0455adfda92ac69a2f79ff3ef9880b0fbef3026",
+          "sha256_committed_blob": null,
+          "worktree_matches_blob": null
+        },
+        "samples": {
+          "kind": "TTFT/TPOT sidecar (breach metric source)",
+          "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps1.5.samples.jsonl",
+          "bytes": 1345667,
+          "sha256_worktree": "e1f231f667af45a636fc63ab9677cfd02d4864e55b82cd9b9461b8e90802101e",
+          "sha256_committed_blob": null,
+          "worktree_matches_blob": null
+        },
+        "metrics": {
+          "kind": "per-point metrics record (session-time)",
+          "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps1.5.metrics.json",
+          "bytes": 3370,
+          "sha256_worktree": "4b3d72230e88893076685094b979d08df68f4adc88375751963d465eba576ccb",
+          "sha256_committed_blob": null,
+          "worktree_matches_blob": null
+        }
+      },
+      "format_versions": {
+        "rng_scheme_version": "loadgen-rng-v1",
+        "schedule_scheme_version": "loadgen-schedule-v1",
+        "raw_log_schema": "6-field: request_id, send_time, close_time, prompt_id, prompt_len, status (WEEK2_PLAN.md 3.1)",
+        "samples_schema": "request_id, send_time, ttft_ms, tpot_samples_ms, content_chunk_count, error (WEEK2_PLAN.md 3.1)",
+        "point_record_version": "legacy-unversioned"
+      },
+      "corpus_contract": {
+        "corpus_sha256": "f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630",
+        "corpus_size": 5000
+      },
+      "historical_read": {
+        "reader": "metrics.point.point_metrics via loadgen.log.read_log/read_samples",
+        "warmup_n_s": 10.0,
+        "warmup_n_is_placeholder": true,
+        "percentile_method": "numpy linear interpolation (metrics.compute.percentile)",
+        "exact": {
+          "n_scheduled": 182,
+          "n_issued_total": 182,
+          "n_issued_window": 166,
+          "n_shed_total": 0,
+          "n_errored_total": 0,
+          "n_samples_window": 166,
+          "n_ttft_samples": 166,
+          "n_tpot_samples": 61653,
+          "achieved_rps": 1.3833333333333333,
+          "divergence_pct": -7.7777777777777795,
+          "flagged": true,
+          "plot_rps": 1.3833333333333333,
+          "plot_rps_basis": "achieved",
+          "tail_valid": true,
+          "ttft_p50_ms": 92.58185200042135,
+          "ttft_p95_ms": 108.11390599974402,
+          "ttft_p99_ms": 113.62618764987928,
+          "ttft_mean_ms": 92.33010911444273,
+          "tpot_p50_ms": 32.596724000541144,
+          "tpot_p95_ms": 36.04364559996611,
+          "tpot_p99_ms": 37.26172119975672,
+          "breach_500ms": false,
+          "severe_2s": false
+        },
+        "approx": {
+          "tpot_mean_ms": {
+            "value": 32.35023746596267,
+            "rel_tol": 1e-09
+          }
+        }
+      }
+    },
+    {
+      "tag": "poisson_rps2",
+      "nominal_rps": 2.0,
+      "artifacts": {
+        "schedule": {
+          "kind": "frozen schedule (workload input)",
+          "path": "benchmarks/schedules/stage_a/poisson_rps2.schedule.json",
+          "bytes": 23333,
+          "sha256_worktree": "7b457a853d951f701c0a6b534882fae022ca952fd67cc54fae0fa55d1703ac28",
+          "sha256_committed_blob": "26eac0fbdbfdafa70d968f88d7516e8deffdf3ffb677ece260cb7a38b7ade2fe",
+          "worktree_matches_blob": false
+        },
+        "raw_log": {
+          "kind": "raw 6-field log (run record)",
+          "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps2.raw_log.jsonl",
+          "bytes": 34810,
+          "sha256_worktree": "f5ce23706012b2e5c20fda9aeaacf95b3a4fb9b1492ff572faf031810dfbadb6",
+          "sha256_committed_blob": null,
+          "worktree_matches_blob": null
+        },
+        "samples": {
+          "kind": "TTFT/TPOT sidecar (breach metric source)",
+          "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps2.samples.jsonl",
+          "bytes": 1862094,
+          "sha256_worktree": "46c59091df3f5cce48d59d514ab9f2f0717218962c71efdd0558eaac9ecf4c96",
+          "sha256_committed_blob": null,
+          "worktree_matches_blob": null
+        },
+        "metrics": {
+          "kind": "per-point metrics record (session-time)",
+          "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps2.metrics.json",
+          "bytes": 3322,
+          "sha256_worktree": "76a8d98fa064690eb816e8c9c4146c998de1800da9602cf178814a0edc2ed94c",
+          "sha256_committed_blob": null,
+          "worktree_matches_blob": null
+        }
+      },
+      "format_versions": {
+        "rng_scheme_version": "loadgen-rng-v1",
+        "schedule_scheme_version": "loadgen-schedule-v1",
+        "raw_log_schema": "6-field: request_id, send_time, close_time, prompt_id, prompt_len, status (WEEK2_PLAN.md 3.1)",
+        "samples_schema": "request_id, send_time, ttft_ms, tpot_samples_ms, content_chunk_count, error (WEEK2_PLAN.md 3.1)",
+        "point_record_version": "legacy-unversioned"
+      },
+      "corpus_contract": {
+        "corpus_sha256": "f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630",
+        "corpus_size": 5000
+      },
+      "historical_read": {
+        "reader": "metrics.point.point_metrics via loadgen.log.read_log/read_samples",
+        "warmup_n_s": 10.0,
+        "warmup_n_is_placeholder": true,
+        "percentile_method": "numpy linear interpolation (metrics.compute.percentile)",
+        "exact": {
+          "n_scheduled": 248,
+          "n_issued_total": 248,
+          "n_issued_window": 225,
+          "n_shed_total": 0,
+          "n_errored_total": 0,
+          "n_samples_window": 225,
+          "n_ttft_samples": 225,
+          "n_tpot_samples": 86329,
+          "achieved_rps": 1.875,
+          "divergence_pct": -6.25,
+          "flagged": true,
+          "plot_rps": 1.875,
+          "plot_rps_basis": "achieved",
+          "tail_valid": true,
+          "ttft_p50_ms": 115.44913099987753,
+          "ttft_p95_ms": 283.22484199998127,
+          "ttft_p99_ms": 524.5720889199937,
+          "ttft_mean_ms": 135.3888487022151,
+          "tpot_p50_ms": 36.973666999983834,
+          "tpot_p95_ms": 42.79551719982919,
+          "tpot_p99_ms": 73.4802616001798,
+          "breach_500ms": true,
+          "severe_2s": false
+        },
+        "approx": {
+          "tpot_mean_ms": {
+            "value": 38.459398318085434,
+            "rel_tol": 1e-09
+          }
+        }
+      }
+    }
+  ]
+}

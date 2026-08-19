@@ -23,12 +23,22 @@ from pathlib import Path
 
 from loadgen.corpus import Corpus, draw_prompt_id, draw_prompt_id_long_context
 from loadgen.rng import RNG_SCHEME_VERSION, derive_streams
+from metrics.artifacts import write_json_artifact
 
 # Bump on any change to how a schedule's entries are generated (arrival math,
 # corpus draw function, truncation rule) -- distinct from RNG_SCHEME_VERSION,
 # which covers only the seed -> stream derivation. Both are recorded so a
 # stale archived schedule can be told apart from a current one.
 SCHEDULE_SCHEME_VERSION = "loadgen-schedule-v1"
+
+# Every format this reader accepts. v1 is the first session's fixed-duration
+# schedule; v2 is the redesigned exact-N headline family
+# (`loadgen/headline_schedule.py`). Listed here rather than imported to keep
+# the dependency pointing one way -- headline_schedule imports this module.
+KNOWN_SCHEDULE_SCHEME_VERSIONS = frozenset({
+    SCHEDULE_SCHEME_VERSION,
+    "headline-schedule-v2",
+})
 
 
 @dataclass(frozen=True)
@@ -48,14 +58,38 @@ class Schedule:
             "entries": [asdict(e) for e in self.entries],
         }
 
-    def save(self, path: Path | str) -> None:
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.to_dict(), indent=2))
+    def save(self, path: Path | str) -> str:
+        """Write the frozen schedule byte-stably; returns its sha256.
+
+        Byte-stably because `Path.write_text` translates LF to CRLF on
+        Windows, so the same schedule written on the dev box and on the GPU
+        instance would differ in every line (R4 README P2). The serialized
+        form is unchanged -- re-serialising a committed Stage A schedule
+        reproduces its blob byte-for-byte -- so this fixes the writer without
+        touching any historical artifact.
+        """
+        return write_json_artifact(path, self.to_dict())
 
     @classmethod
     def load(cls, path: Path | str) -> "Schedule":
+        """Read a frozen schedule of any KNOWN format version.
+
+        The version check exists because the redesign added a second format
+        (`headline-schedule-v2`, exact-N with a warmup boundary) alongside the
+        first session's `loadgen-schedule-v1`. Both are legitimate and both
+        must keep parsing under their own contract -- but an *unknown* version
+        must fail loudly rather than being read with whatever semantics this
+        code happens to implement today. Silent coercion is how a frozen
+        workload stops meaning what its provenance says (R4 README R5).
+        """
         data = json.loads(Path(path).read_text(encoding="utf-8"))
+        version = data.get("provenance", {}).get("schedule_scheme_version")
+        if version not in KNOWN_SCHEDULE_SCHEME_VERSIONS:
+            raise ValueError(
+                f"{path}: unknown schedule_scheme_version {version!r}. Known versions are "
+                f"{sorted(KNOWN_SCHEDULE_SCHEME_VERSIONS)}. Refusing to interpret an unknown "
+                "format rather than guessing at its semantics."
+            )
         entries = [ScheduleEntry(**e) for e in data["entries"]]
         return cls(provenance=data["provenance"], entries=entries)
 

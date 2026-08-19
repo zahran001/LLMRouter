@@ -1,0 +1,26 @@
+unloaded floor: 248 sequential requests, concurrency=1
+prompts replayed from poisson_rps2.schedule.json (same distribution as the 2 RPS point)
+  25/248  n_ttft=25 err=0 p50=83ms p99=242ms
+  50/248  n_ttft=50 err=0 p50=83ms p99=242ms
+  75/248  n_ttft=75 err=0 p50=83ms p99=198ms
+  100/248  n_ttft=100 err=0 p50=83ms p99=242ms
+  125/248  n_ttft=125 err=0 p50=83ms p99=242ms
+  150/248  n_ttft=150 err=0 p50=83ms p99=242ms
+  175/248  n_ttft=175 err=0 p50=83ms p99=242ms
+  200/248  n_ttft=200 err=0 p50=83ms p99=402ms
+  225/248  n_ttft=225 err=0 p50=83ms p99=402ms
+
+=== UNLOADED FLOOR (concurrency 1) ===
+  n_requests: 248
+  n_ttft_samples: 248
+  n_errors: 0
+  elapsed_s: 24.43
+  effective_rps: 10.15
+  ttft_p50_ms: 82.82
+  ttft_p95_ms: 176.40
+  ttft_p99_ms: 402.27
+  ttft_max_ms: 523.35
+  ttft_mean_ms: 97.97
+  breach_500ms: False
+  severe_2s: False
+  -> /home/minha/llmrouter-artifacts/unloaded_floor/unloaded_floor.metrics.json

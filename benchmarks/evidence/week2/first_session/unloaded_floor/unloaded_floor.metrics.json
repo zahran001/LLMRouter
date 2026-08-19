@@ -1,0 +1,24 @@
+{
+  "mode": "unloaded_floor_concurrency_1",
+  "n_requests": 248,
+  "n_ttft_samples": 248,
+  "n_errors": 0,
+  "elapsed_s": 24.43447651399947,
+  "effective_rps": 10.149593336199,
+  "ttft_p50_ms": 82.81694400011474,
+  "ttft_p95_ms": 176.40346700045484,
+  "ttft_p99_ms": 402.2692119997373,
+  "ttft_max_ms": 523.3469590002642,
+  "ttft_mean_ms": 97.9668574637146,
+  "breach_500ms": false,
+  "severe_2s": false,
+  "provenance": {
+    "prompts_from": "/home/minha/LLMRouter/benchmarks/schedules/stage_a/poisson_rps2.schedule.json",
+    "corpus_sha256_expected": "f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630",
+    "model": "meta-llama/Llama-3.2-3B-Instruct",
+    "max_tokens": 512,
+    "timeout_s": 300.0,
+    "base_url": "http://127.0.0.1:8000",
+    "note": "sequential replay; arrival offsets deliberately ignored (concurrency 1)"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "what": "First Week 2 GPU session artifacts, promoted as DIAGNOSTIC evidence.",
+  "classification": "diagnostic / failed-experiment evidence -- NOT baseline evidence",
+  "session_date": "2026-08-18",
+  "no_final_breach_rps": true,
+  "note": "The 2026-08-18 session produced no defensible breach RPS (WEEK2_GPU_REDESIGN_HANDOFF.md \u00a713). These artifacts are the record of what falsified the original design -- the prompt-tail confound, the n>=100 insufficiency, and the timeout censoring -- and the source arrays for the R2 p99 sample-size calibration. Do not cite them as baseline results.",
+  "promoted_at": "2026-08-19T01:55:24+00:00",
+  "promoted_from": "benchmarks/runs",
+  "repo_head_at_promotion": "a9210ddaa80dcbe129188ce62ba85a59e39bd4dc",
+  "hash_algorithm": "sha256",
+  "file_count": 24,
+  "files": [
+    {
+      "path": "benchmarks/evidence/week2/first_session/session_logs/unloaded_floor.stdout.log",
+      "source_path": "benchmarks/runs/session_logs/unloaded_floor.stdout.log",
+      "sha256": "0fd78231974f1d8ad3ca45f8dec20dfecf16e8ce8b4e6f5b2d973997f1df459d",
+      "bytes": 926
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/session_logs/vllm.log",
+      "source_path": "benchmarks/runs/session_logs/vllm.log",
+      "sha256": "3f509b13803e95fdcd3d9c112966d585963701b81382484d83ee3ef69d4bbe76",
+      "bytes": 1287711
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps1.5.metrics.json",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps1.5.metrics.json",
+      "sha256": "4b3d72230e88893076685094b979d08df68f4adc88375751963d465eba576ccb",
+      "bytes": 3370
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps1.5.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps1.5.raw_log.jsonl",
+      "sha256": "36db733683ca0b01cc3b1968a0455adfda92ac69a2f79ff3ef9880b0fbef3026",
+      "bytes": 25548
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps1.5.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps1.5.samples.jsonl",
+      "sha256": "e1f231f667af45a636fc63ab9677cfd02d4864e55b82cd9b9461b8e90802101e",
+      "bytes": 1345667
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps10.metrics.json",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps10.metrics.json",
+      "sha256": "3627b6c6d4627ab15f89714fe8ac326dbde35f6fc9144a9b8f700daf2f034461",
+      "bytes": 3342
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps10.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps10.raw_log.jsonl",
+      "sha256": "609cba29de93931514e509596b15e4e9d7e491967fd1305ed2c1a3d6baa75d9f",
+      "bytes": 187309
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps10.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps10.samples.jsonl",
+      "sha256": "b6ba2995763c4ff3504fed0e40540888389158499d36dcf3a0b34f8e01260b6c",
+      "bytes": 6618680
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps2.metrics.json",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps2.metrics.json",
+      "sha256": "76a8d98fa064690eb816e8c9c4146c998de1800da9602cf178814a0edc2ed94c",
+      "bytes": 3322
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps2.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps2.raw_log.jsonl",
+      "sha256": "f5ce23706012b2e5c20fda9aeaacf95b3a4fb9b1492ff572faf031810dfbadb6",
+      "bytes": 34810
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps2.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps2.samples.jsonl",
+      "sha256": "46c59091df3f5cce48d59d514ab9f2f0717218962c71efdd0558eaac9ecf4c96",
+      "bytes": 1862094
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps20.metrics.json",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps20.metrics.json",
+      "sha256": "2f72024618086718d683360629f9093fb3fc126a9ec906b202197981ff29e4d1",
+      "bytes": 3359
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps20.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps20.raw_log.jsonl",
+      "sha256": "3a88c093182758b7ebbefbc05b563db53a4dc4569f674b8c465d337e9d65fc44",
+      "bytes": 373705
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps20.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps20.samples.jsonl",
+      "sha256": "e31b65bb04ad14482116b8061b0ac5333c140bf317b7c36e87be313e4502e6da",
+      "bytes": 5984726
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps30.metrics.json",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps30.metrics.json",
+      "sha256": "8dfc207c2c85df8c3b14d7c486df348a4d4c289c119be5b458f7dcecf03c9f70",
+      "bytes": 3344
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps30.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps30.raw_log.jsonl",
+      "sha256": "7005fcf2ba790a582e0052e1747c7510d0cf9b1769027ecb6f2a6e93df4211f1",
+      "bytes": 554981
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps30.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps30.samples.jsonl",
+      "sha256": "eecc22165363d2d5a2352799ff3bb52f99b98c1f160ef44ffe55c2a4d231d5ee",
+      "bytes": 5739274
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps40.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps40.raw_log.jsonl",
+      "sha256": "9d4d1c778c209645c53b2a6d36a5a76e3208a33944ce3450e8701e2e3cece4c6",
+      "bytes": 235176
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps40.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps40.samples.jsonl",
+      "sha256": "e34e1ab0210d4bd52d92daf7c14908555be6043fc84678bda63be59558f00dc3",
+      "bytes": 2453865
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps5.metrics.json",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps5.metrics.json",
+      "sha256": "1bfa52afdaffb0a12e63ed640511870badb530877e0aa7f8d841ba7dbe1a88c2",
+      "bytes": 3317
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps5.raw_log.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps5.raw_log.jsonl",
+      "sha256": "120bf33c8df67e40722574187b0f6a6cb4cba0ce1cf820b906d974d749d4a9ca",
+      "bytes": 90514
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/stage_a/poisson_rps5.samples.jsonl",
+      "source_path": "benchmarks/runs/stage_a/poisson_rps5.samples.jsonl",
+      "sha256": "fdf66a92ceb72bbaaf0d6582e911f31b520bed98f111fdbb9d9a5d962ef29687",
+      "bytes": 4702527
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/unloaded_floor/unloaded_floor.metrics.json",
+      "source_path": "benchmarks/runs/unloaded_floor/unloaded_floor.metrics.json",
+      "sha256": "d6429adecb586873aea31eae87a632af2d8374b0b77b18bbb82e74b9ea3fde49",
+      "bytes": 850
+    },
+    {
+      "path": "benchmarks/evidence/week2/first_session/unloaded_floor/unloaded_floor.samples.jsonl",
+      "source_path": "benchmarks/runs/unloaded_floor/unloaded_floor.samples.jsonl",
+      "sha256": "da9940bee27c830746fa1db89821e0a4bf8557e1bbe1be89490897bcdf0fd7a2",
+      "bytes": 23056
+    }
+  ]
+}

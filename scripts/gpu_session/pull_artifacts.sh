@@ -45,13 +45,19 @@ echo "=== completeness check ==="
 # record. A sidecar that did not make it is a point that cannot produce a
 # p99 -- which is the exact failure this whole pipeline exists to prevent,
 # so it is checked rather than assumed.
-python - "$DEST_DIR" <<'PYEOF'
+python - "$DEST_DIR" "$REPO_ROOT" <<'PYEOF'
 import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, sys.argv[2])
+from metrics.artifacts import discover_tags
+
 dest = Path(sys.argv[1])
-tags = sorted({p.name.split(".")[0] for p in dest.glob("*.raw_log.jsonl")})
+# Suffix-stripping, NOT name.split(".")[0]: the old rule read
+# `poisson_rps1.5.raw_log.jsonl` as the point `poisson_rps1` and reported a
+# healthy fractional point as incomplete (handoff 11). Stage B is fractional.
+tags = discover_tags(dest)
 if not tags:
     print(f"NOTHING PULLED: no *.raw_log.jsonl under {dest}")
     raise SystemExit(1)

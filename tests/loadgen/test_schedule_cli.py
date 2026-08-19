@@ -181,21 +181,51 @@ def test_steady_arrival_process_is_supported(tmp_path):
     assert json.loads(path.read_text(encoding="utf-8"))["provenance"]["arrival_process"] == "steady"
 
 
+def _committed_blob(rel_path: str) -> bytes:
+    """The bytes git STORES for a tracked file.
+
+    Not the same thing as the bytes on disk. With `core.autocrlf=true` on
+    Windows, a tracked text file is checked out CRLF while its blob is LF, so
+    the working-tree copy is a platform-local rendering of the artifact rather
+    than the artifact itself. The frozen-workload contract is about the
+    committed bytes -- that is what a Linux GPU instance clones and drives --
+    so that is what a byte-identity check must compare against
+    (R4 README P2).
+    """
+    return subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "show", f"HEAD:{rel_path}"],
+        capture_output=True, check=True,
+    ).stdout
+
+
 def test_stage_a_points_regenerate_byte_identically_through_the_generic_path(tmp_path):
     """The committed Stage A artifacts are frozen inputs. Routing Stage A
     through the generic implementation must not have perturbed them -- if it
     had, every replay comparison against them would silently be against a
-    different file."""
-    committed_dir = REPO_ROOT / "benchmarks" / "schedules" / "stage_a"
+    different file.
+
+    Compared against the committed blob rather than the working-tree file.
+    This used to compare on-disk bytes and passed on both platforms for a
+    coincidental reason: the writer applied the same newline translation that
+    git had applied on checkout, so two platform-dependent transformations
+    cancelled. `metrics.artifacts.write_json_artifact` now pins LF on every
+    platform, which removes the writer's half -- and makes the check
+    genuinely platform-independent instead of accidentally symmetric.
+    """
     from scripts.generate_stage_a_schedules import STAGE_A_RPS_POINTS
 
     written = generate(STAGE_A_RPS_POINTS, tmp_path)
     assert len(written) == len(STAGE_A_RPS_POINTS)
     for _, path, _ in written:
-        committed = committed_dir / path.name
-        assert committed.exists(), f"{path.name} is not among the committed Stage A schedules"
-        assert path.read_bytes() == committed.read_bytes(), (
+        rel = f"benchmarks/schedules/stage_a/{path.name}"
+        committed = _committed_blob(rel)
+        assert committed, f"{path.name} is not among the committed Stage A schedules"
+        assert path.read_bytes() == committed, (
             f"{path.name} no longer regenerates byte-identically to the committed artifact"
+        )
+        assert b"\r\n" not in path.read_bytes(), (
+            f"{path.name} was written with CRLF -- frozen artifacts must be byte-stable "
+            "across platforms (R4 README P2)"
         )
 
 

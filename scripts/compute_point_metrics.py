@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from loadgen.log import read_log, read_samples
 from loadgen.schedule import Schedule
+from metrics.artifacts import SAMPLES_SUFFIX, discover_tags
 from metrics.point import DEFAULT_BAND_PCT, MIN_TAIL_SAMPLES, point_metrics
 
 
@@ -86,7 +87,7 @@ def main() -> None:
 
     run_dir: Path = args.run_dir
     out_dir: Path = args.out_dir or run_dir
-    tags = sorted(p.name[: -len(".samples.jsonl")] for p in run_dir.glob("*.samples.jsonl"))
+    tags = discover_tags(run_dir, SAMPLES_SUFFIX)
     if not tags:
         raise SystemExit(f"no *.samples.jsonl under {run_dir} -- nothing to recompute")
 
