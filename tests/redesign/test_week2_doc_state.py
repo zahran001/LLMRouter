@@ -254,7 +254,13 @@ STALE_CONCEPTS = {
     "post-hoc warmup re-filtering": _concept(
         r"re-?filter\w*\s+(?:over\s+)?(?:the\s+)?(?:committed\s+|headline\s+)?sidecars"
         r"|resolve\s+(?:the\s+)?warmup\s+(?:after|later)"
-        r"|--warmup-n\b",
+        r"|--warmup-n\b"
+        # The four survivors of the first fix: the *rows* were corrected while
+        # the section lead-ins above them still called the warmup an open value
+        # to be read off the run. Same claim, none of the same words.
+        r"|warmup N[^.]{0,80}resolved from[^.]{0,60}(?:transient|Block F)"
+        r"|(?:one row|the warmup N?)[^.]{0,40}remains open"
+        r"|deliberately post-GPU",
         r"(?:not|never|no longer)\s+(?:a\s+)?valid",
         r"\binvalid\b",
         r"must not be (?:applied|used)",
@@ -295,6 +301,16 @@ STALE_CONCEPTS = {
     # These are not statistics, they are instructions, and they are the ones a
     # reader would actually *do*. An active document may narrate them only as
     # history; no denial phrase makes them current, so they have none.
+    # A resolved calibration still described as open is the same failure as a
+    # superseded procedure still described as current: the operator believes the
+    # repository, and the repository is wrong. The Linux spin margin was
+    # calibrated on 2026-08-18 and is platform-dispatched (0ms on Linux), but two
+    # active documents went on telling the reader not to run on Linux unverified.
+    "uncalibrated Linux spin margin": _concept(
+        r"not yet Linux-calibrated|Windows-tuned[^.]{0,60}(?:unverified|not yet)",
+        r"resolved",
+        r"platform-dispatched",
+    ),
     "session #1 Stage A/B sweep": _concept(r"\bStage [AB]\b"),
     "on-meter lambda improvisation": _concept(
         r"extend\s+(?:the sweep\s+)?upward|add lower points"

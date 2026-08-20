@@ -31,10 +31,10 @@ are the ones measured after that correction.
 | | |
 |---|---|
 | Branch | `week2/loadgen-baseline` |
-| HEAD at audit start | `efbf3e5` (= `origin/week2/loadgen-baseline`) |
-| Working tree | **dirty** — this cleanup and the T-DOC-4 fix are uncommitted, pending R-DOC PASS |
-| Files changed | 24 modified, 6 added (incl. both implementation briefs) |
-| Benchmark SHA | **not yet cut** — assigned after R-DOC PASS, then re-verified |
+| HEAD at audit start | `efbf3e5`; R-DOC cut `0c09878`; the R-PREGPU lead-in fixes cut the SHA reported at closeout |
+| Working tree | **clean** at the benchmark SHA; R-DOC PASSED 2026-08-19 |
+| Files changed | 30 at R-DOC, plus the R-PREGPU lead-in corrections |
+| Benchmark SHA | Cut from this tree and reported at closeout — writing it into a tracked file would advance `HEAD` past the commit it names |
 
 `run_on_instance.sh bootstrap` refuses a dirty or unpushed HEAD, so the
 benchmark SHA cannot be skipped by accident.
@@ -48,8 +48,8 @@ benchmark SHA cannot be skipped by accident.
 | Documents classified | **23** Week 2 process documents, in `docs/WEEK2_DOC_INDEX.md` |
 | Index completeness | **PASS** — no unindexed markdown at repo root or in `docs/`; new files fail closed |
 | Current GPU runbooks | **1** — `docs/WEEK2_GPU_SESSION_2_PLAN.md` |
-| Stale-assumption scan | **PASS on the second pass** — 29 hits found by the corrected rule, all resolved, 0 unexplained (§ below) |
-| Documentation tests | **PASS** — `tests/redesign/test_week2_doc_state.py`, 17 tests |
+| Stale-assumption scan | **PASS on the third pass** — 29 hits (second) + 4 lead-ins (third), all resolved, 0 unexplained (§ below) |
+| Documentation tests | **PASS** — `tests/redesign/test_week2_doc_state.py`, 17 tests, 13 stale concepts |
 | Documentation controls | **PASS** — 6/6 red→green, `scripts/show_doc_control_bites.py` |
 | Fresh-context test | **Automated chain + policy-fact check PASS**; human-run review **outstanding** (§ below) |
 
@@ -109,9 +109,10 @@ than only when someone remembers the control script.
 
 ## Stale-assumption audit
 
-Two passes. The first is recorded below as it was reported; the second — after
-the checker that produced it was found to be unsound — is recorded under
-"Second pass". **Unexplained stale hits after the second pass: 0.**
+Three passes. The first is recorded below as it was reported; the second —
+after the checker that produced it was found to be unsound — and the third,
+found at R-PREGPU on the section lead-ins the second pass left behind.
+**Unexplained stale hits after the third pass: 0.**
 
 ### First pass (as originally reported)
 
@@ -184,7 +185,36 @@ and a denial must be a phrase specific to that concept. Units are matched with
 line wrapping flattened, because `resolved from Stage\nA's transient` is the
 same claim to a reader and was invisible to a per-line matcher.
 
-**Re-scan with the corrected rule: 29 hits, all resolved.**
+### Third pass — found at R-PREGPU, on the section lead-ins
+
+The second pass corrected table *rows* and left four **section lead-ins** above
+them still asserting the old state. Found by reading, when the closeout claim
+"the only thing left is the GPU run" was checked rather than accepted:
+
+| Location | Said | Contradicted by |
+|---|---|---|
+| `WEEK2_PLAN.md` §8 preamble | "One row remains open: the per-point warmup N, resolved from GPU transient data in Block F **by design**" | The row three lines below it, corrected to the 60s frozen boundary; lock 4A |
+| `WEEK2_PLAN.md` §9 preamble | "every `[CALIBRATE]` value is resolved **except the one that is deliberately post-GPU**" | Same |
+| `WEEK2_PLAN.md` §8 spin row | "`SPIN_MARGIN_S` (5ms) is Windows-tuned, **not yet Linux-calibrated** … do not ship onto Linux vLLM runs unverified" | §9 of the same document, `STATUS.md`, `loadgen/scheduler.py` (`LINUX_SPIN_MARGIN_S = 0.0`, platform-dispatched), and `scheduler_spin_linux_ab.json` — a real Linux VM, kernel `6.8.0-1066-gcp`, arms 0ms/5ms, 20 and 80 RPS, 5 repeats, 2026-08-18 |
+| `WEEK2_EXECUTION.md` Block C | Same spin claim, phrased as a live instruction | Same |
+
+All four corrected, with the old wording kept as marked provenance. Both
+concepts are now in `STALE_CONCEPTS` — a **resolved calibration still described
+as open** is the same failure mode as a superseded procedure still described as
+current, and neither had coverage. Verified against the pre-fix text:
+
+```
+CAUGHT   PLAN section 8 preamble    [post-hoc warmup re-filtering]
+CAUGHT   PLAN section 9 preamble    [post-hoc warmup re-filtering]
+CAUGHT   PLAN section 8 spin row    [uncalibrated Linux spin margin]
+CAUGHT   EXECUTION Block C spin     [uncalibrated Linux spin margin]
+```
+
+**The lesson, recorded because it recurred:** each pass corrected the thing the
+scan pointed at and left its neighbours. Rows, then lead-ins. The scan finds
+instances; only reading the section finds the claim.
+
+**Re-scan with the corrected rule: 29 hits (second pass), all resolved.**
 
 | Class | Count | Disposition |
 |---|---:|---|

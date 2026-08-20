@@ -798,9 +798,13 @@ read the ~3ms CI number as settling this; it is a prior, not an answer.
 
 ## 8. Open [CALIBRATE] values (Week 2)
 
-**One row remains open: the per-point warmup N, which is resolved from GPU
-transient data in Block F by design (§2.4/§6.3) and is not a pre-GPU gap.**
-Everything else is resolved with named evidence.
+**No rows remain open.** Every value is resolved with named evidence,
+including the per-point warmup N — which is no longer a value read off a
+transient after the run, but a **frozen 60-second boundary materialized into
+the exact-N schedules and validated forward in Tier A** (§11.4). *(This preamble
+previously read "one row remains open: the per-point warmup N, resolved from GPU
+transient data in Block F by design." That was true under the superseded
+fixed-duration design and is not true under lock 4A.)*
 
 | Value | Status | Source |
 |---|---|---|
@@ -811,7 +815,7 @@ Everything else is resolved with named evidence.
 | ~~Offered-vs-achieved band~~ | **RESOLVED: ±5%** (2026-08-18) | Block C low-load tracking (`benchmarks/calibration/block_c/calibration_reads.json` → `low_load_tracking`): 0.0% / 0.0% / 0.0% / −0.67% at 0.5/1/2/5 RPS. Deliberately **not** tightened to the measured 0.67% max — the band detects material driver under-delivery, and a band with no headroom would flag healthy points near the breach. Reasoning in §2.5. Constant: `metrics/point.py: DEFAULT_BAND_PCT` |
 | ~~Concurrency cap value~~ | **RESOLVED: 3000** (2026-08-17) | Set above Block C's uncapped peak concurrency (2380 @ 300 RPS; 651 @ 100 RPS) — cannot bite below a 37.5s mean response time at session #1's Stage A 80 RPS ceiling, far above any λ the session #2 scout reaches. Full provenance + the `ulimit -n` precondition in §3.3. Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP` |
 | ~~Loadgen capability target~~ | **RESOLVED with the cap** (2026-08-17) | Same measurement (see note below). Verified per point rather than assumed: `shed > 0` at any swept point means the cap bit and that point is cap-shaped — flagged automatically by `scripts/compute_point_metrics.py` |
-| Loadgen scheduler spin margin (`loadgen/scheduler.py:SPIN_MARGIN_S`) | 5ms | **Windows-tuned, not yet Linux-calibrated.** Carried forward from Hard Stop 2 review (2026-08-16): same class of A/B as Block 0's mock-timing spin (`mock/timing.py:SPIN_MARGIN_S`) — run it on the Linux e2 VM, same session if convenient. Do not ship the Windows-tuned 5ms onto Linux vLLM runs unverified. |
+| Loadgen scheduler spin margin (`loadgen/scheduler.py:SPIN_MARGIN_S`) | **RESOLVED: platform-dispatched — Linux 0ms, Windows 5ms** (2026-08-18) | A/B run on a real Linux VM (`benchmarks/calibration/scheduler_spin/scheduler_spin_linux_ab.json`: kernel `6.8.0-1066-gcp`, arms 0ms vs 5ms, 20 and 80 RPS, 5 repeats each). Constants: `LINUX_SPIN_MARGIN_S` / `WINDOWS_SPIN_MARGIN_S`, selected by platform, overridable via `LOADGEN_SPIN_MARGIN_S`. Session #2 drives on-instance Linux, so the effective value is **0ms**. Read-up in `BENCHMARKS.md` |
 
 Note: the concurrency-cap value and the loadgen-capability target are the **same
 measurement** (§3.3) — "can one capped client sustain offered load through the
@@ -828,8 +832,11 @@ gate), trace/replay (§5, Option M frozen-schedule + schedule-plus-corpus
 contract), and session #1's GPU runbook (§6 — superseded, single continuous session,
 durable-on-produce recording, adversarial-last).
 
-**All design sections are locked, and every `[CALIBRATE]` value is resolved
-except the one that is deliberately post-GPU:**
+**All design sections are locked, and every `[CALIBRATE]` value is resolved.**
+*(Superseded wording, kept as provenance: this line previously read "…except
+the one that is deliberately post-GPU", meaning the warmup N. Lock 4A closed
+that — the boundary is frozen into the schedules, not resolved afterwards,
+§11.4.)*
 
 | Value | State |
 |---|---|
