@@ -1,0 +1,1534 @@
+{
+  "what": "Pinned-corpus length structure and candidate headline strata (README R1).",
+  "status": "RECOMMENDATION INPUT -- k, L and N are locked by the human at Hard Stop R3",
+  "generated_at": "2026-08-19T02:03:00+00:00",
+  "corpus": {
+    "path": "corpus/baseline_prompts.jsonl",
+    "sha256": "f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630",
+    "total_prompts": 5000,
+    "prompt_len_definition": "char count of the first human turn, stripped (token count is a Week 3 revisit, WEEK2_PLAN.md 3.4)",
+    "build_provenance": {
+      "source_dataset": "anon8231489123/ShareGPT_Vicuna_unfiltered",
+      "source_file": "ShareGPT_V3_unfiltered_cleaned_split.json",
+      "source_url": "https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered/resolve/main/ShareGPT_V3_unfiltered_cleaned_split.json",
+      "source_commit": "192ab2185289094fc556ec8ce5ce1e8e587154ca",
+      "download_date": "2026-08-16",
+      "filter_definition": "keep an entry iff conversations[0]['from'] in {'human','user'} and conversations[0]['value'], after str.strip(), is a non-empty string -- a validity predicate only. No exclusion by length or content (WEEK2_PLAN.md \u00a73.4: 'may NOT remove valid prompts to shape the spread').",
+      "total_raw_entries": 94145,
+      "total_valid_after_filter": 58820,
+      "selection_seed": 20260816,
+      "subset_size": 5000,
+      "prompt_len_definition": "char count of conversations[0]['value'] after strip(); token count is a Week 3 revisit (WEEK2_PLAN.md \u00a73.4)",
+      "char_len_stats": {
+        "min": 1,
+        "max": 44445,
+        "mean": 899.533
+      },
+      "artifact": "corpus/baseline_prompts.jsonl",
+      "note": "with-replacement i.i.d. draws happen at schedule-materialization time via a separate corpus_rng (WEEK2_PLAN.md \u00a73.2/\u00a73.4); this seed only controls which prompts made it into the pinned subset, not which are drawn from it at runtime."
+    }
+  },
+  "length_summary": {
+    "min": 1.0,
+    "max": 44445.0,
+    "mean": 899.533,
+    "std": 2220.7189525566373,
+    "quantiles": {
+      "0": 1.0,
+      "1": 4.0,
+      "5": 22.0,
+      "10": 34.0,
+      "25": 60.0,
+      "50": 142.0,
+      "75": 594.25,
+      "90": 2358.100000000004,
+      "95": 4566.200000000001,
+      "97.5": 7999.9249999999865,
+      "99": 11471.370000000008,
+      "99.5": 13101.0,
+      "99.9": 16424.357000000073,
+      "100": 44445.0
+    }
+  },
+  "histogram": {
+    "bin_edges_chars": [
+      1,
+      2,
+      4,
+      6,
+      9,
+      15,
+      23,
+      35,
+      55,
+      86,
+      135,
+      211,
+      329,
+      514,
+      803,
+      1255,
+      1960,
+      3061,
+      4781,
+      7468,
+      11664,
+      18218,
+      28455,
+      44445
+    ],
+    "counts": [
+      1,
+      39,
+      39,
+      20,
+      49,
+      106,
+      259,
+      590,
+      655,
+      652,
+      493,
+      390,
+      343,
+      300,
+      246,
+      234,
+      193,
+      155,
+      95,
+      95,
+      43,
+      1,
+      2
+    ],
+    "note": "log-spaced bins; edges are inclusive-left, exclusive-right, last bin closed"
+  },
+  "ecdf": {
+    "char_len": [
+      1,
+      7,
+      16,
+      23,
+      27,
+      31,
+      34,
+      38,
+      41,
+      43,
+      46,
+      49,
+      52,
+      54,
+      58,
+      61,
+      65,
+      69,
+      73,
+      77,
+      82,
+      86,
+      91,
+      96,
+      101,
+      107,
+      114,
+      122,
+      129,
+      138,
+      149,
+      160,
+      173,
+      188,
+      205,
+      224,
+      250,
+      277,
+      302,
+      336,
+      368,
+      412,
+      462,
+      517,
+      581,
+      663,
+      760,
+      852,
+      1016,
+      1194,
+      1374,
+      1640,
+      1940,
+      2326,
+      2803,
+      3563,
+      4440,
+      6504,
+      9421,
+      44445
+    ],
+    "cumulative_fraction": [
+      0.0002,
+      0.0172,
+      0.034,
+      0.051,
+      0.068,
+      0.085,
+      0.1018,
+      0.1188,
+      0.1358,
+      0.1528,
+      0.1696,
+      0.1866,
+      0.2036,
+      0.2204,
+      0.2374,
+      0.2544,
+      0.2714,
+      0.2882,
+      0.3052,
+      0.3222,
+      0.3392,
+      0.356,
+      0.373,
+      0.39,
+      0.4068,
+      0.4238,
+      0.4408,
+      0.4578,
+      0.4746,
+      0.4916,
+      0.5086,
+      0.5256,
+      0.5424,
+      0.5594,
+      0.5764,
+      0.5934,
+      0.6102,
+      0.6272,
+      0.6442,
+      0.661,
+      0.678,
+      0.695,
+      0.712,
+      0.7288,
+      0.7458,
+      0.7628,
+      0.7798,
+      0.7966,
+      0.8136,
+      0.8306,
+      0.8474,
+      0.8644,
+      0.8814,
+      0.8984,
+      0.9152,
+      0.9322,
+      0.9492,
+      0.9662,
+      0.983,
+      1.0
+    ]
+  },
+  "counts_above_quantile": {
+    "90": {
+      "char_len_threshold": 2358.100000000004,
+      "count": 500
+    },
+    "95": {
+      "char_len_threshold": 4566.200000000001,
+      "count": 250
+    },
+    "99": {
+      "char_len_threshold": 11471.370000000008,
+      "count": 50
+    },
+    "99.5": {
+      "char_len_threshold": 13101.0,
+      "count": 26
+    },
+    "99.9": {
+      "char_len_threshold": 16424.357000000073,
+      "count": 5
+    }
+  },
+  "counts_above_absolute_chars": {
+    "1000": 939,
+    "2000": 575,
+    "5000": 226,
+    "10000": 74,
+    "20000": 3,
+    "40000": 1
+  },
+  "candidate_constructions": [
+    {
+      "name": "k3_coarse",
+      "k": 3,
+      "rationale": "Minimal structure: body / shoulder / top-1%. The top stratum is exactly the population a p99 reads, so this is the smallest construction that controls the quantity that decided the first session.",
+      "edges_pct": [
+        0,
+        90,
+        99,
+        100
+      ],
+      "edges_chars": [
+        1.0,
+        2358.100000000004,
+        11471.370000000008,
+        44445.0
+      ],
+      "strata": [
+        {
+          "index": 0,
+          "quantile_range_pct": [
+            0,
+            90
+          ],
+          "char_len_range": [
+            1.0,
+            2358.100000000004
+          ],
+          "population_fraction": 0.9,
+          "available_prompts": 4500
+        },
+        {
+          "index": 1,
+          "quantile_range_pct": [
+            90,
+            99
+          ],
+          "char_len_range": [
+            2358.100000000004,
+            11471.370000000008
+          ],
+          "population_fraction": 0.09,
+          "available_prompts": 450
+        },
+        {
+          "index": 2,
+          "quantile_range_pct": [
+            99,
+            100
+          ],
+          "char_len_range": [
+            11471.370000000008,
+            44445.0
+          ],
+          "population_fraction": 0.01,
+          "available_prompts": 50
+        }
+      ],
+      "degenerate_strata": [],
+      "allocation_rule": "proportional to population fraction, largest-remainder, without replacement within a stratum",
+      "per_candidate_N": {
+        "250": {
+          "allocation": [
+            225,
+            23,
+            2
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "500": {
+          "allocation": [
+            450,
+            45,
+            5
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "750": {
+          "allocation": [
+            675,
+            68,
+            7
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1000": {
+          "allocation": [
+            900,
+            90,
+            10
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1250": {
+          "allocation": [
+            1125,
+            113,
+            12
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1500": {
+          "allocation": [
+            1350,
+            135,
+            15
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2000": {
+          "allocation": [
+            1800,
+            180,
+            20
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2500": {
+          "allocation": [
+            2250,
+            225,
+            25
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "3000": {
+          "allocation": [
+            2700,
+            270,
+            30
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "4000": {
+          "allocation": [
+            3600,
+            360,
+            40
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "5000": {
+          "allocation": [
+            4500,
+            450,
+            50
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        }
+      },
+      "max_feasible_N_on_grid": 5000,
+      "binding_stratum": {
+        "index": 0,
+        "implied_N_ceiling": 5000,
+        "note": "N ceiling implied by the scarcest stratum under proportional, without-replacement selection"
+      }
+    },
+    {
+      "name": "k4_tail_split",
+      "k": 4,
+      "rationale": "Splits the body at the median so the bulk prompt cost is held fixed too, not only the tail.",
+      "edges_pct": [
+        0,
+        50,
+        90,
+        99,
+        100
+      ],
+      "edges_chars": [
+        1.0,
+        142.0,
+        2358.100000000004,
+        11471.370000000008,
+        44445.0
+      ],
+      "strata": [
+        {
+          "index": 0,
+          "quantile_range_pct": [
+            0,
+            50
+          ],
+          "char_len_range": [
+            1.0,
+            142.0
+          ],
+          "population_fraction": 0.5,
+          "available_prompts": 2491
+        },
+        {
+          "index": 1,
+          "quantile_range_pct": [
+            50,
+            90
+          ],
+          "char_len_range": [
+            142.0,
+            2358.100000000004
+          ],
+          "population_fraction": 0.4,
+          "available_prompts": 2009
+        },
+        {
+          "index": 2,
+          "quantile_range_pct": [
+            90,
+            99
+          ],
+          "char_len_range": [
+            2358.100000000004,
+            11471.370000000008
+          ],
+          "population_fraction": 0.09,
+          "available_prompts": 450
+        },
+        {
+          "index": 3,
+          "quantile_range_pct": [
+            99,
+            100
+          ],
+          "char_len_range": [
+            11471.370000000008,
+            44445.0
+          ],
+          "population_fraction": 0.01,
+          "available_prompts": 50
+        }
+      ],
+      "degenerate_strata": [],
+      "allocation_rule": "proportional to population fraction, largest-remainder, without replacement within a stratum",
+      "per_candidate_N": {
+        "250": {
+          "allocation": [
+            125,
+            100,
+            22,
+            3
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "500": {
+          "allocation": [
+            250,
+            200,
+            45,
+            5
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "750": {
+          "allocation": [
+            375,
+            300,
+            67,
+            8
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1000": {
+          "allocation": [
+            500,
+            400,
+            90,
+            10
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1250": {
+          "allocation": [
+            625,
+            500,
+            112,
+            13
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1500": {
+          "allocation": [
+            750,
+            600,
+            135,
+            15
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2000": {
+          "allocation": [
+            1000,
+            800,
+            180,
+            20
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2500": {
+          "allocation": [
+            1250,
+            1000,
+            225,
+            25
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "3000": {
+          "allocation": [
+            1500,
+            1200,
+            270,
+            30
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "4000": {
+          "allocation": [
+            2000,
+            1600,
+            360,
+            40
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "5000": {
+          "allocation": [
+            2500,
+            2000,
+            450,
+            50
+          ],
+          "feasible_without_replacement": false,
+          "overdrawn_strata": [
+            {
+              "stratum": 0,
+              "needed": 2500,
+              "available": 2491
+            }
+          ]
+        }
+      },
+      "max_feasible_N_on_grid": 4000,
+      "binding_stratum": {
+        "index": 0,
+        "implied_N_ceiling": 4982,
+        "note": "N ceiling implied by the scarcest stratum under proportional, without-replacement selection"
+      }
+    },
+    {
+      "name": "k6_readme_example",
+      "k": 6,
+      "rationale": "The structure the README offers as an exploration starting point. Resolves the top 1% into two strata, so the extreme sub-tail cannot vary inside a single bucket.",
+      "edges_pct": [
+        0,
+        50,
+        90,
+        95,
+        99,
+        99.5,
+        100
+      ],
+      "edges_chars": [
+        1.0,
+        142.0,
+        2358.100000000004,
+        4566.200000000001,
+        11471.370000000008,
+        13101.0,
+        44445.0
+      ],
+      "strata": [
+        {
+          "index": 0,
+          "quantile_range_pct": [
+            0,
+            50
+          ],
+          "char_len_range": [
+            1.0,
+            142.0
+          ],
+          "population_fraction": 0.5,
+          "available_prompts": 2491
+        },
+        {
+          "index": 1,
+          "quantile_range_pct": [
+            50,
+            90
+          ],
+          "char_len_range": [
+            142.0,
+            2358.100000000004
+          ],
+          "population_fraction": 0.4,
+          "available_prompts": 2009
+        },
+        {
+          "index": 2,
+          "quantile_range_pct": [
+            90,
+            95
+          ],
+          "char_len_range": [
+            2358.100000000004,
+            4566.200000000001
+          ],
+          "population_fraction": 0.05,
+          "available_prompts": 250
+        },
+        {
+          "index": 3,
+          "quantile_range_pct": [
+            95,
+            99
+          ],
+          "char_len_range": [
+            4566.200000000001,
+            11471.370000000008
+          ],
+          "population_fraction": 0.04,
+          "available_prompts": 200
+        },
+        {
+          "index": 4,
+          "quantile_range_pct": [
+            99,
+            99.5
+          ],
+          "char_len_range": [
+            11471.370000000008,
+            13101.0
+          ],
+          "population_fraction": 0.005,
+          "available_prompts": 24
+        },
+        {
+          "index": 5,
+          "quantile_range_pct": [
+            99.5,
+            100
+          ],
+          "char_len_range": [
+            13101.0,
+            44445.0
+          ],
+          "population_fraction": 0.005,
+          "available_prompts": 26
+        }
+      ],
+      "degenerate_strata": [],
+      "allocation_rule": "proportional to population fraction, largest-remainder, without replacement within a stratum",
+      "per_candidate_N": {
+        "250": {
+          "allocation": [
+            125,
+            100,
+            13,
+            10,
+            1,
+            1
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "500": {
+          "allocation": [
+            250,
+            200,
+            25,
+            20,
+            2,
+            3
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "750": {
+          "allocation": [
+            375,
+            300,
+            37,
+            30,
+            4,
+            4
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1000": {
+          "allocation": [
+            500,
+            400,
+            50,
+            40,
+            5,
+            5
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1250": {
+          "allocation": [
+            625,
+            500,
+            63,
+            50,
+            6,
+            6
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1500": {
+          "allocation": [
+            750,
+            600,
+            75,
+            60,
+            7,
+            8
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2000": {
+          "allocation": [
+            1000,
+            800,
+            100,
+            80,
+            10,
+            10
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2500": {
+          "allocation": [
+            1250,
+            1000,
+            125,
+            100,
+            12,
+            13
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "3000": {
+          "allocation": [
+            1500,
+            1200,
+            150,
+            120,
+            15,
+            15
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "4000": {
+          "allocation": [
+            2000,
+            1600,
+            200,
+            160,
+            20,
+            20
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "5000": {
+          "allocation": [
+            2500,
+            2000,
+            250,
+            200,
+            25,
+            25
+          ],
+          "feasible_without_replacement": false,
+          "overdrawn_strata": [
+            {
+              "stratum": 0,
+              "needed": 2500,
+              "available": 2491
+            },
+            {
+              "stratum": 4,
+              "needed": 25,
+              "available": 24
+            }
+          ]
+        }
+      },
+      "max_feasible_N_on_grid": 4000,
+      "binding_stratum": {
+        "index": 4,
+        "implied_N_ceiling": 4800,
+        "note": "N ceiling implied by the scarcest stratum under proportional, without-replacement selection"
+      }
+    },
+    {
+      "name": "k5_deep_tail",
+      "k": 5,
+      "rationale": "Isolates the top 0.1% -- the region where the single extreme prompt that flipped the 2-RPS classification lives. Costs the most tail availability.",
+      "edges_pct": [
+        0,
+        50,
+        90,
+        99,
+        99.9,
+        100
+      ],
+      "edges_chars": [
+        1.0,
+        142.0,
+        2358.100000000004,
+        11471.370000000008,
+        16424.357000000073,
+        44445.0
+      ],
+      "strata": [
+        {
+          "index": 0,
+          "quantile_range_pct": [
+            0,
+            50
+          ],
+          "char_len_range": [
+            1.0,
+            142.0
+          ],
+          "population_fraction": 0.5,
+          "available_prompts": 2491
+        },
+        {
+          "index": 1,
+          "quantile_range_pct": [
+            50,
+            90
+          ],
+          "char_len_range": [
+            142.0,
+            2358.100000000004
+          ],
+          "population_fraction": 0.4,
+          "available_prompts": 2009
+        },
+        {
+          "index": 2,
+          "quantile_range_pct": [
+            90,
+            99
+          ],
+          "char_len_range": [
+            2358.100000000004,
+            11471.370000000008
+          ],
+          "population_fraction": 0.09,
+          "available_prompts": 450
+        },
+        {
+          "index": 3,
+          "quantile_range_pct": [
+            99,
+            99.9
+          ],
+          "char_len_range": [
+            11471.370000000008,
+            16424.357000000073
+          ],
+          "population_fraction": 0.009000000000000057,
+          "available_prompts": 45
+        },
+        {
+          "index": 4,
+          "quantile_range_pct": [
+            99.9,
+            100
+          ],
+          "char_len_range": [
+            16424.357000000073,
+            44445.0
+          ],
+          "population_fraction": 0.0009999999999999432,
+          "available_prompts": 5
+        }
+      ],
+      "degenerate_strata": [],
+      "allocation_rule": "proportional to population fraction, largest-remainder, without replacement within a stratum",
+      "per_candidate_N": {
+        "250": {
+          "allocation": [
+            125,
+            100,
+            23,
+            2,
+            0
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "500": {
+          "allocation": [
+            250,
+            200,
+            45,
+            5,
+            0
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "750": {
+          "allocation": [
+            375,
+            300,
+            67,
+            7,
+            1
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1000": {
+          "allocation": [
+            500,
+            400,
+            90,
+            9,
+            1
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1250": {
+          "allocation": [
+            625,
+            500,
+            113,
+            11,
+            1
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "1500": {
+          "allocation": [
+            750,
+            600,
+            135,
+            14,
+            1
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2000": {
+          "allocation": [
+            1000,
+            800,
+            180,
+            18,
+            2
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "2500": {
+          "allocation": [
+            1250,
+            1000,
+            225,
+            23,
+            2
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "3000": {
+          "allocation": [
+            1500,
+            1200,
+            270,
+            27,
+            3
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "4000": {
+          "allocation": [
+            2000,
+            1600,
+            360,
+            36,
+            4
+          ],
+          "feasible_without_replacement": true,
+          "overdrawn_strata": []
+        },
+        "5000": {
+          "allocation": [
+            2500,
+            2000,
+            450,
+            45,
+            5
+          ],
+          "feasible_without_replacement": false,
+          "overdrawn_strata": [
+            {
+              "stratum": 0,
+              "needed": 2500,
+              "available": 2491
+            }
+          ]
+        }
+      },
+      "max_feasible_N_on_grid": 4000,
+      "binding_stratum": {
+        "index": 0,
+        "implied_N_ceiling": 4982,
+        "note": "N ceiling implied by the scarcest stratum under proportional, without-replacement selection"
+      }
+    }
+  ],
+  "candidate_L": [
+    90.0,
+    95.0,
+    99.0,
+    99.5
+  ],
+  "candidate_N": [
+    250,
+    500,
+    750,
+    1000,
+    1250,
+    1500,
+    2000,
+    2500,
+    3000,
+    4000,
+    5000
+  ],
+  "tail_support": [
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 250,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 25,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 2.5
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 500,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 50,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 5.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 750,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 75,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 7.5
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 1000,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 100,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 10.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 1250,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 125,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 12.5
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 1500,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 150,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 15.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 2000,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 200,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 20.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 2500,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 250,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 25.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 3000,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 300,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 30.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 4000,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 400,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 40.0
+    },
+    {
+      "L_pct": 90.0,
+      "L_chars": 2358.100000000004,
+      "N": 5000,
+      "corpus_prompts_above_L": 500,
+      "canonical_prompts_above_L": 500,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 50.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 250,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 12,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 2.5
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 500,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 25,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 5.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 750,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 37,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 7.5
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 1000,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 50,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 10.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 1250,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 62,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 12.5
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 1500,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 75,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 15.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 2000,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 100,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 20.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 2500,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 125,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 25.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 3000,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 150,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 30.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 4000,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 200,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 40.0
+    },
+    {
+      "L_pct": 95.0,
+      "L_chars": 4566.200000000001,
+      "N": 5000,
+      "corpus_prompts_above_L": 250,
+      "canonical_prompts_above_L": 250,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 50.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 250,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 2,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 2.5
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 500,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 5,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 5.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 750,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 7,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 7.5
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 1000,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 10,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 10.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 1250,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 12,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 12.5
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 1500,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 15,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 15.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 2000,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 20,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 20.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 2500,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 25,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 25.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 3000,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 30,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 30.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 4000,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 40,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 40.0
+    },
+    {
+      "L_pct": 99.0,
+      "L_chars": 11471.370000000008,
+      "N": 5000,
+      "corpus_prompts_above_L": 50,
+      "canonical_prompts_above_L": 50,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 50.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 250,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 1,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 2.5
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 500,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 2,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 5.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 750,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 3,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 7.5
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 1000,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 5,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 10.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 1250,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 6,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 12.5
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 1500,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 7,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 15.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 2000,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 10,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 20.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 2500,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 12,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 25.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 3000,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 15,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 30.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 4000,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 20,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 40.0
+    },
+    {
+      "L_pct": 99.5,
+      "L_chars": 13101.0,
+      "N": 5000,
+      "corpus_prompts_above_L": 26,
+      "canonical_prompts_above_L": 25,
+      "feasible_without_replacement": true,
+      "top_1pct_of_N": 50.0
+    }
+  ],
+  "caveats": [
+    "Selection without replacement within a stratum means per-stratum availability caps N. Allowing repeats would lift the cap but invites prefix-cache reuse effects inside one run (handoff 16.1), which is not the thing being measured.",
+    "prompt_len is char count, not tokens. The tail boundary L is therefore a proxy for prefill cost; the char/token ratio is not constant across prompts (WEEK2_PLAN.md 3.4 defers tokens to Week 3).",
+    "Proportional allocation preserves the corpus's natural composition exactly. Any tail-floor variant that raises the top stratum above its natural share changes the workload's mean prompt cost and is a different experiment, not a bigger one."
+  ]
+}

@@ -1,5 +1,14 @@
 # GPU Session Notes — GCP + vLLM Setup
 
+> **STATUS: EXECUTABLE — WEEK 2**
+>
+> Role: GCP + vLLM environment knowledge — the working `gcloud` invocation and
+> the environment-specific failures already worked out. **Setup reference, not
+> the session runbook:** it decides no experimental policy.
+>
+> The GPU session #2 runbook is `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`.
+
 Operational knowledge from standing up a real vLLM instance on GCP for the
 Week 1 faithfulness check (`docs/archive/week1/WEEK1_CLOSEOUT.md`). Every
 item here was a real failure hit during that session, not a hypothetical —
@@ -35,6 +44,19 @@ Environment this was run from: Windows, `gcloud` using **PuTTY** (`plink`/
   ```
   gcloud compute ssh INSTANCE --zone=ZONE --ssh-flag="-L 8000:localhost:8000" --ssh-flag="-N"
   ```
+- **First contact with a new instance fails with `Server refused our key` /
+  `No supported authentication methods available`,** and `pscp` additionally
+  stops on an interactive `Store key in cache? (y/n)` host-key prompt that a
+  non-interactive shell can never answer. The key hasn't been generated and
+  propagated to the instance yet. Fix: pass **`--quiet`**, which accepts the
+  host key and lets gcloud provision the key non-interactively —
+  ```
+  gcloud compute ssh INSTANCE --zone=ZONE --quiet --command="echo ok"
+  gcloud compute scp --quiet LOCAL "INSTANCE:/home/<user>/dest" --zone=ZONE
+  ```
+  Run the `ssh` form once first; `scp` alone does not always trigger the key
+  provisioning. Hit for real on 2026-08-18 standing up the scheduler-spin
+  calibration VM.
 - **`gcloud compute scp SOURCE INSTANCE:~/dest`** — PuTTY's `pscp` doesn't
   reliably expand `~` in the **remote** destination path and fails with
   `pscp: unable to open ~/dest: no such file or directory`. Use an absolute

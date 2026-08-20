@@ -1,0 +1,491 @@
+{
+  "purpose": "Loadgen scheduler spin-margin A/B (WEEK2_PLAN.md \u00a78, WEEK2_EXECUTION.md Block C). Arm A = 0ms (bare asyncio.sleep), Arm B = 5ms (Windows-tuned incumbent). One variable; everything else held identical.",
+  "host": {
+    "platform": "linux",
+    "system": "Linux",
+    "release": "6.8.0-1066-gcp",
+    "machine": "x86_64",
+    "python": "3.10.12",
+    "cpu_count": 4,
+    "hostname": "llmrouter-spin-calib"
+  },
+  "method": {
+    "seed": 20260818,
+    "arrival_process": "poisson",
+    "rps_points": [
+      20.0,
+      80.0
+    ],
+    "spin_arms_s": [
+      0.0,
+      0.005
+    ],
+    "duration_s": 30.0,
+    "repeats": 5,
+    "concurrency_cap": 3000,
+    "mock_config": "slow",
+    "num_tokens": 5,
+    "instrument": "loadgen scheduling lag (send_time - (t_start + scheduled_offset))",
+    "smoke": false,
+    "mock_spin_margin_s": 0.02,
+    "mock_topology": "external-process"
+  },
+  "cells": {
+    "rps20_spin0ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 0.9096233799027686,
+        "p95": 2.0161866072339762,
+        "p99": 2.667304178827181,
+        "max": 5.74090689951845,
+        "mean": 0.9935356120570721
+      },
+      "achieved_rps": 20.966666666666665,
+      "divergence_pct": 4.833333333333325,
+      "worst_divergence_pct": 4.833333333333325,
+      "n_shed_total": 0,
+      "n_errored_total": 0,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.09954901088349288,
+      "per_run": [
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.9085800452339754,
+            "p95": 1.91271185012738,
+            "p99": 2.723905965922314,
+            "max": 5.74090689951845,
+            "min": 0.09954901088349288,
+            "mean": 0.9797986511573155
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.09954901088349288
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.9080279724003049,
+            "p95": 2.023590819135279,
+            "p99": 2.6896435957496583,
+            "max": 4.553395584025566,
+            "min": 0.12291688108234666,
+            "mean": 0.984981635266037
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.12291688108234666
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.9217955521307886,
+            "p95": 2.101293806572358,
+            "p99": 2.709534803561838,
+            "max": 3.39156430300136,
+            "min": 0.12639768510780414,
+            "mean": 1.0090095208169085
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.12639768510780414
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.9265009725822893,
+            "p95": 2.0136035122959584,
+            "p99": 2.731690282926139,
+            "max": 4.745891220863996,
+            "min": 0.12273808079044102,
+            "mean": 1.0181424158728094
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.12273808079044102
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.8832123571664852,
+            "p95": 2.0297330480389064,
+            "p99": 2.4817462459759576,
+            "max": 3.1372623029710667,
+            "min": 0.11665825059026247,
+            "mean": 0.9757458371722898
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.11665825059026247
+        }
+      ]
+    },
+    "rps20_spin5ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 0.08110552635116619,
+        "p95": 0.5482914318417901,
+        "p99": 1.3842546512605653,
+        "max": 36.558749397045176,
+        "mean": 0.16707587102478977
+      },
+      "achieved_rps": 20.966666666666665,
+      "divergence_pct": 4.833333333333325,
+      "worst_divergence_pct": 4.833333333333325,
+      "n_shed_total": 0,
+      "n_errored_total": 0,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.029539457045757445,
+      "per_run": [
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.08033193171286257,
+            "p95": 0.5767390778601114,
+            "p99": 1.5771113693517764,
+            "max": 3.1463852205888543,
+            "min": 0.03678986331578926,
+            "mean": 0.1574942616397694
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.03678986331578926
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.08076470248852274,
+            "p95": 0.5500472263520356,
+            "p99": 1.2261486206807626,
+            "max": 2.2301423032331513,
+            "min": 0.03278545727880555,
+            "mean": 0.13686303931093347
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.03278545727880555
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.08088121239779866,
+            "p95": 0.5275474637528538,
+            "p99": 1.2819284714532857,
+            "max": 36.558749397045176,
+            "min": 0.03468345721557853,
+            "mean": 0.19488430329124243
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.03468345721557853
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.08116725211948506,
+            "p95": 0.47609082757844606,
+            "p99": 1.4262459107703798,
+            "max": 2.7698398798747803,
+            "min": 0.029539457045757445,
+            "mean": 0.14823085619944912
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.029539457045757445
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.08238253303716192,
+            "p95": 0.6110325636655036,
+            "p99": 1.4098388840466225,
+            "max": 29.56210229149292,
+            "min": 0.03383885177754564,
+            "mean": 0.19790689468255437
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.03383885177754564
+        }
+      ]
+    },
+    "rps80_spin0ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 745.8839081863061,
+        "p95": 4448.784105678715,
+        "p99": 5030.836826024421,
+        "max": 6293.290735138726,
+        "mean": 1327.5845823952395
+      },
+      "achieved_rps": 79.86666666666666,
+      "divergence_pct": -0.16666666666667496,
+      "worst_divergence_pct": -0.16666666666667496,
+      "n_shed_total": 0,
+      "n_errored_total": 61,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.08049071402638219,
+      "per_run": [
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2383,
+          "n_shed": 0,
+          "n_errored": 13,
+          "lag_ms": {
+            "p50": 248.59293757776868,
+            "p95": 4204.0158033005355,
+            "p99": 4596.705743279041,
+            "max": 4693.809333828995,
+            "min": 0.11463938699307619,
+            "mean": 1054.8442542328464
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.11463938699307619
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2385,
+          "n_shed": 0,
+          "n_errored": 11,
+          "lag_ms": {
+            "p50": 1276.8673391756238,
+            "p95": 5254.860499989036,
+            "p99": 6036.99584346341,
+            "max": 6293.290735138726,
+            "min": 0.08049071402638219,
+            "mean": 1613.0145627805507
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.08049071402638219
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2386,
+          "n_shed": 0,
+          "n_errored": 10,
+          "lag_ms": {
+            "p50": 857.1962697028539,
+            "p95": 4946.618685981321,
+            "p99": 5431.853274502555,
+            "max": 5600.275994777803,
+            "min": 0.16438848069810774,
+            "mean": 1573.6167085678303
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.16438848069810774
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2384,
+          "n_shed": 0,
+          "n_errored": 12,
+          "lag_ms": {
+            "p50": 1046.9269176319358,
+            "p95": 4188.246366140902,
+            "p99": 5143.10356764177,
+            "max": 5259.4806659035385,
+            "min": 0.15477752640435938,
+            "mean": 1288.5945738457197
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.15477752640435938
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2381,
+          "n_shed": 0,
+          "n_errored": 15,
+          "lag_ms": {
+            "p50": 299.83607684334856,
+            "p95": 3650.1791729817796,
+            "p99": 3945.5257012353286,
+            "max": 3990.2572568571486,
+            "min": 0.19346003409737023,
+            "mean": 1107.8528125492505
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.19346003409737023
+        }
+      ]
+    },
+    "rps80_spin5ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 733.8961182792445,
+        "p95": 4398.058347760434,
+        "p99": 5174.817757658395,
+        "max": 6082.602406260776,
+        "mean": 1296.705347717802
+      },
+      "achieved_rps": 79.86666666666666,
+      "divergence_pct": -0.16666666666667496,
+      "worst_divergence_pct": -0.16666666666667496,
+      "n_shed_total": 0,
+      "n_errored_total": 68,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.02940671311080223,
+      "per_run": [
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2378,
+          "n_shed": 0,
+          "n_errored": 18,
+          "lag_ms": {
+            "p50": 823.4922166293472,
+            "p95": 5056.204635091262,
+            "p99": 5756.6008296137215,
+            "max": 6082.602406260776,
+            "min": 0.040340351006307174,
+            "mean": 1571.1784061128058
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.040340351006307174
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2380,
+          "n_shed": 0,
+          "n_errored": 16,
+          "lag_ms": {
+            "p50": 359.1300000962292,
+            "p95": 3780.2921823761153,
+            "p99": 4710.899565658247,
+            "max": 4886.11119950383,
+            "min": 0.032307161745848134,
+            "mean": 949.9698999852975
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.032307161745848134
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2390,
+          "n_shed": 0,
+          "n_errored": 6,
+          "lag_ms": {
+            "p50": 1655.3832128097383,
+            "p95": 4188.9886588776335,
+            "p99": 5221.3494019280015,
+            "max": 5408.938438290534,
+            "min": 0.03487664343992947,
+            "mean": 1540.253981870462
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.03487664343992947
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2386,
+          "n_shed": 0,
+          "n_errored": 10,
+          "lag_ms": {
+            "p50": 544.0843079104525,
+            "p95": 4793.926132951583,
+            "p99": 5048.799421211108,
+            "max": 5314.083381663295,
+            "min": 0.033825280297605786,
+            "mean": 1388.3609686996201
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.033825280297605786
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2378,
+          "n_shed": 0,
+          "n_errored": 18,
+          "lag_ms": {
+            "p50": 287.3908539504555,
+            "p95": 4170.880129505576,
+            "p99": 5136.439569880895,
+            "max": 5230.091859449203,
+            "min": 0.02940671311080223,
+            "mean": 1033.7634819208242
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.02940671311080223
+        }
+      ]
+    }
+  }
+}

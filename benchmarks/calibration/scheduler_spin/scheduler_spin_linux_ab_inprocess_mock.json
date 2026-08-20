@@ -1,0 +1,489 @@
+{
+  "purpose": "Loadgen scheduler spin-margin A/B (WEEK2_PLAN.md \u00a78, WEEK2_EXECUTION.md Block C). Arm A = 0ms (bare asyncio.sleep), Arm B = 5ms (Windows-tuned incumbent). One variable; everything else held identical.",
+  "host": {
+    "platform": "linux",
+    "system": "Linux",
+    "release": "6.8.0-1066-gcp",
+    "machine": "x86_64",
+    "python": "3.10.12",
+    "cpu_count": 4,
+    "hostname": "llmrouter-spin-calib"
+  },
+  "method": {
+    "seed": 20260818,
+    "arrival_process": "poisson",
+    "rps_points": [
+      20.0,
+      80.0
+    ],
+    "spin_arms_s": [
+      0.0,
+      0.005
+    ],
+    "duration_s": 30.0,
+    "repeats": 5,
+    "concurrency_cap": 3000,
+    "mock_config": "slow",
+    "num_tokens": 5,
+    "instrument": "loadgen scheduling lag (send_time - (t_start + scheduled_offset))",
+    "smoke": false
+  },
+  "cells": {
+    "rps20_spin0ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 1.5627668105366865,
+        "p95": 17.003283480497668,
+        "p99": 38.652946169597776,
+        "max": 84.69994884393373,
+        "mean": 4.227669255133418
+      },
+      "achieved_rps": 20.966666666666665,
+      "divergence_pct": 4.833333333333325,
+      "worst_divergence_pct": 4.833333333333325,
+      "n_shed_total": 0,
+      "n_errored_total": 0,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.127396764128207,
+      "per_run": [
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 1.6495628142081387,
+            "p95": 20.361898915371075,
+            "p99": 56.321841973708665,
+            "max": 84.69994884393373,
+            "min": 0.16204868984459608,
+            "mean": 5.173907344470672
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.16204868984459608
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 1.4928233131570323,
+            "p95": 13.110587990149725,
+            "p99": 21.619609641434185,
+            "max": 39.05701112464044,
+            "min": 0.17109115199787084,
+            "mean": 3.242716900930494
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.17109115199787084
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 1.4886846672084175,
+            "p95": 16.00097186861263,
+            "p99": 31.914554695622456,
+            "max": 48.73182836067258,
+            "min": 0.127396764128207,
+            "mean": 3.9501728564061525
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.127396764128207
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 1.5216816494785235,
+            "p95": 17.7717366530942,
+            "p99": 42.52776810000802,
+            "max": 82.20328608041427,
+            "min": 0.15566722629500873,
+            "mean": 4.158274815056382
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.15566722629500873
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 1.6610816086313207,
+            "p95": 17.77122197526071,
+            "p99": 40.88095643721555,
+            "max": 75.1421841479214,
+            "min": 0.13778923283780387,
+            "mean": 4.61327435880339
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.13778923283780387
+        }
+      ]
+    },
+    "rps20_spin5ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 0.777504061363743,
+        "p95": 12.54259179130941,
+        "p99": 25.668539346782914,
+        "max": 72.74247355400121,
+        "mean": 2.733231650687004
+      },
+      "achieved_rps": 20.966666666666665,
+      "divergence_pct": 4.833333333333325,
+      "worst_divergence_pct": 4.833333333333325,
+      "n_shed_total": 0,
+      "n_errored_total": 0,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.03867170903504302,
+      "per_run": [
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.7929257523073829,
+            "p95": 15.276468038950954,
+            "p99": 38.18395077874387,
+            "max": 72.74247355400121,
+            "min": 0.048643387060565146,
+            "mean": 3.2753441378244696
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.048643387060565146
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.7773218314923724,
+            "p95": 10.17507496117105,
+            "p99": 17.371067033898324,
+            "max": 47.991777949960124,
+            "min": 0.04944828390307521,
+            "mean": 2.264517767373122
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.04944828390307521
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.779231462502139,
+            "p95": 13.995486908015668,
+            "p99": 26.517200150262855,
+            "max": 43.01622997712684,
+            "min": 0.051364507953621796,
+            "mean": 2.84299950504937
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.051364507953621796
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.7767686823854092,
+            "p95": 10.322270828123694,
+            "p99": 20.387147957271743,
+            "max": 57.23273214726987,
+            "min": 0.03867170903504302,
+            "mean": 2.4393887244455628
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.03867170903504302
+        },
+        {
+          "offered_rps": 20.0,
+          "achieved_rps": 20.966666666666665,
+          "divergence_pct": 4.833333333333325,
+          "n_scheduled": 629,
+          "n_sent": 629,
+          "n_shed": 0,
+          "n_errored": 0,
+          "lag_ms": {
+            "p50": 0.7612725781314111,
+            "p95": 12.943658220285686,
+            "p99": 25.88333081373777,
+            "max": 53.44585870972196,
+            "min": 0.0537880143269831,
+            "mean": 2.8439081187424953
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.0537880143269831
+        }
+      ]
+    },
+    "rps80_spin0ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 652.5856362198397,
+        "p95": 3681.2395007815494,
+        "p99": 4192.526845941092,
+        "max": 5012.816651202684,
+        "mean": 1262.06665987853
+      },
+      "achieved_rps": 79.86666666666666,
+      "divergence_pct": -0.16666666666667496,
+      "worst_divergence_pct": -0.16666666666667496,
+      "n_shed_total": 0,
+      "n_errored_total": 136,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.20545844131447666,
+      "per_run": [
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2368,
+          "n_shed": 0,
+          "n_errored": 28,
+          "lag_ms": {
+            "p50": 637.5393050191178,
+            "p95": 2721.5127032540636,
+            "p99": 3091.5926843866705,
+            "max": 3197.9327802806665,
+            "min": 0.4056253434896462,
+            "mean": 1016.0627384838623
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.4056253434896462
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2378,
+          "n_shed": 0,
+          "n_errored": 18,
+          "lag_ms": {
+            "p50": 507.029206759114,
+            "p95": 3780.197075159947,
+            "p99": 4163.123012692018,
+            "max": 4232.769089579733,
+            "min": 0.20545844131447666,
+            "mean": 1285.7816878027963
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.20545844131447666
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2379,
+          "n_shed": 0,
+          "n_errored": 17,
+          "lag_ms": {
+            "p50": 1124.2973969012269,
+            "p95": 3649.974774752337,
+            "p99": 4788.822180298673,
+            "max": 5012.816651202684,
+            "min": 0.44990635092290177,
+            "mean": 1410.9333298306722
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.44990635092290177
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2368,
+          "n_shed": 0,
+          "n_errored": 28,
+          "lag_ms": {
+            "p50": 504.0775666731179,
+            "p95": 4302.364373730029,
+            "p99": 4674.829528301849,
+            "max": 4749.7047147954845,
+            "min": 0.21299155491760757,
+            "mean": 1287.0585891386593
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.21299155491760757
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2351,
+          "n_shed": 0,
+          "n_errored": 45,
+          "lag_ms": {
+            "p50": 489.9847057466218,
+            "p95": 3952.1485770113713,
+            "p99": 4244.266824026249,
+            "max": 4294.596332307151,
+            "min": 0.5349912682959257,
+            "mean": 1310.4969541366595
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.5349912682959257
+        }
+      ]
+    },
+    "rps80_spin5ms": {
+      "runs": 5,
+      "lag_ms": {
+        "p50": 793.849454134488,
+        "p95": 3787.607378008363,
+        "p99": 4414.217080648694,
+        "max": 5318.712854735168,
+        "mean": 1257.8674239314803
+      },
+      "achieved_rps": 79.86666666666666,
+      "divergence_pct": -0.16666666666667496,
+      "worst_divergence_pct": -0.16666666666667496,
+      "n_shed_total": 0,
+      "n_errored_total": 70,
+      "n_negative_lag_total": 0,
+      "most_negative_lag_ms": 0.042197670381938224,
+      "per_run": [
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2381,
+          "n_shed": 0,
+          "n_errored": 15,
+          "lag_ms": {
+            "p50": 641.2903925281626,
+            "p95": 4658.929540150155,
+            "p99": 5248.7629769443065,
+            "max": 5318.712854735168,
+            "min": 0.043599458308563044,
+            "mean": 1261.097382652526
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.043599458308563044
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2386,
+          "n_shed": 0,
+          "n_errored": 10,
+          "lag_ms": {
+            "p50": 1129.2136139130662,
+            "p95": 3565.6960435713927,
+            "p99": 4240.336807353936,
+            "max": 4303.131843149913,
+            "min": 0.042197670381938224,
+            "mean": 1367.276230409152
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.042197670381938224
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2387,
+          "n_shed": 0,
+          "n_errored": 9,
+          "lag_ms": {
+            "p50": 991.412008941893,
+            "p95": 3967.4080144616823,
+            "p99": 4497.732705216937,
+            "max": 4618.4320629247395,
+            "min": 0.046180998879208346,
+            "mean": 1471.986315807375
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.046180998879208346
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2374,
+          "n_shed": 0,
+          "n_errored": 22,
+          "lag_ms": {
+            "p50": 453.8875861538827,
+            "p95": 3041.1313120951604,
+            "p99": 3483.175650138787,
+            "max": 3537.618035952164,
+            "min": 0.051355998948565684,
+            "mean": 1022.7853995899303
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.051355998948565684
+        },
+        {
+          "offered_rps": 80.0,
+          "achieved_rps": 79.86666666666666,
+          "divergence_pct": -0.16666666666667496,
+          "n_scheduled": 2396,
+          "n_sent": 2382,
+          "n_shed": 0,
+          "n_errored": 14,
+          "lag_ms": {
+            "p50": 753.4436691354358,
+            "p95": 3704.871979763425,
+            "p99": 4601.077263589505,
+            "max": 4933.69345871406,
+            "min": 0.06484725849986717,
+            "mean": 1166.1917911984183
+          },
+          "n_negative_lag": 0,
+          "most_negative_lag_ms": 0.06484725849986717
+        }
+      ]
+    }
+  }
+}

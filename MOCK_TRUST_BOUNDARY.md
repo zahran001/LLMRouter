@@ -56,6 +56,35 @@ the sequential noise calibration run with the spin disabled
 and again with it enabled, both compared against the *configured* values. Until
 that A/B exists, the busy-wait stays and this question stays open.
 
+**Status update (2026-08-16) — CLOSED. The A/B ran; the spin is not needed on
+Linux.** Dedicated `e2-standard-2` GCP VM (`us-central1-a`), same
+`calibrate_noise_floor.py` harness, 200 runs each, `fast` config, spin
+toggled via `mock.timing.SPIN_MARGIN_S` (see `mock/timing.py`,
+`--spin-margin-s` flag) so both runs share everything except the one
+variable:
+
+| | spin disabled (bare `asyncio.sleep`) | spin enabled (default 20ms margin) |
+|---|---|---|
+| TTFT bias vs configured | +5.97ms | +5.26ms |
+| TTFT max abs deviation | 6.76ms | 5.75ms |
+| TPOT bias vs configured | +0.59ms | +0.23ms |
+| TPOT max abs deviation | 0.66ms | 0.28ms |
+
+Full results: `benchmarks/calibration/noise_floor/noise_floor_fast_linux_nospin.json`,
+`benchmarks/calibration/noise_floor/noise_floor_fast_linux_spin.json`.
+
+**Reading it:** the spin buys under 1ms on Linux (5.97ms -> 5.26ms TTFT bias),
+nothing like the ~10-30ms bare-`asyncio.sleep()` overshoot it corrects on
+Windows (`mock/timing.py`'s own calibration comment). The ~5-6ms that
+*remains* even with the spin enabled is the same structural
+transport/event-loop latency the CI ~3ms number reflected (§ above) — a
+different quantity from sleep overshoot, and one the spin was never meant to
+fix. **Conclusion: the busy-wait is a Windows-only fix.** It stays in the
+code (harmless on Linux, required on Windows, and this project's dev/CI
+matrix includes both), but Linux GPU-session numbers do not depend on it —
+Week 2's real-vLLM measurements would be trustworthy on Linux even if the
+spin were removed entirely.
+
 ---
 
 ## 2. What "request patterns" means

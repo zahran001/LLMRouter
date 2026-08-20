@@ -1,0 +1,86 @@
+{
+  "what": "Repeat/evidence policy for GPU session #2 (R4 README R10/§11, plus the six human locks taken at the pre-GPU documentation cleanup).",
+  "status": "LOCKED",
+  "status_note": "Signed off by the human as locks D-CLEAN-1..6 ahead of Hard Stop R-DOC. Superseded the earlier PROPOSED state of 2026-08-19. metrics.classification.RepeatPolicy mirrors the `policy` block below rather than hard-coding values elsewhere, so the numbers stay a recorded human decision.",
+  "proposed_at": "2026-08-19",
+  "locked_at": "2026-08-19",
+  "policy_version": 2,
+  "human_locks": {
+    "D-CLEAN-1": "1A -- three independent repeats per headline lambda; final classification requires agreement; a 2-1 split is UNCERTAIN, never a majority verdict.",
+    "D-CLEAN-2": "2B -- N=4000 is the authorized headline evidence size. N=5000 is NOT authorized. An unresolved crossing is reported as a breach interval.",
+    "D-CLEAN-3": "3A -- repeats from different vLLM process epochs may not be combined into one final classification family.",
+    "D-CLEAN-4": "4A -- the 60s warmup boundary is frozen into the exact-N schedules and validated during Tier A. Post-hoc warmup re-filtering of headline sidecars is not a valid resolution.",
+    "D-CLEAN-5": "5A -- scout lambda 1/2/4/8, with 0.5 and 16 pre-authorized as fallback. No other lambda may be invented on the meter.",
+    "D-CLEAN-6": "6A -- Week 2 is not closed until the controlled Poisson headline, the natural-random secondary, the steady-arrival reference and the adversarial scenario are accounted for. Only the controlled Poisson workload defines the headline breach."
+  },
+  "policy": {
+    "min_valid_repeats": 3,
+    "require_unanimous": true,
+    "majority_vote": false,
+    "split_verdict": "UNCERTAIN",
+    "n_per_run": 4000,
+    "n_max": 5000,
+    "max_repeats_authorized": 3,
+    "max_ttft_p99_spread_ms": null,
+    "cross_process_epoch_combination": false,
+    "warmup_boundary_s": 60,
+    "post_hoc_warmup_refilter": false,
+    "unresolved_boundary": "interval"
+  },
+  "rationale": {
+    "min_valid_repeats": "Three is the smallest number that can show disagreement AS disagreement: with two, a split is a tie and there is no way to tell which run was unusual.",
+    "require_unanimous": "Near the SLO a 2-1 split IS the finding -- the point is unstable. Taking the majority would convert an honest UNCERTAIN into a verdict, which is the failure the first session already made once.",
+    "majority_vote": "Stated as an explicit false rather than left implicit, because 'unanimous' and 'majority' are the same word to a hurried reader on a meter.",
+    "n_per_run": "Smallest grid candidate reaching a <=5% per-run classification-flip rate on the conservative 2-RPS bootstrap source (R3 evidence package 4.1).",
+    "n_max": "Structural: the pinned corpus holds 5,000 prompts, so a larger canonical multiset would require repeating prompts, which is not neutral with prefix caching and is forbidden.",
+    "max_repeats_authorized": "Three at N=4,000 is ~5.4h of drive time in the worst-case lambda set. Beyond that the session length itself becomes the dominant risk (spot preemption), not the statistics.",
+    "max_ttft_p99_spread_ms": "Left null deliberately. Spread is RECORDED for every point; gating on a threshold nobody has calibrated would invent a rule, and unanimity already catches the case that matters.",
+    "cross_process_epoch_combination": "A vLLM restart (spot preemption is the realistic cause) resets the engine state the repeats were meant to hold constant. Mixing epochs would let process-initialization variance enter one repeat and not the others, silently, at exactly the boundary where the verdict is decided.",
+    "warmup_boundary_s": "Frozen into the materialized exact-N schedules: N arrivals are materialized at or after this boundary. It is validated against the Tier A transient BEFORE Tier B is driven.",
+    "post_hoc_warmup_refilter": "Valid under the superseded fixed-duration design, invalid for the redesigned exact-N headline: filtering past the frozen boundary discards canonical arrivals and leaves fewer than N measured samples. metrics/headline_point.py refuses it. If 60s proves insufficient, the schedules are REGENERATED at a larger boundary, offline.",
+    "unresolved_boundary": "An interval is a legitimate final answer. A <=1% per-run flip rate would need N ~ 7,500, above n_max, so escalating on the meter cannot reach it."
+  },
+  "escalation": {
+    "n5000": {
+      "authorized": false,
+      "why_not": "Locked as D-CLEAN-2 (2B). The earlier proposal left this open as at-most-one re-drive of a single UNCERTAIN boundary lambda at N=5,000. The human closed it: if N=4,000 cannot resolve the crossing under the unanimity rule, the answer is a breach interval, not a bigger meter bill.",
+      "cost_at_lambda_2_if_it_had_been_authorized": "3 x 5000/2 = 7,500s = 2.1h additional drive time."
+    },
+    "authorized": false,
+    "note": "No escalation of any kind is authorized for GPU session #2. This field was `null` while the policy was PROPOSED; it is now an explicit false."
+  },
+  "scout": {
+    "lambdas": [1, 2, 4, 8],
+    "n_per_point": 500,
+    "repeats": 1,
+    "evidence_class": "DIAGNOSTIC -- locates the crossing region, never enters classification",
+    "preauthorized_fallback": {
+      "if_lambda_1_is_already_over": [0.5],
+      "if_lambda_8_is_still_under": [16],
+      "if_fallback_still_fails_to_bracket": "STOP and return to human review"
+    }
+  },
+  "secondary_scope": {
+    "required_before_week2_closeout": [
+      "controlled Poisson headline",
+      "natural-random secondary",
+      "steady-arrival reference",
+      "adversarial scenario"
+    ],
+    "headline_defining": "controlled Poisson headline",
+    "execution_order_note": "Adversarial runs last -- it deliberately drives the replica toward saturation.",
+    "interpretation_rule": "Secondary scenarios may support interpretation of the headline breach. They may never redefine it."
+  },
+  "stop_condition": {
+    "rule": "If the crossing is still unresolved once the authorized ceiling is reached, report breach interval = (highest defensible UNDER lambda, lowest defensible OVER lambda] and stop.",
+    "never": [
+      "escalate N beyond 4,000 for GPU session #2",
+      "repeat corpus prompts to manufacture a larger N",
+      "add unplanned repeats on the meter",
+      "take a majority verdict from split repeats",
+      "combine repeats from different vLLM process epochs",
+      "resolve an insufficient warmup by re-filtering headline sidecars after the run",
+      "invent scout lambda values beyond the pre-authorized fallback"
+    ]
+  }
+}

@@ -1,0 +1,252 @@
+{
+  "what": "Redesigned Week 2 schedule families (R4 README R5/R6/R11).",
+  "generated_at": "2026-08-19T06:23:28+00:00",
+  "headline": {
+    "schedule_scheme_version": "headline-schedule-v2",
+    "canonical_workload": "benchmarks/workloads/week2_headline/canonical_v1.json",
+    "canonical_membership_id": "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b",
+    "lambdas": [
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      4.0
+    ],
+    "repeats": 3,
+    "warmup_s": 60.0,
+    "arrival_seed_base": 20260819000,
+    "assignment_seed_base": 20260819500,
+    "seed_rule": "arrival_seed = base + repeat_id; assignment_seed = base + repeat_id",
+    "total_schedule_duration_s": 26481.760854221728,
+    "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps1.5.schedule.json",
+        "sha256": "5246068ddb450f2720f06c22d3c6e320915e0658e89eed3c0e976eec936deda2",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 1.5,
+        "materialized_schedule_count": 4089,
+        "materialized_warmup_count": 89,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 2681.4448532685137,
+        "materialized_schedule_rps": 1.5258760812811505,
+        "nominal_realization_delta_pct": 1.7250720854100325
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps2.schedule.json",
+        "sha256": "994ed4b6620dbae9b39a94c39e1bbebc6660099b57161c8d764217042697ed14",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 2.0,
+        "materialized_schedule_count": 4106,
+        "materialized_warmup_count": 106,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 2020.5475177428827,
+        "materialized_schedule_rps": 2.0402463922961047,
+        "nominal_realization_delta_pct": 2.012319614805236
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps2.5.schedule.json",
+        "sha256": "ce0f8cca64b5cd834fe0704f2119b15e9e4c629ccb0558f11aab9a38e213aa24",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 2.5,
+        "materialized_schedule_count": 4134,
+        "materialized_warmup_count": 134,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1627.0739832073384,
+        "materialized_schedule_rps": 2.5525278594780696,
+        "nominal_realization_delta_pct": 2.1011143791227838
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps3.schedule.json",
+        "sha256": "82f23c4ab22b3af2769610688532f5cfdebdde077c4721a42cdf850379c36d09",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 3.0,
+        "materialized_schedule_count": 4156,
+        "materialized_warmup_count": 156,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1366.3542087938645,
+        "materialized_schedule_rps": 3.061956683014123,
+        "nominal_realization_delta_pct": 2.0652227671374312
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps4.schedule.json",
+        "sha256": "b124a609b16e0716a35bb96efa2a07c2e9d05bba07ebf9f7e1412572603bdfed",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 4.0,
+        "materialized_schedule_count": 4219,
+        "materialized_warmup_count": 219,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1042.5720090309133,
+        "materialized_schedule_rps": 4.070948452872276,
+        "nominal_realization_delta_pct": 1.7737113218069034
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps1.5.schedule.json",
+        "sha256": "12514c042f86ee08b99239f44f63a06fc6c335611834ab20d9f1a8ccb5efed71",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 1.5,
+        "materialized_schedule_count": 4113,
+        "materialized_warmup_count": 113,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 2724.944700468053,
+        "materialized_schedule_rps": 1.5009692318559058,
+        "nominal_realization_delta_pct": 0.06461545706038703
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps2.schedule.json",
+        "sha256": "46aa5d961fc97a1d3b4d96e020d0ca5cb29a29813d13ea26466334898af9af86",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 2.0,
+        "materialized_schedule_count": 4144,
+        "materialized_warmup_count": 144,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 2061.5752623998055,
+        "materialized_schedule_rps": 1.9984259773495434,
+        "nominal_realization_delta_pct": -0.07870113252282929
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps2.5.schedule.json",
+        "sha256": "2679ccf8161010d3e06fce3e9e23209b375fd1b51a2e94b33cef51ab478d3241",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 2.5,
+        "materialized_schedule_count": 4166,
+        "materialized_warmup_count": 166,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1661.061843503815,
+        "materialized_schedule_rps": 2.4983419698806086,
+        "nominal_realization_delta_pct": -0.06632120477565451
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps3.schedule.json",
+        "sha256": "a7bd67710e28a0386bea8569490fcd1837c4df13ab58079a193bc1ddf6149467",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 3.0,
+        "materialized_schedule_count": 4198,
+        "materialized_warmup_count": 198,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1394.4111675688916,
+        "materialized_schedule_rps": 2.997576831800227,
+        "nominal_realization_delta_pct": -0.08077227332576875
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps4.schedule.json",
+        "sha256": "cdecb9991e2ac0091e74ba523a2a0dd8588bfdfb33709087aeb1dda0f82134b3",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 4.0,
+        "materialized_schedule_count": 4256,
+        "materialized_warmup_count": 256,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1060.3174656457845,
+        "materialized_schedule_rps": 3.9987305404266653,
+        "nominal_realization_delta_pct": -0.031736489333367146
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps1.5.schedule.json",
+        "sha256": "8ce66e9516b7fc8072a50bec9747006a5f789ffb9ab7886e4a1eb5e6060c7d69",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 1.5,
+        "materialized_schedule_count": 4111,
+        "materialized_warmup_count": 111,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 2710.6099479007066,
+        "materialized_schedule_rps": 1.5090866172776631,
+        "nominal_realization_delta_pct": 0.6057744851775423
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps2.schedule.json",
+        "sha256": "d0007418412047abe352d70af99ef0c3d0857c6618a0560f6092878e86a48e38",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 2.0,
+        "materialized_schedule_count": 4138,
+        "materialized_warmup_count": 138,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 2042.9225014155606,
+        "materialized_schedule_rps": 2.0172245749112716,
+        "nominal_realization_delta_pct": 0.8612287455635803
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps2.5.schedule.json",
+        "sha256": "2ad0bd2f8d792e524100dbc07b4bc86424865e9a83269997dd2ae7a29f411c6d",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 2.5,
+        "materialized_schedule_count": 4177,
+        "materialized_warmup_count": 177,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1647.8484722465187,
+        "materialized_schedule_rps": 2.5191320644977684,
+        "nominal_realization_delta_pct": 0.7652825799107354
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps3.schedule.json",
+        "sha256": "ffbbada36aa84bb9e0b2d8243cdd3cb2b60b770af42a3d08df27c2ccf45ccff3",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 3.0,
+        "materialized_schedule_count": 4209,
+        "materialized_warmup_count": 209,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1384.404665687325,
+        "materialized_schedule_rps": 3.020224938519168,
+        "nominal_realization_delta_pct": 0.6741646173055985
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps4.schedule.json",
+        "sha256": "2f751afe75f9c8347548134fb4cb8e7e55beb5e24691624ab41fa04cee93aff0",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 4.0,
+        "materialized_schedule_count": 4273,
+        "materialized_warmup_count": 273,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 1055.6722553417553,
+        "materialized_schedule_rps": 4.017386221761333,
+        "nominal_realization_delta_pct": 0.4346555440333244
+      }
+    ]
+  },
+  "secondary": {
+    "workload_class": "secondary_natural_random",
+    "duration_s": 600.0,
+    "seed_base": 20260819900,
+    "never_defines_headline_breach": true,
+    "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps1.5.schedule.json",
+        "sha256": "bd01b1c2a8d5cd8b8edf3be71c6b8cfb46c4a7876c416e80c2eed45d5c4c2adc",
+        "nominal_lambda_rps": 1.5,
+        "n_scheduled": 968,
+        "duration_s": 600.0,
+        "seed": 20260819915
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps2.schedule.json",
+        "sha256": "4ce648df186a2eaa3bb6d64a16a3e6d49644fa763c28397b1a1002c28ea99dc8",
+        "nominal_lambda_rps": 2.0,
+        "n_scheduled": 1235,
+        "duration_s": 600.0,
+        "seed": 20260819920
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps2.5.schedule.json",
+        "sha256": "de2c7ee2ca4450efed818af685ee4bd8c310733cc74df37f4f5ccbb501889ff8",
+        "nominal_lambda_rps": 2.5,
+        "n_scheduled": 1499,
+        "duration_s": 600.0,
+        "seed": 20260819925
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps3.schedule.json",
+        "sha256": "8a79549d400a46deadf572ba0a23360febf688190316c5f2ba029b26af0b9ddd",
+        "nominal_lambda_rps": 3.0,
+        "n_scheduled": 1762,
+        "duration_s": 600.0,
+        "seed": 20260819930
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps4.schedule.json",
+        "sha256": "3a2b5d753dff9f5f04a0c592f7f948356981c870d044e72a7ee8f170492e9c85",
+        "nominal_lambda_rps": 4.0,
+        "n_scheduled": 2369,
+        "duration_s": 600.0,
+        "seed": 20260819940
+      }
+    ]
+  }
+}

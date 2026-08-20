@@ -1,0 +1,471 @@
+{
+  "seed": 20260817,
+  "duration_s_main_sweeps": 8.0,
+  "candidate_caps": [
+    50,
+    100,
+    200
+  ],
+  "rps_sweep": [
+    5,
+    10,
+    20,
+    30,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300
+  ],
+  "shed_onset": [
+    {
+      "offered_rps": 5,
+      "cap": 50,
+      "n_scheduled": 39,
+      "n_sent": 39,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 4.875,
+      "peak_concurrency": 6
+    },
+    {
+      "offered_rps": 10,
+      "cap": 50,
+      "n_scheduled": 79,
+      "n_sent": 79,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 9.875,
+      "peak_concurrency": 11
+    },
+    {
+      "offered_rps": 20,
+      "cap": 50,
+      "n_scheduled": 159,
+      "n_sent": 159,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 19.875,
+      "peak_concurrency": 22
+    },
+    {
+      "offered_rps": 30,
+      "cap": 50,
+      "n_scheduled": 240,
+      "n_sent": 206,
+      "n_shed": 34,
+      "n_errored": 0,
+      "achieved_rps": 25.75,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 50,
+      "cap": 50,
+      "n_scheduled": 399,
+      "n_sent": 203,
+      "n_shed": 196,
+      "n_errored": 0,
+      "achieved_rps": 25.375,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 75,
+      "cap": 50,
+      "n_scheduled": 599,
+      "n_sent": 202,
+      "n_shed": 397,
+      "n_errored": 0,
+      "achieved_rps": 25.25,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 100,
+      "cap": 50,
+      "n_scheduled": 799,
+      "n_sent": 202,
+      "n_shed": 597,
+      "n_errored": 0,
+      "achieved_rps": 25.25,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 150,
+      "cap": 50,
+      "n_scheduled": 1199,
+      "n_sent": 194,
+      "n_shed": 1005,
+      "n_errored": 0,
+      "achieved_rps": 24.25,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 200,
+      "cap": 50,
+      "n_scheduled": 1599,
+      "n_sent": 179,
+      "n_shed": 1420,
+      "n_errored": 0,
+      "achieved_rps": 22.375,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 300,
+      "cap": 50,
+      "n_scheduled": 2399,
+      "n_sent": 162,
+      "n_shed": 2237,
+      "n_errored": 0,
+      "achieved_rps": 20.25,
+      "peak_concurrency": 50
+    },
+    {
+      "offered_rps": 5,
+      "cap": 100,
+      "n_scheduled": 39,
+      "n_sent": 39,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 4.875,
+      "peak_concurrency": 5
+    },
+    {
+      "offered_rps": 10,
+      "cap": 100,
+      "n_scheduled": 79,
+      "n_sent": 79,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 9.875,
+      "peak_concurrency": 11
+    },
+    {
+      "offered_rps": 20,
+      "cap": 100,
+      "n_scheduled": 159,
+      "n_sent": 159,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 19.875,
+      "peak_concurrency": 35
+    },
+    {
+      "offered_rps": 30,
+      "cap": 100,
+      "n_scheduled": 240,
+      "n_sent": 203,
+      "n_shed": 36,
+      "n_errored": 1,
+      "achieved_rps": 25.5,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 50,
+      "cap": 100,
+      "n_scheduled": 399,
+      "n_sent": 204,
+      "n_shed": 194,
+      "n_errored": 1,
+      "achieved_rps": 25.625,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 75,
+      "cap": 100,
+      "n_scheduled": 599,
+      "n_sent": 221,
+      "n_shed": 378,
+      "n_errored": 0,
+      "achieved_rps": 27.625,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 100,
+      "cap": 100,
+      "n_scheduled": 799,
+      "n_sent": 239,
+      "n_shed": 560,
+      "n_errored": 0,
+      "achieved_rps": 29.875,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 150,
+      "cap": 100,
+      "n_scheduled": 1199,
+      "n_sent": 229,
+      "n_shed": 969,
+      "n_errored": 1,
+      "achieved_rps": 28.75,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 200,
+      "cap": 100,
+      "n_scheduled": 1599,
+      "n_sent": 237,
+      "n_shed": 1362,
+      "n_errored": 0,
+      "achieved_rps": 29.625,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 300,
+      "cap": 100,
+      "n_scheduled": 2399,
+      "n_sent": 237,
+      "n_shed": 2162,
+      "n_errored": 0,
+      "achieved_rps": 29.625,
+      "peak_concurrency": 100
+    },
+    {
+      "offered_rps": 5,
+      "cap": 200,
+      "n_scheduled": 39,
+      "n_sent": 39,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 4.875,
+      "peak_concurrency": 5
+    },
+    {
+      "offered_rps": 10,
+      "cap": 200,
+      "n_scheduled": 79,
+      "n_sent": 79,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 9.875,
+      "peak_concurrency": 10
+    },
+    {
+      "offered_rps": 20,
+      "cap": 200,
+      "n_scheduled": 159,
+      "n_sent": 159,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 19.875,
+      "peak_concurrency": 22
+    },
+    {
+      "offered_rps": 30,
+      "cap": 200,
+      "n_scheduled": 240,
+      "n_sent": 240,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 30.0,
+      "peak_concurrency": 142
+    },
+    {
+      "offered_rps": 50,
+      "cap": 200,
+      "n_scheduled": 399,
+      "n_sent": 306,
+      "n_shed": 92,
+      "n_errored": 1,
+      "achieved_rps": 38.375,
+      "peak_concurrency": 200
+    },
+    {
+      "offered_rps": 75,
+      "cap": 200,
+      "n_scheduled": 599,
+      "n_sent": 319,
+      "n_shed": 280,
+      "n_errored": 0,
+      "achieved_rps": 39.875,
+      "peak_concurrency": 200
+    },
+    {
+      "offered_rps": 100,
+      "cap": 200,
+      "n_scheduled": 799,
+      "n_sent": 351,
+      "n_shed": 444,
+      "n_errored": 4,
+      "achieved_rps": 44.375,
+      "peak_concurrency": 200
+    },
+    {
+      "offered_rps": 150,
+      "cap": 200,
+      "n_scheduled": 1199,
+      "n_sent": 404,
+      "n_shed": 793,
+      "n_errored": 2,
+      "achieved_rps": 50.75,
+      "peak_concurrency": 200
+    },
+    {
+      "offered_rps": 200,
+      "cap": 200,
+      "n_scheduled": 1599,
+      "n_sent": 402,
+      "n_shed": 1194,
+      "n_errored": 3,
+      "achieved_rps": 50.625,
+      "peak_concurrency": 200
+    },
+    {
+      "offered_rps": 300,
+      "cap": 200,
+      "n_scheduled": 2399,
+      "n_sent": 403,
+      "n_shed": 1993,
+      "n_errored": 3,
+      "achieved_rps": 50.75,
+      "peak_concurrency": 200
+    }
+  ],
+  "natural_concurrency": [
+    {
+      "offered_rps": 5,
+      "cap": 100000,
+      "n_scheduled": 39,
+      "n_sent": 39,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 4.875,
+      "peak_concurrency": 5
+    },
+    {
+      "offered_rps": 10,
+      "cap": 100000,
+      "n_scheduled": 79,
+      "n_sent": 79,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 9.875,
+      "peak_concurrency": 10
+    },
+    {
+      "offered_rps": 20,
+      "cap": 100000,
+      "n_scheduled": 159,
+      "n_sent": 159,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 19.875,
+      "peak_concurrency": 28
+    },
+    {
+      "offered_rps": 30,
+      "cap": 100000,
+      "n_scheduled": 240,
+      "n_sent": 240,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 30.0,
+      "peak_concurrency": 129
+    },
+    {
+      "offered_rps": 50,
+      "cap": 100000,
+      "n_scheduled": 399,
+      "n_sent": 397,
+      "n_shed": 0,
+      "n_errored": 2,
+      "achieved_rps": 49.875,
+      "peak_concurrency": 288
+    },
+    {
+      "offered_rps": 75,
+      "cap": 100000,
+      "n_scheduled": 599,
+      "n_sent": 598,
+      "n_shed": 0,
+      "n_errored": 1,
+      "achieved_rps": 74.875,
+      "peak_concurrency": 488
+    },
+    {
+      "offered_rps": 100,
+      "cap": 100000,
+      "n_scheduled": 799,
+      "n_sent": 796,
+      "n_shed": 0,
+      "n_errored": 3,
+      "achieved_rps": 99.875,
+      "peak_concurrency": 651
+    },
+    {
+      "offered_rps": 150,
+      "cap": 100000,
+      "n_scheduled": 1199,
+      "n_sent": 1193,
+      "n_shed": 0,
+      "n_errored": 6,
+      "achieved_rps": 149.875,
+      "peak_concurrency": 1141
+    },
+    {
+      "offered_rps": 200,
+      "cap": 100000,
+      "n_scheduled": 1599,
+      "n_sent": 1594,
+      "n_shed": 0,
+      "n_errored": 5,
+      "achieved_rps": 199.875,
+      "peak_concurrency": 1539
+    },
+    {
+      "offered_rps": 300,
+      "cap": 100000,
+      "n_scheduled": 2399,
+      "n_sent": 2399,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 299.875,
+      "peak_concurrency": 2380
+    }
+  ],
+  "low_load_tracking": [
+    {
+      "offered_rps": 0.5,
+      "cap": 100000,
+      "n_scheduled": 15,
+      "n_sent": 15,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 0.5,
+      "peak_concurrency": 1,
+      "divergence_pct": 0.0
+    },
+    {
+      "offered_rps": 1,
+      "cap": 100000,
+      "n_scheduled": 30,
+      "n_sent": 30,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 1.0,
+      "peak_concurrency": 1,
+      "divergence_pct": 0.0
+    },
+    {
+      "offered_rps": 2,
+      "cap": 100000,
+      "n_scheduled": 60,
+      "n_sent": 60,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 2.0,
+      "peak_concurrency": 3,
+      "divergence_pct": 0.0
+    },
+    {
+      "offered_rps": 5,
+      "cap": 100000,
+      "n_scheduled": 149,
+      "n_sent": 149,
+      "n_shed": 0,
+      "n_errored": 0,
+      "achieved_rps": 4.966666666666667,
+      "peak_concurrency": 5,
+      "divergence_pct": -0.6666666666666643
+    }
+  ]
+}

@@ -1,0 +1,349 @@
+{
+  "what": "Cache-state audit of the first session's unloaded TTFT floor (R4 README P1).",
+  "verdict": "CACHE_INFLUENCED_DIAGNOSTIC",
+  "verdict_reasons": [
+    "prefix cache was demonstrably live during the floor: 1 of 1 discriminating within-run replays collapsed to cache-hit speed",
+    "1 of 1 first servings still paid full cold prefill despite the Stage A sweep having served the same prompt earlier, so that earlier exposure had been evicted before the floor ran",
+    "none of the top 10 TTFT samples -- the ones that set the floor's p99 -- is a within-run repeat serving",
+    "but the floor was measured AFTER the same prompts had been served by the Stage A sweep, with prefix caching enabled, so a cold cache cannot be PROVEN -- only argued from behaviour"
+  ],
+  "generated_at": "2026-08-19T05:46:39+00:00",
+  "artifact_not_modified": true,
+  "source": {
+    "samples": "benchmarks/evidence/week2/first_session/unloaded_floor/unloaded_floor.samples.jsonl",
+    "metrics": "benchmarks/evidence/week2/first_session/unloaded_floor/unloaded_floor.metrics.json",
+    "committed_p99_ms": 402.2692119997373,
+    "committed_n_requests": 248,
+    "committed_n_errors": 0,
+    "mode": "unloaded_floor_concurrency_1"
+  },
+  "server_config": {
+    "enable_prefix_caching": true,
+    "source": "session_logs/vllm.log EngineCore config line (vLLM v0.27.1)"
+  },
+  "run_order": {
+    "n_blocks": 8,
+    "blocks": [
+      {
+        "from_time": "19:15:39",
+        "to_time": "19:17:49",
+        "duration_samples": 14,
+        "peak_running": 38,
+        "peak_waiting": 0,
+        "hit_rate_from_pct": 5.3,
+        "hit_rate_to_pct": 12.7
+      },
+      {
+        "from_time": "19:18:09",
+        "to_time": "19:20:39",
+        "duration_samples": 16,
+        "peak_running": 170,
+        "peak_waiting": 0,
+        "hit_rate_from_pct": 12.9,
+        "hit_rate_to_pct": 25.2
+      },
+      {
+        "from_time": "19:20:59",
+        "to_time": "19:24:29",
+        "duration_samples": 22,
+        "peak_running": 256,
+        "peak_waiting": 606,
+        "hit_rate_from_pct": 24.6,
+        "hit_rate_to_pct": 14.6
+      },
+      {
+        "from_time": "19:24:49",
+        "to_time": "19:28:19",
+        "duration_samples": 22,
+        "peak_running": 256,
+        "peak_waiting": 1215,
+        "hit_rate_from_pct": 15.0,
+        "hit_rate_to_pct": 11.6
+      },
+      {
+        "from_time": "19:28:59",
+        "to_time": "19:32:19",
+        "duration_samples": 21,
+        "peak_running": 256,
+        "peak_waiting": 1808,
+        "hit_rate_from_pct": 11.8,
+        "hit_rate_to_pct": 14.3
+      },
+      {
+        "from_time": "19:32:49",
+        "to_time": "19:34:19",
+        "duration_samples": 10,
+        "peak_running": 256,
+        "peak_waiting": 2397,
+        "hit_rate_from_pct": 15.2,
+        "hit_rate_to_pct": 15.1
+      },
+      {
+        "from_time": "19:51:29",
+        "to_time": "19:51:29",
+        "duration_samples": 1,
+        "peak_running": 1,
+        "peak_waiting": 0,
+        "hit_rate_from_pct": 16.4,
+        "hit_rate_to_pct": 16.4
+      },
+      {
+        "from_time": "20:04:09",
+        "to_time": "20:06:19",
+        "duration_samples": 14,
+        "peak_running": 24,
+        "peak_waiting": 0,
+        "hit_rate_from_pct": 17.4,
+        "hit_rate_to_pct": 27.4
+      }
+    ]
+  },
+  "cold_prefill_fit": {
+    "intercept_ms": 76.82744596098036,
+    "slope_ms_per_char": 0.02569523966043107,
+    "note": "fitted on the floor itself, so it is a description of these samples, not an independent predictor. Used only to ask whether a given first serving looks like full prefill for its length."
+  },
+  "internal_control_within_run_repeats": {
+    "n_requests": 248,
+    "n_distinct_prompts": 236,
+    "n_repeat_servings": 12,
+    "pairs": [
+      {
+        "prompt_id": 1903,
+        "char_len": 4992,
+        "first_seq": 29,
+        "first_ttft_ms": 197.66323500061844,
+        "repeat_seq": 164,
+        "repeat_ttft_ms": 83.92306699988694,
+        "ratio": 0.4245760067603081
+      },
+      {
+        "prompt_id": 2493,
+        "char_len": 850,
+        "first_seq": 20,
+        "first_ttft_ms": 89.08852900003694,
+        "repeat_seq": 170,
+        "repeat_ttft_ms": 80.66375900034473,
+        "ratio": 0.9054337287386491
+      },
+      {
+        "prompt_id": 1923,
+        "char_len": 843,
+        "first_seq": 55,
+        "first_ttft_ms": 89.09176100041805,
+        "repeat_seq": 86,
+        "repeat_ttft_ms": 80.31591400049365,
+        "ratio": 0.9014965368135083
+      },
+      {
+        "prompt_id": 2306,
+        "char_len": 399,
+        "first_seq": 30,
+        "first_ttft_ms": 85.03698799995618,
+        "repeat_seq": 85,
+        "repeat_ttft_ms": 80.02210699942225,
+        "ratio": 0.9410270622410036
+      },
+      {
+        "prompt_id": 380,
+        "char_len": 272,
+        "first_seq": 25,
+        "first_ttft_ms": 83.51898099954269,
+        "repeat_seq": 116,
+        "repeat_ttft_ms": 80.2289719995315,
+        "ratio": 0.9606076491758297
+      },
+      {
+        "prompt_id": 2102,
+        "char_len": 111,
+        "first_seq": 81,
+        "first_ttft_ms": 82.31318600064697,
+        "repeat_seq": 99,
+        "repeat_ttft_ms": 82.32783299990842,
+        "ratio": 1.0001779423197317
+      },
+      {
+        "prompt_id": 3233,
+        "char_len": 85,
+        "first_seq": 31,
+        "first_ttft_ms": 83.4562130003178,
+        "repeat_seq": 153,
+        "repeat_ttft_ms": 81.99175400022796,
+        "ratio": 0.982452366966564
+      },
+      {
+        "prompt_id": 2408,
+        "char_len": 71,
+        "first_seq": 50,
+        "first_ttft_ms": 82.4475720000919,
+        "repeat_seq": 105,
+        "repeat_ttft_ms": 79.43379400057893,
+        "ratio": 0.9634461279283081
+      },
+      {
+        "prompt_id": 4553,
+        "char_len": 54,
+        "first_seq": 162,
+        "first_ttft_ms": 82.23407499917812,
+        "repeat_seq": 209,
+        "repeat_ttft_ms": 81.96419700016122,
+        "ratio": 0.9967181731050103
+      },
+      {
+        "prompt_id": 2597,
+        "char_len": 48,
+        "first_seq": 84,
+        "first_ttft_ms": 83.5889939999106,
+        "repeat_seq": 93,
+        "repeat_ttft_ms": 80.19189099923096,
+        "ratio": 0.9593594462844801
+      },
+      {
+        "prompt_id": 1554,
+        "char_len": 46,
+        "first_seq": 28,
+        "first_ttft_ms": 83.58383100039646,
+        "repeat_seq": 244,
+        "repeat_ttft_ms": 80.23106699965865,
+        "ratio": 0.9598874093157814
+      },
+      {
+        "prompt_id": 763,
+        "char_len": 16,
+        "first_seq": 147,
+        "first_ttft_ms": 81.39454899992415,
+        "repeat_seq": 226,
+        "repeat_ttft_ms": 81.03259499966953,
+        "ratio": 0.9955530928704456
+      }
+    ],
+    "discriminating_pairs": [
+      {
+        "prompt_id": 1903,
+        "char_len": 4992,
+        "first_seq": 29,
+        "first_ttft_ms": 197.66323500061844,
+        "repeat_seq": 164,
+        "repeat_ttft_ms": 83.92306699988694,
+        "ratio": 0.4245760067603081
+      }
+    ],
+    "note": "Only pairs above 2358 chars discriminate: below that, cold prefill and a cache hit both land near the ~82ms short-prompt floor and the pair is uninformative."
+  },
+  "cold_first_serving_evidence": {
+    "pairs": [
+      {
+        "prompt_id": 1903,
+        "char_len": 4992,
+        "first_seq": 29,
+        "first_ttft_ms": 197.66323500061844,
+        "repeat_seq": 164,
+        "repeat_ttft_ms": 83.92306699988694,
+        "ratio": 0.4245760067603081,
+        "predicted_cold_prefill_ms": 205.09808234585225,
+        "first_serving_vs_predicted_cold": 0.9637497959015697,
+        "repeat_behaves_like_hit": true
+      }
+    ],
+    "interpretation": "first_serving_vs_predicted_cold near 1.0 means the first serving paid full prefill despite the sweep having served that prompt earlier, i.e. the earlier exposure had been evicted. repeat_behaves_like_hit true means the immediate replay was served from cache."
+  },
+  "tail_composition": {
+    "top_k": 10,
+    "samples": [
+      {
+        "seq": 151,
+        "prompt_id": 458,
+        "char_len": 14960,
+        "ttft_ms": 523.3469590002642,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 192,
+        "prompt_id": 2350,
+        "char_len": 16781,
+        "ttft_ms": 506.9109189998926,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 182,
+        "prompt_id": 737,
+        "char_len": 7430,
+        "ttft_ms": 402.2692119997373,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 193,
+        "prompt_id": 863,
+        "char_len": 11327,
+        "ttft_ms": 373.08492200008914,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 201,
+        "prompt_id": 4322,
+        "char_len": 10034,
+        "ttft_ms": 367.12838799940073,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 179,
+        "prompt_id": 3255,
+        "char_len": 9446,
+        "ttft_ms": 324.5304739994026,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 79,
+        "prompt_id": 4739,
+        "char_len": 6718,
+        "ttft_ms": 259.17072300035215,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 4,
+        "prompt_id": 1593,
+        "char_len": 8049,
+        "ttft_ms": 242.08795000049577,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 103,
+        "prompt_id": 4902,
+        "char_len": 6890,
+        "ttft_ms": 227.49551099968812,
+        "is_repeat_serving": false
+      },
+      {
+        "seq": 225,
+        "prompt_id": 3275,
+        "char_len": 4513,
+        "ttft_ms": 223.8606040000377,
+        "is_repeat_serving": false
+      }
+    ],
+    "n_repeat_servings_in_top_k": 0
+  },
+  "percentiles": {
+    "as_recorded": {
+      "n": 248,
+      "p50_ms": 82.81316449983933,
+      "p99_linear_ms": 388.5525956999027,
+      "p99_nearest_rank_ms": 402.2692119997373,
+      "max_ms": 523.3469590002642
+    },
+    "first_servings_only": {
+      "n": 236,
+      "p50_ms": 82.8925360001449,
+      "p99_linear_ms": 392.0547104998606,
+      "p99_nearest_rank_ms": 402.2692119997373,
+      "max_ms": 523.3469590002642
+    },
+    "note": "The redesigned convention is nearest-rank (L5). Both are shown because the committed floor record happens to be a nearest-rank value while every Stage A record is linear."
+  },
+  "how_this_number_may_now_be_described": [
+    "ALLOWED: 'the first session's unloaded diagnostic floor, measured with prefix caching enabled, whose p99 region is composed entirely of first servings'.",
+    "NOT ALLOWED: 'the unloaded TTFT floor is 402.3ms' as a definitive, cache-free measurement. Cache state cannot be proven clean, so the figure stops being citable as definitive (R4 README P1).",
+    "The next GPU session collects a new clean floor with prefix caching disabled (L6); that measurement supersedes this one for any published claim.",
+    "The thesis-level conclusion it supported -- that 500ms is achievable for this corpus/model without contention -- is WEAKENED, not overturned: a cache-influenced floor would be biased LOW, so the true cold floor is at or above 402.3ms and could sit closer to the SLO."
+  ]
+}

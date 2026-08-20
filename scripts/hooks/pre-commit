@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# pre-commit -- block staged changes that would publish GCP account or
+# project identifiers. This repo is public, and the pre-flight docs are
+# written by pasting real `gcloud` transcripts into them, so the failure
+# mode is routine rather than exotic: run a command, paste the proof, ship
+# the account ID with it.
+#
+# Install:
+#     git config core.hooksPath scripts/hooks
+#
+# Bypass for a deliberate false positive:
+#     git commit --no-verify
+#
+# Scans ADDED lines only (`+` in a zero-context staged diff), so existing
+# occurrences elsewhere in a file do not block unrelated edits.
+
+set -u
+
+added=$(git diff --cached --unified=0 --no-color | grep '^+' | grep -v '^+++' || true)
+[ -z "$added" ] && exit 0
+
+# Same text with long hex tokens masked out. Content-addressed evidence is now
+# routinely committed -- MANIFEST.json carries a SHA-256 per promoted artifact,
+# and the workload/schedule provenance carries corpus and membership digests --
+# and a 64-char hex string contains a run of 12+ decimal digits often enough to
+# matter (roughly one in six). Those runs are not project numbers, and without
+# this every evidence commit would need --no-verify, which would skip the
+# billing-account checks too: strictly worse than masking. Same reasoning that
+# already narrowed the pattern for the calibration artifacts' timing floats.
+#
+# Masked ONLY for the digit-run rule below. The billing-account and
+# projects/<number> rules still see the raw text, because those patterns cannot
+# be produced by a hash.
+added_no_hashes=$(printf '%s\n' "$added" | sed -E 's/[0-9a-f]{32,}/<HASH>/g')
+
+status=0
+
+flag() {
+  pattern="$1"
+  label="$2"
+  haystack="${3:-$added}"
+  hits=$(printf '%s\n' "$haystack" | grep -nE "$pattern" || true)
+  if [ -n "$hits" ]; then
+    if [ "$status" -eq 0 ]; then
+      echo "pre-commit: refusing to commit -- staged changes contain infrastructure identifiers." >&2
+      echo "This is a public repo. Replace them with <REDACTED>; the command itself is the evidence," >&2
+      echo "not the account it ran against." >&2
+      echo >&2
+    fi
+    echo "  [$label]" >&2
+    printf '%s\n' "$hits" | sed 's/^/    /' >&2
+    echo >&2
+    status=1
+  fi
+}
+
+# GCP billing account ID: six-six-six uppercase alphanumerics, either bare
+# or in the resource/flag forms gcloud prints and accepts.
+flag '[0-9A-F]{6}-[0-9A-F]{6}-[0-9A-F]{6}' 'billing account ID'
+flag 'billingAccounts/[A-Za-z0-9][A-Za-z0-9-]*' 'billingAccounts/ resource'
+flag 'billing-account=[A-Za-z0-9][A-Za-z0-9-]*' '--billing-account= flag'
+
+# GCP project number (12+ digits; CI run IDs here are 11 and unix
+# timestamps 10, so this threshold does not collide with them) and the
+# numeric projects/ resource form.
+#
+# The leading class excludes '.' so a decimal fraction is not a hit. The
+# calibration artifacts under benchmarks/calibration/ are full of
+# full-precision timing floats (e.g. 105.6721945006575 -- 13 digits after the
+# point), and those are now routinely committed evidence rather than
+# gitignored output. Without this, every calibration commit would need
+# --no-verify, which would skip the billing-account checks too -- a strictly
+# worse outcome than narrowing the pattern. A real project number is still
+# caught at line start, after a space, or after '/' (projects/<number>).
+flag '(^|[^0-9.])[0-9]{12,}([^0-9]|$)' 'project number (12+ digit literal)' "$added_no_hashes"
+flag 'projects/[0-9]{8,}' 'projects/<number> resource'
+
+# Auto-generated GCP project IDs, e.g. project-1234abcd-....
+flag 'project-[0-9a-f]{8}-[0-9a-f]{4}-' 'generated project ID'
+
+if [ "$status" -ne 0 ]; then
+  echo "If a hit is a false positive, commit with --no-verify and say why in the message." >&2
+fi
+
+exit "$status"

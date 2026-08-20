@@ -1,0 +1,232 @@
+{
+  "what": "Exact tokenizer capacity proof for the canonical headline workload (R4 README R4B).",
+  "verdict": "PASS",
+  "generated_at": "2026-08-19T06:07:02+00:00",
+  "workload": {
+    "path": "benchmarks/workloads/week2_headline/canonical_v1.candidate.json",
+    "membership_id": "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b",
+    "scheme_version": "canonical-workload-v1",
+    "N": 4000
+  },
+  "tokenizer": {
+    "gated_repo": "meta-llama/Llama-3.2-3B-Instruct",
+    "gated_repo_commit": "0cb88a4f764b7a12671c53f0838cd831a0843b95",
+    "verification": "Each file's git blob SHA-1 was compared against the blob id the public Hugging Face metadata API reports for that path in the gated repo. Equal blob ids means byte-identical contents.",
+    "files": [
+      {
+        "filename": "tokenizer.json",
+        "git_blob_sha1": "5cc5f00a5b203e90a27a3bd60d1ec393b07971e8",
+        "sha256": "79e3e522635f3171300913bb421464a87de6222182a0570b9b2ccba2a964b2b4",
+        "bytes": 9085657
+      },
+      {
+        "filename": "tokenizer_config.json",
+        "git_blob_sha1": "4ff488a165e900e5129cda7c20ab32d568d2a475",
+        "sha256": "9823dcfdc1121869029da45192238e85cf44f0b232a6d9dc20e4fe6f4242a14e",
+        "bytes": 54528
+      }
+    ],
+    "vocab_size": 128256,
+    "chat_template_applied": true,
+    "chat_template_sha256": "5816fce10444e03c2e9ee1ef8a4a1ea61ae7e69e438613f3b17b69d0426223a4",
+    "empty_message_overhead_tokens": 35,
+    "note": "Counts are of the RENDERED chat request, which is what vLLM tokenizes -- not of the bare prompt text."
+  },
+  "input_tokens": {
+    "max": 10482,
+    "max_prompt_id": 790,
+    "max_prompt_char_len": 44445,
+    "mean": 247.12875,
+    "total": 988515,
+    "quantiles": {
+      "0": 36.0,
+      "50": 66.0,
+      "90": 600.0,
+      "95": 1226.349999999998,
+      "99": 2706.0599999999986,
+      "99.5": 3060.2900000000063,
+      "100": 10482.0
+    }
+  },
+  "chars_per_token": {
+    "basis": "prompt text only, excluding the chat-template overhead",
+    "min": 1.0,
+    "mean": 4.578850786275652,
+    "max": 10.25,
+    "at_longest_prompt": 4.254331387001053,
+    "note": "The old sizing assumed ~4 chars/token uniformly. The ratio varies by more than 4x across this workload, so the estimate was only safe because the extremes were unlikely to be drawn -- which the canonical construction deliberately changes."
+  },
+  "per_stratum": [
+    {
+      "index": 0,
+      "quantile_range_pct": [
+        0.0,
+        50.0
+      ],
+      "char_len_range": [
+        1.0,
+        142.0
+      ],
+      "selected_count": 2000,
+      "input_tokens": {
+        "min": 36,
+        "max": 110,
+        "mean": 49.259,
+        "quantiles": {
+          "0": 36.0,
+          "50": 48.0,
+          "90": 60.0,
+          "95": 64.0,
+          "99": 71.0,
+          "99.5": 75.0,
+          "100": 110.0
+        }
+      }
+    },
+    {
+      "index": 1,
+      "quantile_range_pct": [
+        50.0,
+        90.0
+      ],
+      "char_len_range": [
+        142.0,
+        2358.100000000004
+      ],
+      "selected_count": 1600,
+      "input_tokens": {
+        "min": 55,
+        "max": 1316,
+        "mean": 187.410625,
+        "quantiles": {
+          "0": 55.0,
+          "50": 129.0,
+          "90": 401.10000000000014,
+          "95": 482.0999999999999,
+          "99": 661.05,
+          "99.5": 740.039999999999,
+          "100": 1316.0
+        }
+      }
+    },
+    {
+      "index": 2,
+      "quantile_range_pct": [
+        90.0,
+        95.0
+      ],
+      "char_len_range": [
+        2358.100000000004,
+        4566.200000000001
+      ],
+      "selected_count": 200,
+      "input_tokens": {
+        "min": 454,
+        "max": 2093,
+        "mean": 833.78,
+        "quantiles": {
+          "0": 454.0,
+          "50": 769.0,
+          "90": 1203.5,
+          "95": 1367.3,
+          "99": 1785.2699999999998,
+          "99.5": 1813.4049999999988,
+          "100": 2093.0
+        }
+      }
+    },
+    {
+      "index": 3,
+      "quantile_range_pct": [
+        95.0,
+        99.0
+      ],
+      "char_len_range": [
+        4566.200000000001,
+        11471.370000000008
+      ],
+      "selected_count": 160,
+      "input_tokens": {
+        "min": 1017,
+        "max": 3696,
+        "mean": 1791.7375,
+        "quantiles": {
+          "0": 1017.0,
+          "50": 1691.0,
+          "90": 2598.1,
+          "95": 2757.0999999999995,
+          "99": 3595.0199999999995,
+          "99.5": 3672.945,
+          "100": 3696.0
+        }
+      }
+    },
+    {
+      "index": 4,
+      "quantile_range_pct": [
+        99.0,
+        99.5
+      ],
+      "char_len_range": [
+        11471.370000000008,
+        13101.0
+      ],
+      "selected_count": 20,
+      "input_tokens": {
+        "min": 2031,
+        "max": 3343,
+        "mean": 2727.65,
+        "quantiles": {
+          "0": 2031.0,
+          "50": 2692.0,
+          "90": 3063.5000000000005,
+          "95": 3286.95,
+          "99": 3331.79,
+          "99.5": 3337.395,
+          "100": 3343.0
+        }
+      }
+    },
+    {
+      "index": 5,
+      "quantile_range_pct": [
+        99.5,
+        100.0
+      ],
+      "char_len_range": [
+        13101.0,
+        44445.0
+      ],
+      "selected_count": 20,
+      "input_tokens": {
+        "min": 2596,
+        "max": 10482,
+        "mean": 4107.65,
+        "quantiles": {
+          "0": 2596.0,
+          "50": 3293.5,
+          "90": 6663.900000000003,
+          "95": 8700.750000000002,
+          "99": 10125.749999999998,
+          "99.5": 10303.875000000002,
+          "100": 10482.0
+        }
+      }
+    }
+  ],
+  "capacity": {
+    "output_token_budget": 512,
+    "safety_margin_tokens": 1099,
+    "margin_rule": "max(512, 10% of input+output)",
+    "required_context_tokens": 12093,
+    "tested_max_model_len": 20000,
+    "fits": true,
+    "first_session_max_model_len": 20000,
+    "proposed_max_model_len": 20000
+  },
+  "caveats": [
+    "The chat template embeds today's date via strftime_now; its token count is stable across plausible dates, and the safety margin covers any drift.",
+    "vLLM may add a small number of internal tokens beyond the rendered template. The margin is sized to absorb that; it is not measured here.",
+    "This does not change the Week 2 raw-log `prompt_len` contract, which stays char count (token count is the Week 3 revisit, WEEK2_PLAN.md 3.4)."
+  ]
+}

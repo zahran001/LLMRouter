@@ -32,6 +32,14 @@ DEFAULT_NUM_TOKENS = 20
 # _identity_for below.
 SEEDED_CREATED = 1_700_000_000
 
+# Real vLLM appends a `system_fingerprint` to the finish_reason chunk (the
+# captured fixture shows "vllm-0.27.1-nohash"). The mock declares itself as a
+# mock rather than impersonating a vLLM build string -- the faithfulness
+# check compares key SETS, not values, and a reader tailing the mock's stream
+# should never mistake it for the real server. Constant, not generated: the
+# router's F1 byte-identity test needs seeded responses to be reproducible.
+SYSTEM_FINGERPRINT = "mock-replica-nohash"
+
 
 def _draw_delay_ms(base_ms: float, cfg: MockConfig, rng: random.Random) -> float:
     """One delay draw for either the ttft wait or one tpot gap, in ms --
@@ -75,14 +83,79 @@ def _identity_for(seed: int | None) -> tuple[str, int]:
     return f"chatcmpl-{uuid.UUID(int=id_rng.getrandbits(128), version=4)}", SEEDED_CREATED
 
 
-def _make_chunk(chat_id: str, created: int, model: str, delta: dict, finish_reason: str | None) -> dict:
-    return {
+# Faithfulness Layer 3 (WEEK1_MEASUREMENT_SPEC.md §6): the key SET of every
+# chunk the mock emits must cover the key set real vLLM emits, checked
+# recursively against the captured fixture by
+# tests/faithfulness/test_real_fixture.py::test_real_stream_key_set_matches_mock.
+#
+# The three chunk kinds below carry DIFFERENT key sets in real vLLM 0.27.1 --
+# they are not one shape with varying values -- so they are built separately
+# rather than emitting the union on every chunk. Emitting the union would pass
+# the test while being *less* faithful (real vLLM never puts prompt_token_ids
+# on a content chunk), and the point of Layer 3 is shape fidelity, not a green
+# check. Every value below is null/empty because the mock has no tokenizer, no
+# logprobs and no real prompt echo; the contract being mirrored is the shape
+# and type, not the content.
+#
+# Verified against tests/fixtures/vllm_real_stream.txt (vLLM 0.27.1,
+# meta-llama/Llama-3.2-3B-Instruct, captured 2026-08-16).
+
+
+def _make_chunk(chat_id: str, created: int, model: str, delta: dict, finish_reason: str | None,
+                *, choice_extra: dict | None = None, top_extra: dict | None = None) -> dict:
+    chunk = {
         "id": chat_id,
         "object": "chat.completion.chunk",
         "created": created,
         "model": model,
-        "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}],
+        "choices": [{
+            "index": 0,
+            "delta": delta,
+            # Real vLLM sends logprobs on every chunk kind (null when not
+            # requested). Present-and-null, not absent.
+            "logprobs": None,
+            "finish_reason": finish_reason,
+            **(choice_extra or {}),
+        }],
     }
+    chunk.update(top_extra or {})
+    return chunk
+
+
+def _role_chunk(chat_id: str, created: int, model: str) -> dict:
+    """Real vLLM's role chunk carries `content: ""` alongside the role, and
+    echoes prompt_token_ids/prompt_text (null unless explicitly requested) at
+    the top level -- only on this first chunk.
+
+    The empty-string content is deliberate and load-bearing: metrics/parse.py
+    classifies a chunk as content iff delta.content is a NON-EMPTY string, so
+    this chunk stays a non-content chunk and TTFT is still measured to the
+    first real token. Emitting `""` here matches vLLM without touching that
+    contract."""
+    return _make_chunk(
+        chat_id, created, model, {"role": "assistant", "content": ""}, None,
+        top_extra={"prompt_token_ids": None, "prompt_text": None},
+    )
+
+
+def _content_chunk(chat_id: str, created: int, model: str, text: str) -> dict:
+    """Content chunks add per-choice `token_ids` and, unlike the role chunk,
+    carry no top-level prompt echo."""
+    return _make_chunk(
+        chat_id, created, model, {"content": text}, None,
+        choice_extra={"token_ids": None},
+    )
+
+
+def _final_chunk(chat_id: str, created: int, model: str) -> dict:
+    """The finish_reason chunk. Real vLLM sends `delta: {"content": ""}` (not
+    an empty delta), adds `stop_reason`, and appends a top-level
+    `system_fingerprint`."""
+    return _make_chunk(
+        chat_id, created, model, {"content": ""}, "stop",
+        choice_extra={"stop_reason": None, "token_ids": None},
+        top_extra={"system_fingerprint": SYSTEM_FINGERPRINT},
+    )
 
 
 def _sse(chunk_dict: dict) -> str:
@@ -119,7 +192,7 @@ async def chat_completions(request: Request) -> StreamingResponse:
         chat_id, created = _identity_for(seed)
 
         # 1. role chunk, emitted immediately, BEFORE the ttft_ms wait.
-        yield _sse(_make_chunk(chat_id, created, model, {"role": "assistant"}, None))
+        yield _sse(_role_chunk(chat_id, created, model))
 
         # 2. wait ttft_ms
         await precise_sleep(_draw_delay_ms(cfg.ttft_ms, cfg, rng) / 1000.0)
@@ -128,10 +201,10 @@ async def chat_completions(request: Request) -> StreamingResponse:
         for i in range(num_tokens):
             if i > 0:
                 await precise_sleep(_draw_delay_ms(cfg.tpot_ms, cfg, rng) / 1000.0)
-            yield _sse(_make_chunk(chat_id, created, model, {"content": f"tok{i} "}, None))
+            yield _sse(_content_chunk(chat_id, created, model, f"tok{i} "))
 
         # 4. final chunk
-        yield _sse(_make_chunk(chat_id, created, model, {}, "stop"))
+        yield _sse(_final_chunk(chat_id, created, model))
 
         # 5. terminator
         yield "data: [DONE]\n\n"

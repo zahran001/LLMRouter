@@ -1,0 +1,14 @@
+# Offline pre-GPU preflight only -- NOT installed on the GPU instance.
+#
+# `scripts/gpu_session/remote_loadgen.sh setup` installs requirements.txt on
+# the metered instance. These two are used exclusively by the R4B token
+# capacity proof (scripts/fetch_tokenizer.py, scripts/check_tokenizer_capacity.py),
+# which runs on the dev box before the session and never on the instance.
+# Keeping them out of requirements.txt keeps the metered setup step minimal and
+# removes a failure surface from it -- `tokenizers` alone pulls
+# huggingface-hub, hf-xet, fsspec, filelock, pyyaml and tqdm.
+#
+#   .venv/Scripts/pip install -r requirements-preflight.txt
+
+tokenizers>=0.20,<1.0
+jinja2>=3.1

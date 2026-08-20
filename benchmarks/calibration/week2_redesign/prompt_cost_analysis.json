@@ -1,0 +1,329 @@
+{
+  "what": "Measured intrinsic prompt cost vs TTFT, as the empirical basis for the tail boundary L (README R1).",
+  "status": "DIAGNOSTIC / RECOMMENDATION INPUT -- L is locked by the human at Hard Stop R3",
+  "generated_at": "2026-08-19T02:06:34+00:00",
+  "slo_ms": 500.0,
+  "historical_warmup_s": 10.0,
+  "candidate_L_chars": {
+    "90.0": 2358.100000000004,
+    "95.0": 4566.200000000001,
+    "99.0": 11471.370000000008,
+    "99.5": 13101.0
+  },
+  "unloaded_floor": {
+    "source": "benchmarks/evidence/week2/first_session/unloaded_floor/unloaded_floor.samples.jsonl",
+    "n": 248,
+    "concurrency": 1,
+    "ttft_p99_ms_by_method": {
+      "linear": 388.5525956999027,
+      "lower": 373.08492200008914,
+      "higher": 402.2692119997373,
+      "nearest": 402.2692119997373,
+      "midpoint": 387.6770669999132
+    },
+    "ttft_max_ms": 523.3469590002642,
+    "fit": {
+      "intercept_ms": 76.82744596098036,
+      "slope_ms_per_char": 0.02569523966043107,
+      "r_squared": 0.9079337815454643,
+      "pearson_r": 0.95285559322778,
+      "n": 248,
+      "residual_std_ms": 17.494235002975532
+    },
+    "by_candidate_stratum": [
+      {
+        "char_len_range": [
+          0.0,
+          142.0
+        ],
+        "n": 133,
+        "ttft_p50_ms": 82.41203800025687,
+        "ttft_max_ms": 86.0850950002714,
+        "ttft_mean_ms": 82.09986662406212,
+        "fraction_over_slo": 0.0
+      },
+      {
+        "char_len_range": [
+          142.0,
+          2358.100000000004
+        ],
+        "n": 96,
+        "ttft_p50_ms": 84.3734680001944,
+        "ttft_max_ms": 147.1082429998205,
+        "ttft_mean_ms": 89.44528273958478,
+        "fraction_over_slo": 0.0
+      },
+      {
+        "char_len_range": [
+          2358.100000000004,
+          4566.200000000001
+        ],
+        "n": 6,
+        "ttft_p50_ms": 176.0135130002709,
+        "ttft_max_ms": 223.8606040000377,
+        "ttft_mean_ms": 168.85897116693135,
+        "fraction_over_slo": 0.0
+      },
+      {
+        "char_len_range": [
+          4566.200000000001,
+          11471.370000000008
+        ],
+        "n": 11,
+        "ttft_p50_ms": 242.08795000049577,
+        "ttft_max_ms": 402.2692119997373,
+        "ttft_mean_ms": 249.66723109082523,
+        "fraction_over_slo": 0.0
+      },
+      {
+        "char_len_range": [
+          11471.370000000008,
+          44445.0
+        ],
+        "n": 2,
+        "ttft_p50_ms": 515.1289390000784,
+        "ttft_max_ms": 523.3469590002642,
+        "ttft_mean_ms": 515.1289390000784,
+        "fraction_over_slo": 1.0
+      }
+    ]
+  },
+  "corpus_wide_projection": {
+    "basis": "least-squares fit over the 248 unloaded-floor observations, applied to all 5000 pinned-corpus prompts",
+    "status": "EXTRAPOLATION -- diagnostic only, not a measurement",
+    "p50_ms": 80.47616999276157,
+    "p90_ms": 137.41939060424295,
+    "p99_ms": 371.58704734445973,
+    "p99_5_ms": 413.4607807522878,
+    "p99_9_ms": 498.8552353444609,
+    "max_ms": 1218.8523726688393,
+    "fraction_over_slo": 0.001,
+    "char_len_at_slo": 16468.90862398442,
+    "corpus_percentile_at_slo_length": 99.9
+  },
+  "loaded_points": {
+    "poisson_rps1.5": {
+      "n": 166,
+      "ttft_p99_ms_by_method": {
+        "linear": 113.62618764987928,
+        "lower": 113.41505400014285,
+        "higher": 114.01829299938981,
+        "nearest": 113.41505400014285,
+        "midpoint": 113.71667349976633
+      },
+      "top_10_ttft": [
+        {
+          "char_len": 4383.0,
+          "ttft_ms": 120.52019000020664
+        },
+        {
+          "char_len": 54.0,
+          "ttft_ms": 114.01829299938981
+        },
+        {
+          "char_len": 80.0,
+          "ttft_ms": 113.41505400014285
+        },
+        {
+          "char_len": 47.0,
+          "ttft_ms": 112.01825499938423
+        },
+        {
+          "char_len": 111.0,
+          "ttft_ms": 112.01452299974335
+        },
+        {
+          "char_len": 170.0,
+          "ttft_ms": 111.69090400017012
+        },
+        {
+          "char_len": 662.0,
+          "ttft_ms": 110.73308699997142
+        },
+        {
+          "char_len": 4992.0,
+          "ttft_ms": 109.97422499985987
+        },
+        {
+          "char_len": 90.0,
+          "ttft_ms": 108.11954899963894
+        },
+        {
+          "char_len": 172.0,
+          "ttft_ms": 108.09697700005927
+        }
+      ],
+      "pearson_r_len_vs_ttft": 0.1849272772158445,
+      "cap_sensitivity": [
+        {
+          "cap_chars": 14960.0,
+          "n_kept": 166,
+          "n_excluded": 0,
+          "ttft_p99_ms": 113.62618764987928,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 16000.0,
+          "n_kept": 166,
+          "n_excluded": 0,
+          "ttft_p99_ms": 113.62618764987928,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 14000.0,
+          "n_kept": 165,
+          "n_excluded": 1,
+          "ttft_p99_ms": 113.63222003987174,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 11471.370000000008,
+          "n_kept": 165,
+          "n_excluded": 1,
+          "ttft_p99_ms": 113.63222003987174,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 8000.0,
+          "n_kept": 164,
+          "n_excluded": 2,
+          "ttft_p99_ms": 113.63825242986422,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 4566.200000000001,
+          "n_kept": 159,
+          "n_excluded": 7,
+          "ttft_p99_ms": 113.66841437982656,
+          "classification": "UNDER"
+        }
+      ],
+      "n_above_L": {
+        "90.0": 10,
+        "95.0": 7,
+        "99.0": 1,
+        "99.5": 1
+      }
+    },
+    "poisson_rps2": {
+      "n": 225,
+      "ttft_p99_ms_by_method": {
+        "linear": 524.5720889199937,
+        "lower": 434.81387200017707,
+        "higher": 552.9167889999371,
+        "nearest": 552.9167889999371,
+        "midpoint": 493.8653305000571
+      },
+      "top_10_ttft": [
+        {
+          "char_len": 11327.0,
+          "ttft_ms": 656.7720409998401
+        },
+        {
+          "char_len": 16781.0,
+          "ttft_ms": 574.8112599999331
+        },
+        {
+          "char_len": 14960.0,
+          "ttft_ms": 552.9167889999371
+        },
+        {
+          "char_len": 7430.0,
+          "ttft_ms": 434.81387200017707
+        },
+        {
+          "char_len": 10034.0,
+          "ttft_ms": 421.5686340003231
+        },
+        {
+          "char_len": 9446.0,
+          "ttft_ms": 408.1871220000721
+        },
+        {
+          "char_len": 183.0,
+          "ttft_ms": 370.63168399981805
+        },
+        {
+          "char_len": 1959.0,
+          "ttft_ms": 361.0947769998347
+        },
+        {
+          "char_len": 139.0,
+          "ttft_ms": 314.73509499983265
+        },
+        {
+          "char_len": 6718.0,
+          "ttft_ms": 287.6919700001963
+        }
+      ],
+      "pearson_r_len_vs_ttft": 0.8627979954105529,
+      "cap_sensitivity": [
+        {
+          "cap_chars": 16781.0,
+          "n_kept": 225,
+          "n_excluded": 0,
+          "ttft_p99_ms": 524.5720889199937,
+          "classification": "OVER"
+        },
+        {
+          "cap_chars": 16000.0,
+          "n_kept": 224,
+          "n_excluded": 1,
+          "ttft_p99_ms": 431.76746726021076,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 14000.0,
+          "n_kept": 223,
+          "n_excluded": 2,
+          "ttft_p99_ms": 418.62470136026786,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 11471.370000000008,
+          "n_kept": 223,
+          "n_excluded": 2,
+          "ttft_p99_ms": 418.62470136026786,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 8000.0,
+          "n_kept": 220,
+          "n_excluded": 5,
+          "ttft_p99_ms": 352.28643741983444,
+          "classification": "UNDER"
+        },
+        {
+          "cap_chars": 4566.200000000001,
+          "n_kept": 213,
+          "n_excluded": 12,
+          "ttft_p99_ms": 311.3117450798562,
+          "classification": "UNDER"
+        }
+      ],
+      "n_above_L": {
+        "90.0": 18,
+        "95.0": 12,
+        "99.0": 2,
+        "99.5": 2
+      }
+    }
+  },
+  "percentile_method_sensitivity": {
+    "why_this_matters": "The promoted unloaded_floor.metrics.json reports p99 = 402.269ms, which is the nearest-rank value; metrics.compute.percentile (linear interpolation, the method every Stage A point record uses) gives 388.553ms on the same 248 samples. The floor was produced by a one-off on-instance script that is not in the repo, so two percentile conventions are already mixed inside the first session's own evidence. At the boundary this is not cosmetic: it is worth tens of ms on exactly the quantity that decides UNDER vs OVER.",
+    "unloaded_floor": {
+      "linear": 388.5525956999027,
+      "lower": 373.08492200008914,
+      "higher": 402.2692119997373,
+      "nearest": 402.2692119997373,
+      "midpoint": 387.6770669999132
+    },
+    "committed_floor_record_p99_ms": 402.2692119997373
+  },
+  "caveats": [
+    "The unloaded floor's 248 prompts are the 2-RPS schedule's realized draw, not the redesigned canonical multiset. Its own tail is a sample, so the fit is anchored by roughly a dozen long prompts.",
+    "The corpus-wide projection is a linear extrapolation, and the corpus reaches 44445 chars while the fit was observed only to 16781. Treat the projected p99 as an order-of-magnitude read, not a prediction.",
+    "char_len is a proxy for prefill token count; the ratio is not constant across prompts (WEEK2_PLAN.md 3.4 defers tokens to Week 3).",
+    "Load adds interference on top of this intrinsic cost; the whole point of the headline experiment is to measure that addition, so nothing here predicts a breach RPS."
+  ]
+}

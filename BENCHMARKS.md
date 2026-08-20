@@ -319,7 +319,7 @@ TTFT degradation, see "concurrent-stream throughput" above). `fast`
 TPOT is only 2ms, so its tolerance band is governed entirely by the floor,
 not the percentage term -- the config the floor actually has to protect.
 200 runs x 110 requests/run (10 warmup + 100 measured), `num_tokens=5`,
-post-timing-fix. Full raw data: `benchmarks/noise_floor_fast.json`.
+post-timing-fix. Full raw data: `benchmarks/calibration/noise_floor/noise_floor_fast.json`.
 
 ```
 TTFT p50 across 200 runs: mean=105.67ms  stdev=0.88ms  min=103.36ms  max=107.56ms  range=4.20ms
@@ -395,3 +395,77 @@ smoke-test data below predates that fix and is kept only as a record of
 what run-to-run spread looked like before -- re-run
 `scripts/calibrate_noise_floor.py` post-fix for current numbers before
 setting `TOLERANCE_FLOOR_MS`.
+
+---
+
+## Loadgen scheduler spin margin, Linux (WEEK2_PLAN.md §8) -- STATUS: done
+
+Distinct from the mock's `precise_sleep` spin above. `loadgen/scheduler.py`'s
+`_sleep_until` coarse-sleeps and then busy-waits the final `SPIN_MARGIN_S`
+against the monotonic clock, so a send can never fire *before* its scheduled
+offset -- §4 V5's "late allowed, early impossible". That 5ms was tuned on the
+Windows dev box, and `WEEK2_PLAN.md` §8 forbade shipping it onto the Linux vLLM
+runs unverified.
+
+**A/B, 2026-08-18.** Dedicated CPU-only `e2-standard-4` (`us-central1-a`, Ubuntu
+22.04, Python 3.10.12), created and destroyed for the measurement, deletion
+verified. Same machine, seed, Poisson schedule construction, corpus, client,
+concurrency cap and repetition count across arms -- one variable, the spin
+margin. 5 runs x 30s per cell. Harness: `scripts/calibrate_scheduler_spin.py`.
+Full evidence and run conditions: `benchmarks/calibration/scheduler_spin/`.
+
+| RPS | spin | lag p50 | p95 | p99 | max | offered | achieved | divergence | early sends |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 20 | **0ms** | 0.910 | 2.016 | 2.667 | 5.741 | 20 | 20.97 | +4.83% | **0** |
+| 20 | 5ms | 0.081 | 0.548 | 1.384 | 36.559 | 20 | 20.97 | +4.83% | **0** |
+| 80 | **0ms** | 745.884 | 4448.784 | 5030.837 | 6293.291 | 80 | 79.87 | -0.17% | **0** |
+| 80 | 5ms | 733.896 | 4398.058 | 5174.818 | 6082.602 | 80 | 79.87 | -0.17% | **0** |
+
+Lag in ms, averaged over the 5 runs; `max` is the worst single observation.
+
+**The 80 RPS row measures the mock, not the scheduler.** A companion sweep
+(`rps_knee_diagnostic.txt`) shows the mock holding a flat 0.911s response with
+peak concurrency scaling linearly through 60 RPS (30 -> 53 -> 78), then
+collapsing at 80: response p50 10.8s, peak concurrency 1323. Client CPU never
+exceeded ~25% of one core and load average stayed at ~0.2, so the driver is not
+what saturated -- the lag is downstream of 1323 concurrent open streams.
+`MOCK_TRUST_BOUNDARY.md` does not trust the mock for saturation behaviour or
+latency under concurrency (the deferred Week 1 concurrency bug), so those
+absolute numbers do not transfer to real vLLM. Both arms are affected
+identically, so the comparison itself still holds.
+
+### Decision: Linux 0ms, Windows 5ms
+
+`loadgen/scheduler.py: LINUX_SPIN_MARGIN_S = 0.0`, `WINDOWS_SPIN_MARGIN_S = 0.005`.
+
+- **The spin's only justification does not apply on Linux.** It exists to prevent
+  an early send. **Zero early sends at 0ms in every cell of every pass**,
+  including the saturated ones. Windows keeps its 5ms, because that is the
+  platform where bare `asyncio.sleep` actually returns early.
+- **Where the measurement is clean it buys nothing that matters.** At 20 RPS the
+  5ms arm lands closer to target in the body (p50 0.08ms vs 0.91ms) -- but both
+  are negligible against a 50ms inter-arrival gap, and the 5ms arm's *worst* case
+  is 6x worse (36.6ms vs 5.7ms). At 80 RPS the arms are indistinguishable.
+- **It costs CPU where this project can least afford it.** Week 2 drives the
+  loadgen **on the GPU instance** (`WEEK2_GPU_SESSION_2_PLAN.md`), so a 5ms
+  busy-wait per send burns ~40% of a core at 80 RPS on the same box as vLLM --
+  spending CPU the measured system needs, for no measured benefit.
+- Consistent with Block 0's independent finding that the *mock's* busy-wait is a
+  Windows-only fix.
+
+Overridable per host without editing tracked source (`bootstrap` refuses a dirty
+tree): `--spin-margin-s` or `LOADGEN_SPIN_MARGIN_S`. Every point record carries
+`provenance.spin_margin_s` and `provenance.platform`.
+
+### Two methodology traps this hit, recorded because they generalise
+
+1. **An in-process mock shares the driver's GIL.** The first pass ran the mock in
+   a thread of the driving process; at 80 RPS its request handling and the
+   scheduler's send loop competed for one interpreter and dominated the result.
+   Fixed by running the mock as a separate process over loopback -- which is also
+   the real topology, since the GPU session drives vLLM in its own process/venv.
+2. **`ulimit -n` applies to calibration harnesses too.** The first 80 RPS attempt
+   hit `OSError: [Errno 24] Too many open files` -- §3.3's documented
+   precondition, from the same default soft limit of 1024, in a script that had
+   not raised it. `remote_loadgen.sh` enforces it for the GPU run; the
+   calibration runner now does the same.
