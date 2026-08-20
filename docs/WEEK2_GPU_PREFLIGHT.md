@@ -1,5 +1,14 @@
 # Week 2 GPU Session Pre-Flight (Hard Stop 4)
 
+> **STATUS: SUPERSEDED — DO NOT EXECUTE**
+>
+> Role: the Hard Stop **4** pre-flight checklist for session #1, including its `GPU SESSION READY` verdict. Session #2's checklist is `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
+>
+> Procedures in this document were valid before the Week 2 GPU redesign and
+> **must not** drive GPU session #2.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 Evidence checklist for `WEEK2_EXECUTION.md` Hard Stop 4, ahead of the real
 $150-budget GPU session (Block E, human-run only). Mirrors `WEEK2_PLAN.md`
 §6.1's pre-flight list. Every item below either has evidence attached or is

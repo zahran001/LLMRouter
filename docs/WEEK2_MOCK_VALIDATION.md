@@ -1,5 +1,14 @@
 # Week 2 Mock Validation — Procedure (V1-V5)
 
+> **STATUS: AUTHORITATIVE — WEEK 2**
+>
+> Role: the V1–V5 mock-validation procedure and its negative controls (GPU-free).
+>
+> Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
+> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> conflict** — do not reconcile silently.
+
 **Companion to `MOCK_TRUST_BOUNDARY.md`.** That doc is the *principle* (what
 the mock is ever trusted for: request patterns, never latency under
 concurrency). This doc is the *procedure* for Week 2: the five validations

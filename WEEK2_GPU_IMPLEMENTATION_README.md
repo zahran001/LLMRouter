@@ -1,5 +1,14 @@
 # Week 2 GPU Phase — Implementation README
 
+> **STATUS: SUPERSEDED — DO NOT EXECUTE**
+>
+> Role: the GPU session **#1** runbook (Stage A/B sweep, post-hoc warmup resolution, teardown). Its Stage A/B design was falsified by the session it ran.
+>
+> Procedures in this document were valid before the Week 2 GPU redesign and
+> **must not** drive GPU session #2.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 ## Purpose
 
 This README is the execution handoff for wrapping up **Week 2: load generation & baseline**.

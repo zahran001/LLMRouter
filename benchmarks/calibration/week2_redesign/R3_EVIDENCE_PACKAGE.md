@@ -1,5 +1,15 @@
 # Week 2 redesign — R3 evidence package
 
+> **STATUS: EVIDENCE — DOES NOT GOVERN EXECUTION**
+>
+> Role: the offline calibration `k` / `L` / `N` / `N_max` were read off at Hard Stop R3.
+>
+> This document records *why* something is believed. It does not govern
+> execution, and any command text below is a record of what was run at the
+> time, not an instruction to run it now.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 **Status: recommendations, not decisions.** `k`, `L`, `N` and `N_max` are locked by the
 human at Hard Stop R3 (Redesign README §4). Every number below is an input to that read.
 

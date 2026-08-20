@@ -41,7 +41,9 @@ data tracked.
   locked `BASELINE_SEED` so the prompt-length contribution is held constant
   across the sweep (`WEEK2_PLAN.md` §2.2). Regenerate with
   `scripts/generate_stage_a_schedules.py`; generate Stage B's fine bracket with
-  `scripts/generate_schedules.py`.
+  `scripts/generate_schedules.py`. **Both are session #1 (fixed-duration)
+  tooling**, kept so that session #1's workload stays replayable; session #2's
+  headline family comes from `scripts/generate_headline_schedules.py`.
   - *One seed for every point also means one `corpus_rng` draw sequence, so a
     shorter schedule is a strict prefix of a longer one. That is what makes the
     points matched — and, on a prefix-caching server, what makes run order an
@@ -62,7 +64,7 @@ data tracked.
   accounting and the capacity proof it was frozen behind;
   `tokenizer_capacity_report.json` is that proof (10,482 max input tokens,
   measured with the pinned model's own tokenizer and chat template);
-  `repeat_policy.json` is the evidence policy, still `PROPOSED`.
+  `repeat_policy.json` is the evidence policy, now `LOCKED` (the six human locks, `WEEK2_PLAN.md` §11).
 - **`workloads/week2_scout/`** — the smaller Tier A scouting workload
   (`N`=500), built through the same pipeline and the same capacity gate, in its
   own namespace so a diagnostic membership can never be mistaken for the

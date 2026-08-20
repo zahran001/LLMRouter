@@ -1,5 +1,13 @@
 # Week 2 GPU Redesign — R3 Closeout and R4→Pre-GPU Agent Instructions
 
+> **STATUS: HISTORICAL — DO NOT EXECUTE**
+>
+> Role: the R4→R11 implementation brief. Already executed; the evidence is `docs/WEEK2_R4_EVIDENCE_PACKAGE.md`.
+>
+> This document records an earlier Week 2 state. It is preserved for
+> provenance, and nothing in it may drive GPU session #2.
+> Current entry point: `docs/WEEK2_DOC_INDEX.md`.
+
 **Purpose:** continue Week 2 from the completed R0–R3 redesign calibration without reopening already-proven infrastructure or spending GPU time prematurely.
 
 **Current state:** R0–R3 are complete. Hard Stop R3 produced the evidence package at:

@@ -1,5 +1,15 @@
 # Week 2 Pre-GPU Audit — Remediation Record
 
+> **STATUS: EVIDENCE — DOES NOT GOVERN EXECUTION**
+>
+> Role: the 2026-08-17 pre-GPU audit trail and how each finding was closed.
+>
+> This document records *why* something is believed. It does not govern
+> execution, and any command text below is a record of what was run at the
+> time, not an instruction to run it now.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 **Audit performed 2026-08-17** against `week2/loadgen-baseline` @ `3ac82aa`.
 **Remediation completed 2026-08-18.** All blockers closed; the audit's findings
 are preserved below as the record of what was wrong and how it was fixed.

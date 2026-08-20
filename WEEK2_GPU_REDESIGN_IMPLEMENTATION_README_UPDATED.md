@@ -1,5 +1,13 @@
 # Week 2 GPU Baseline Redesign — Agent Implementation README
 
+> **STATUS: HISTORICAL — DO NOT EXECUTE**
+>
+> Role: the R0–R3 implementation brief. Already executed; the evidence is `docs/WEEK2_R4_EVIDENCE_PACKAGE.md`.
+>
+> This document records an earlier Week 2 state. It is preserved for
+> provenance, and nothing in it may drive GPU session #2.
+> Current entry point: `docs/WEEK2_DOC_INDEX.md`.
+
 **Revision:** post-review update incorporating closed-loop stop-condition, sub-5% censoring, dual-source bootstrap, bounded-UNCERTAIN, and regression/legacy-compatibility guards.
 
 ## Purpose

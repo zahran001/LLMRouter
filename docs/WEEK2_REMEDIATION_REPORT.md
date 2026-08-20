@@ -1,5 +1,15 @@
 # Week 2 Pre-GPU Remediation — Report
 
+> **STATUS: EVIDENCE — DOES NOT GOVERN EXECUTION**
+>
+> Role: what the 2026-08-18 remediation changed, and what it proved.
+>
+> This document records *why* something is believed. It does not govern
+> execution, and any command text below is a record of what was run at the
+> time, not an instruction to run it now.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 **Completed 2026-08-18.** Every blocker from `docs/WEEK2_PRE_GPU_AUDIT.md` is
 closed. The repository is clean, committed and pushed, and no GPU instance was
 created.

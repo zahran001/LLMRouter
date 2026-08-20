@@ -64,10 +64,22 @@ files back**, not from memory -- so the number printed live on the meter and
 the one `scripts/compute_point_metrics.py` recomputes offline after teardown
 come from the same function over the same bytes.
 
-Warmup is discarded **metrics-side and by timestamp** (§2.4), so resolving
-the deferred `[CALIBRATE]` warmup N in Block F is a re-run of
-`scripts/compute_point_metrics.py --warmup-n <N>` over the committed
-sidecars -- never a re-run on the GPU.
+Warmup is discarded **metrics-side and by timestamp** (§2.4).
+
+> **Superseded for the redesigned headline (2026-08-19).** This used to say
+> that resolving the deferred `[CALIBRATE]` warmup N in Block F was a re-run of
+> `scripts/compute_point_metrics.py --warmup-n <N>` over the committed
+> sidecars. That was true of the fixed-duration design, whose window held a
+> surplus of samples. It is **not** true of the exact-N headline: the 60s
+> boundary is frozen into the schedule and exactly N arrivals are materialized
+> at or after it, so filtering later discards canonical arrivals and leaves
+> fewer than N samples. `metrics/headline_point.py` refuses it. The boundary is
+> validated **forward** in Tier A, and an insufficient boundary is fixed by
+> regenerating schedules offline (`WEEK2_PLAN.md` §11.4).
+>
+> The `--warmup-n` re-filter remains correct for **session #1's**
+> fixed-duration artifacts, which are still read under their original
+> semantics.
 
 `--no-capture-samples` disables all of this and yields no TTFT. It exists
 for request-pattern-only runs (the Block C sweeps, the V-series tests);

@@ -1,5 +1,15 @@
 # Week 2 — GPU session #1 findings (2026-08-18)
 
+> **STATUS: EVIDENCE — DOES NOT GOVERN EXECUTION**
+>
+> Role: the permanent interpretation of GPU session #1.
+>
+> This document records *why* something is believed. It does not govern
+> execution, and any command text below is a record of what was run at the
+> time, not an instruction to run it now.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 The permanent record of the first real Week 2 GPU session: what it set out to
 measure, what it falsified, which of its conclusions are trusted, and which must
 never be published.

@@ -1,5 +1,15 @@
 # First Week 2 GPU session — diagnostic evidence (2026-08-18)
 
+> **STATUS: EVIDENCE — DOES NOT GOVERN EXECUTION**
+>
+> Role: the promoted GPU session #1 artifacts and what each may be cited for.
+>
+> This document records *why* something is believed. It does not govern
+> execution, and any command text below is a record of what was run at the
+> time, not an instruction to run it now.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 **This is not baseline evidence.** The session produced **no defensible breach
 RPS**, and nothing in this directory may be cited as one. It is the durable
 record of an experiment whose *statistical design* was falsified while it ran,

@@ -1,5 +1,14 @@
 # GPU Session Notes — GCP + vLLM Setup
 
+> **STATUS: EXECUTABLE — WEEK 2**
+>
+> Role: GCP + vLLM environment knowledge — the working `gcloud` invocation and
+> the environment-specific failures already worked out. **Setup reference, not
+> the session runbook:** it decides no experimental policy.
+>
+> The GPU session #2 runbook is `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 Operational knowledge from standing up a real vLLM instance on GCP for the
 Week 1 faithfulness check (`docs/archive/week1/WEEK1_CLOSEOUT.md`). Every
 item here was a real failure hit during that session, not a hypothetical —

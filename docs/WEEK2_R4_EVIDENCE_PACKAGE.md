@@ -1,5 +1,15 @@
 # Week 2 — R3 closeout and R4→R11 evidence package
 
+> **STATUS: EVIDENCE — DOES NOT GOVERN EXECUTION**
+>
+> Role: the R3-closeout and R4→R11 implementation evidence.
+>
+> This document records *why* something is believed. It does not govern
+> execution, and any command text below is a record of what was run at the
+> time, not an instruction to run it now.
+> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`.
+
 **Status: halted for human review at Hard Stop R-PREGPU.** No GPU instance was
 created. Nothing was committed.
 
@@ -255,7 +265,8 @@ the evidence ceiling an unresolved crossing reports
 `breach interval = (highest UNDER λ, lowest OVER λ]` rather than escalating.
 
 The policy is an **argument**, not a constant — it lives in
-`benchmarks/workloads/week2_headline/repeat_policy.json`, still `PROPOSED`.
+`benchmarks/workloads/week2_headline/repeat_policy.json`, `PROPOSED` at the time
+this package was written. *(Update 2026-08-19: now `LOCKED` — see §8.)*
 
 ### R11 — natural-random secondary
 
@@ -344,6 +355,23 @@ described in §5.
 3. **Steady reference and adversarial scenarios** (`WEEK2_PLAN.md` §2.1) are not
    mentioned by the R4 README and are **not** in the session estimates. Flagged
    rather than dropped.
+
+> ### ✅ All three resolved 2026-08-19 (locks 1A–6A)
+>
+> Recorded here so this package is not read as an open question list. The
+> decisions live in `WEEK2_PLAN.md` §11 and `repeat_policy.json`; this is a
+> pointer, not a second copy.
+>
+> 1. **`repeat_policy.json` is now `LOCKED`.** The N=5,000 escalation was
+>    **withdrawn, not granted** (lock 2B): `escalation.authorized` and
+>    `escalation.n5000.authorized` are both explicit `false`. An unresolved
+>    crossing at N=4,000 is reported as a **breach interval**.
+> 2. **The spot-preemption branch is decided** (lock 3A): repeats from different
+>    vLLM process epochs may not be combined. A preempted epoch becomes
+>    diagnostic evidence and a fresh process re-drives all three repeats. Of the
+>    three options the session plan laid out, this is option 2.
+> 3. **Steady and adversarial stay in Week 2 scope** (lock 6A), with adversarial
+>    last. They are deferred *within* Week 2, not dropped from it.
 
 Two environment notes: `tokenizers` and `jinja2` were installed into `.venv`
 for the R4B capacity proof (the check refuses to fall back to a char estimate —

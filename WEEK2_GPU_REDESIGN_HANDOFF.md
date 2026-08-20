@@ -1,5 +1,13 @@
 # Week 2 GPU Session — Redesign Handoff README
 
+> **STATUS: HISTORICAL — DO NOT EXECUTE**
+>
+> Role: the brief that opened the redesign after GPU session #1. Its conclusions live on in `WEEK2_PLAN.md` §10.
+>
+> This document records an earlier Week 2 state. It is preserved for
+> provenance, and nothing in it may drive GPU session #2.
+> Current entry point: `docs/WEEK2_DOC_INDEX.md`.
+
 ## Purpose
 
 Use this document to resume Week 2 planning in a fresh chat without re-reading the full project history.

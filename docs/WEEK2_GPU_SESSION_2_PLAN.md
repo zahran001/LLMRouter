@@ -1,56 +1,102 @@
-# Week 2 — GPU session #2 plan (proposed)
+# Week 2 — GPU session #2 runbook
 
-**Status: PROPOSED. Requires human approval at Hard Stop R-PREGPU.** No
-instance may be created until this plan is signed off.
+> **STATUS: EXECUTABLE — GPU SESSION #2**
+>
+> Role: **the** GPU session #2 runbook. This is the one file to keep open while
+> the meter is running.
+>
+> Current document authority:
+> - experiment semantics: `WEEK2_PLAN.md`
+> - execution / gating: `WEEK2_EXECUTION.md`
+> - GPU commands: **this document**
+> - machine-readable policy: `benchmarks/workloads/week2_headline/repeat_policy.json`
+>
+> If these appear to conflict: **HALT and surface the conflict. Do not reconcile
+> silently.** Index: `docs/WEEK2_DOC_INDEX.md`.
+>
+> **No instance may be created until Hard Stop R-DOC and Hard Stop R-PREGPU have
+> both been passed by a human.** This document being executable describes what it
+> is *for*, not that it is *authorized to run right now*.
 
 The first session spent its money discovering that its own experimental design
 was unsound. This one executes an experiment that is already fully specified.
 Everything discoverable offline has been discovered; the meter is for
 collecting raw artifacts, not for deciding anything.
 
-- Locks: `WEEK2_PLAN.md` §10
+Rationale lives elsewhere and this document links out to it, but **nothing
+below requires you to go read it mid-session**:
+
+- Locks and semantics: `WEEK2_PLAN.md` §10 (supersessions), §11 (the six locks)
 - Why the redesign exists: `docs/WEEK2_GPU_SESSION_FINDINGS.md`
 - Calibration: `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md`
-- Repeat/evidence policy: `benchmarks/workloads/week2_headline/repeat_policy.json`
+- Environment gotchas: `docs/GPU_SESSION_NOTES.md`
 
 ---
 
-## 0. Why two tiers
+## 0. Identity — what is being run
 
-**The old bracket is not authoritative.** The first session's 1.5 RPS point is
-prefix-cache confounded, so "1.5 under, 5 over" is not a bracket the redesigned
-experiment inherits. Two things also moved the crossing since:
+Record these in the session log. Any mismatch is a STOP.
 
-- **Prefix caching is now off.** Every request pays full prefill where the
-  first session was getting a 12–16% engine-wide hit rate. The server is doing
-  strictly more work at the same λ, so the crossing should move **down**.
-- **The workload changed composition.** The canonical multiset holds the
-  corpus's natural shape exactly, including the 44,445-char prompt that was
-  never drawn before. Its intrinsic tail is heavier than most first-session
-  realizations.
+### Benchmark identity
 
-Both push the same way, and neither is quantified. Jumping straight to a
-full-N sweep at 1.5–2 RPS could therefore spend 5 hours of calibrated evidence
-entirely on one side of the crossing.
+| Field | Value |
+|---|---|
+| Benchmark commit SHA | *(filled in at R-PREGPU; the session is pinned to it)* |
+| Canonical workload | `benchmarks/workloads/week2_headline/canonical_v1.json` |
+| Workload scheme version | `canonical-workload-v1` |
+| **Membership id** | `a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b` |
+| Corpus SHA-256 | `f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630` (5,000 prompts) |
+| Schedule scheme version | `headline-schedule-v2` |
+| RNG scheme version | `headline-rng-v1` |
+| Repeat policy | `repeat_policy.json`, `"status": "LOCKED"`, `policy_version` 2 |
+| Percentile method | **nearest-rank**, one shared implementation (`metrics/percentile.py`) |
+| Scout workload | `benchmarks/workloads/week2_scout/canonical_v1.json`, membership id `e9470f8f…` — **separately namespaced so it can never be mistaken for headline evidence** |
 
-So: **scout cheaply, then confirm expensively, and only on points that can
-decide the answer.**
+The canonical multiset holds the corpus's natural shape exactly, including the
+44,445-char prompt (`prompt_id 790`) that the first session never drew.
+
+### Server configuration
+
+| Field | Value |
+|---|---|
+| Model | `meta-llama/Llama-3.2-3B-Instruct` |
+| vLLM | 0.27.1 lineage, installed by `setup_and_launch_vllm.sh` |
+| `--max-model-len` | **20000** — backed by exact tokenizer evidence: 10,482 max input + 512 output + 1,099 margin = 12,093 ≤ 20,000 **PASS** |
+| Output `max_tokens` | **512** (locked policy) |
+| Prefix caching | **DISABLED** — `DISABLE_PREFIX_CACHING=1` → `--no-enable-prefix-caching` |
+| `--enforce-eager` | `ENFORCE_EAGER` knob. Week 1's proven config is eager; `WEEK2_GPU_IMPLEMENTATION_README.md` §3.2's "try non-eager first" is **not** binding on this session. Whichever mode the server comes up in, **every point in the session must run the same mode** — the launch script echoes the resolved mode; record it |
+| Sampler | `VLLM_USE_FLASHINFER_SAMPLER=0`, flashinfer uninstalled (three real crashes, `GPU_SESSION_NOTES.md`) |
+| Network topology | **on-instance loopback**, `http://127.0.0.1:8000`. Never the SSH tunnel — it folds WAN RTT into every TTFT and multiplexes 3000 streams down one TCP connection |
+
+### Client configuration
+
+| Field | Value |
+|---|---|
+| Load generator | on-instance, from the pinned repo clone |
+| Concurrency cap | **3000** |
+| Linux scheduler spin | **0 ms** (calibrated, `benchmarks/calibration/scheduler_spin/`) |
+| fd limit | `ulimit -n 65535` (asserted by `remote_loadgen.sh env-check`) |
+| Client timeout | 60 s — censoring, not an error; see §5 |
+| Warmup boundary | **60 s, frozen into every schedule** |
 
 ---
 
 ## 1. Preflight (before the meter starts)
 
-Standing Hard Stop 4 checklist plus the redesign items:
+Standing Hard Stop 4 checklist plus the redesign items. Full evidence:
+`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
 
 | Item | Evidence |
 |---|---|
-| Canonical workload frozen | `benchmarks/workloads/week2_headline/canonical_v1.json`, `membership_id a49ecdd8…` |
-| Capacity proven | `tokenizer_capacity_report.json`, PASS: 10,482 max input + 512 output + 1,099 margin = 12,093 ≤ 20,000 |
-| `--max-model-len` | **20000** — unchanged, now backed by exact tokenizer evidence rather than a char estimate |
-| Schedules committed | `benchmarks/schedules/week2_redesign/` (15 headline + 5 secondary) |
-| Repeat policy signed off | `repeat_policy.json` — **still `PROPOSED`** |
-| All controls bite | `scripts/show_control_bites.py` (13 red-then-green) + `tests/redesign/` |
-| Regression suites green | see §7 |
+| R-DOC passed | Human verdict recorded |
+| R-PREGPU passed | Human verdict recorded |
+| Working tree clean, HEAD pushed | `run_on_instance.sh bootstrap` refuses otherwise |
+| Canonical workload frozen | `canonical_v1.json`, membership `a49ecdd8…` |
+| Capacity proven | `tokenizer_capacity_report.json` — PASS |
+| Schedules committed | `benchmarks/schedules/week2_redesign/` (15 headline + 4 scout + 5 secondary) |
+| Repeat policy signed off | `repeat_policy.json` — **`LOCKED`** |
+| All controls bite | `scripts/show_control_bites.py`, `scripts/show_doc_control_bites.py`, `tests/redesign/` |
+| Regression suites green | see `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
 | Quota / budget ladder | $10 canary / $75 / $135 / $150 hard line |
 | Teardown dry-run | `DRY_RUN=1 bash scripts/gpu_session/teardown_week2.sh` |
 
@@ -60,16 +106,44 @@ Standing Hard Stop 4 checklist plus the redesign items:
 
 ```
  1. stand up 1x L4 spot, launch vLLM                        ~15 min
-      DISABLE_PREFIX_CACHING=1  (default)
-      MAX_MODEL_LEN=20000
  2. verify_prefix_cache_disabled.py            GATE          ~3 min
  3. Tier A: clean unloaded floor over the canonical set     ~10 min
  4. Tier A: scout sweep                                     ~20 min
-      -- HUMAN READ: crossing region, warmup transient --
+      -- HARD STOP GPU-1: HUMAN READ --
  5. Tier B: confirmation sweep, repeat-major            2.8-5.4 h
- 6. Secondary natural-random curve                        30-50 min
- 7. pull artifacts, verify, teardown                        ~15 min
+ 6. Secondary: natural-random, then steady                50-110 min
+ 7. Adversarial scenario (LAST)                            ~20 min
+ 8. pull artifacts, verify, teardown                        ~15 min
 ```
+
+### Commands
+
+```bash
+# local, once
+bash scripts/gpu_session/create_instance.sh
+bash scripts/gpu_session/run_on_instance.sh bootstrap     # pins the instance to THIS commit
+bash scripts/gpu_session/run_on_instance.sh check         # deps, fd limit, GPU, vLLM health
+
+# step 2 -- the gate. No headline point may run before this passes.
+bash scripts/gpu_session/run_on_instance.sh verify-cache
+
+# step 4 -- scout (Tier A), one schedule at a time
+SESSION_TAG=scout bash scripts/gpu_session/run_on_instance.sh run \
+    benchmarks/schedules/week2_redesign/scout/headline_r1_rps1.schedule.json
+
+# step 5 -- Tier B, repeat-major, drain-gated, three lambdas
+SESSION_TAG=headline REPEAT_IDS='1 2 3' \
+    bash scripts/gpu_session/run_on_instance.sh headline 1.5 2 2.5
+
+# pull after EVERY repeat, not only at the end
+SESSION_TAG=headline bash scripts/gpu_session/pull_artifacts.sh
+
+# teardown -- the Week 2 wrapper, never bare teardown.sh
+bash scripts/gpu_session/teardown_week2.sh
+```
+
+> `run_on_instance.sh stage-a` drives the **superseded** session #1 fixed-duration
+> sweep. It prompts for a typed confirmation. Never use it in this session.
 
 ### Step 2 — the gate that has no equivalent in session #1
 
@@ -80,21 +154,23 @@ is not accepted as evidence: it can be renamed between vLLM releases or applied
 to a different server than the one being driven.
 
 **If this gate fails, no headline point may be driven.** Relaunch and re-verify.
+The headline driver enforces this independently — it refuses to start unless a
+prefix-cache verdict artifact exists and says DISABLED.
 
 ### Step 3 — a real unloaded floor, over the real workload
 
 Concurrency 1, all 4,000 canonical prompts, prefix caching off, stop at first
-content token. ~4,000 × ~100ms ≈ 7 min.
+content token. ~4,000 × ~100 ms ≈ 7 min.
 
 This replaces the first session's floor, which is classified
-`CACHE_INFLUENCED_DIAGNOSTIC` and can no longer be cited. It is also better
-than its predecessor in kind, not just in cleanliness: the old floor sampled
-248 prompts from one schedule's realized draw, while this measures the
-**exact multiset the headline curve uses**, so the intrinsic p99 it produces is
-the floor that curve actually starts from rather than an estimate of it.
+`CACHE_INFLUENCED_DIAGNOSTIC` and can no longer be cited. It is better than its
+predecessor in kind, not just in cleanliness: the old floor sampled 248 prompts
+from one schedule's realized draw, while this measures the **exact multiset the
+headline curve uses**, so the intrinsic p99 it produces is the floor that curve
+actually starts from rather than an estimate of it.
 
-Projected (from the first session's fit, so treat as an order of magnitude,
-not a prediction): unloaded p99 ≈ 370ms, leaving ~130ms of headroom to the SLO.
+Projected (from the first session's fit — an order of magnitude, not a
+prediction): unloaded p99 ≈ 370 ms, leaving ~130 ms of headroom to the SLO.
 
 ---
 
@@ -108,40 +184,108 @@ not a prediction): unloaded p99 ≈ 370ms, leaving ~130ms of headroom to the SLO
 | λ points | **1.0, 2.0, 4.0, 8.0** | Wide, cheap, brackets a crossing that has moved by an unknown amount |
 | N per point | **500** | ~34% per-run flip rate — useless for a verdict, ample for locating a knee |
 | Repeats | 1 | Scouting, not evidence |
-| Warmup boundary | 60s | Same as Tier B, so the transient read transfers |
+| Warmup boundary | 60 s | Same as Tier B, so the transient read transfers |
 | Drive time | 500/1 + 500/2 + 500/4 + 500/8 + 4×60 ≈ **20 min** | |
 
-Scout schedules are generated offline and committed alongside the Tier B family
-(`--lambdas 1 2 4 8 --repeats 1` against a 500-prompt canonical subset; the
-subset is a *scout* artifact and is namespaced separately so it can never be
-mistaken for the headline membership).
+**The old bracket is not authoritative.** The first session's 1.5 RPS point is
+prefix-cache confounded, so "1.5 under, 5 over" is not a bracket this experiment
+inherits. Two things also moved the crossing since: prefix caching is now off
+(every request pays full prefill where the first session got a 12–16% engine-wide
+hit rate), and the workload composition changed. Both push the crossing **down**,
+and neither is quantified — which is exactly why scouting is cheap and confirming
+is expensive.
+
+### Pre-authorized scout fallback (lock 5A)
+
+```
+if λ=1 is already OVER   →  add λ=0.5
+if λ=8 is still UNDER    →  add λ=16
+```
+
+If the authorized fallback still fails to establish a useful bracket:
+
+```
+STOP. Return to human review.
+```
+
+**Do not invent additional λ values on the meter.** 0.5 and 16 are the only
+pre-authorized additions — not 0.25, not 32.
+
+> ### ✅ Closed: the fallback schedules are committed
+>
+> **Both fallback schedules exist and are frozen.** The committed scout family
+> is λ ∈ {0.5, 1, 2, 4, 8, 16} — six schedules, one repeat each, N = 500
+> post-warmup arrivals, 60s frozen boundary, all against the scout workload
+> `e9470f8f…`. If the 5A fallback fires, drive the schedule; do not generate
+> one.
+>
+> | λ | schedule | total / warmup / post | duration |
+> |---|---|---|---|
+> | 0.5 | `scout/headline_r1_rps0.5.schedule.json` | 530 / 30 / 500 | 1090.2s |
+> | 16 | `scout/headline_r1_rps16.schedule.json` | 1458 / 958 / 500 | 88.9s |
+>
+> They are **staged, not spent**: neither runs unless Tier A's bracket fails at
+> the end it covers — the same argument that justifies the 15-schedule headline
+> family of which only 9 are driven. Cost if one does fire: 18 minutes of drive
+> time at λ=0.5, 1.5 minutes at λ=16.
+>
+> This closes the gap recorded at the pre-GPU documentation cleanup, where the
+> lock authorized a response the frozen artifacts could not deliver. **Building
+> a new schedule while the meter runs stays forbidden**: `run_on_instance.sh
+> bootstrap` refuses a dirty or unpushed tree, so it would cost a commit, a push
+> and a **new benchmark SHA**. That rule has not changed — it is simply no
+> longer reachable through the 5A fallback.
 
 ### What the human reads off Tier A
 
 1. **The crossing region** — which λ are clearly under, which clearly over.
-2. **The warmup transient** — TTFT vs wall-clock, to resolve the per-point
-   warmup N that has been `[CALIBRATE]` since §2.4.
+2. **The warmup transient** — TTFT vs wall-clock, to confirm the frozen 60 s
+   boundary is sufficient.
 3. **Sanity gates** — 0 shed, censoring 0%, `exact_n_honoured` true,
    `schedule_delivery_ok` true at every scout point.
 
-**Constraint on (2):** the resolved warmup must be **≤ 60s**, the boundary the
-Tier B schedules were frozen with. Exactly N arrivals were materialized at or
-after that boundary, so filtering later would discard canonical arrivals and
-leave fewer than N measured samples — `metrics/headline_point.py` refuses it
-rather than letting the count quietly drop. If the transient runs past 60s,
-**regenerate the Tier B schedules at a larger boundary** before driving them.
-That is a few seconds of offline work, not a session restart.
+---
+
+## 4. ── HARD STOP GPU-1 — mid-session, human verdict ──
+
+The only sanctioned mid-session judgment. It must answer exactly two questions:
+
+```
+1. Is the crossing neighbourhood bracketed?
+2. Is the 60s warmup boundary sufficient?
+```
+
+**On (2) — the constraint that makes this a stop rather than a note.** The
+resolved warmup must be **≤ 60 s**, the boundary the Tier B schedules were
+frozen with. Exactly N arrivals were materialized at or after that boundary, so
+filtering later would discard canonical arrivals and leave fewer than N measured
+samples — `metrics/headline_point.py` refuses it rather than letting the count
+quietly drop.
+
+If the transient runs past 60 s:
+
+```
+STOP
+pull artifacts
+regenerate the Tier B schedules at a larger frozen boundary
+re-run the required GPU-free checks
+return to pre-GPU approval
+```
+
+That is a few seconds of offline work, not a session restart. **Do not resolve a
+larger warmup afterward by re-filtering headline sidecars** — that was valid
+under the superseded fixed-duration experiment and is invalid here (lock 4A).
 
 ---
 
-## 4. Tier B — headline confirmation
+## 5. Tier B — headline confirmation
 
 | Parameter | Value |
 |---|---|
 | λ points | **3**, chosen from the Tier A bracket: the highest clearly-under, the lowest clearly-over, and one between |
 | N per point | **4,000** (locked) |
-| Repeats | **3** (policy `min_valid_repeats`) |
-| Order | **repeat-major** — see below |
+| Repeats | **3** (`min_valid_repeats`) |
+| Order | **repeat-major** |
 | Separation | drain to in-flight = 0, then each repeat's own warmup. **No vLLM restart.** |
 
 ### Repeat-major ordering is a deliberate choice
@@ -157,9 +301,11 @@ Not λ-major. This is a spot-preemption hedge: a preemption at hour 4 leaves
 others. Two complete repeats is a reportable (if UNCERTAIN) result; a partial
 λ-major sweep is not.
 
-### Drive time
+The drain probe reads the **server** (`vllm:num_requests_running` /
+`num_requests_waiting`), not the client — a client-side in-flight count is
+always zero by the time a point returns, so gating on it would be green forever.
 
-Per repeat, at the worst-case (lowest) λ set:
+### Drive time
 
 | λ set | per repeat | × 3 repeats |
 |---|---:|---:|
@@ -172,117 +318,205 @@ only the three chosen λ are driven. The rest are staged, not spent.
 
 ---
 
-## 5. Classification and the stop condition
+## 6. Point and repeat validity
 
-Applied **offline, after teardown**, from
-`benchmarks/workloads/week2_headline/repeat_policy.json`:
+Applied **offline, after teardown**, from `repeat_policy.json`.
 
 ```
 min_valid_repeats      3
 require_unanimous      true
+majority_vote          false
 n_per_run              4000
 n_max                  5000
 max_repeats_authorized 3
 ```
 
+### Repeat states
+
+```
+UNDER      p99 TTFT < 500ms, all gates clean
+OVER       p99 TTFT >= 500ms, all gates clean
+CENSORED   >5% censoring -- ordinary p99 SUPPRESSED, never reported as latency
+UNCERTAIN  cannot finalize
+```
+
 - A repeat that is `CENSORED`, missed exact-N, or failed delivery fidelity is
   **excluded, never pooled**.
-- A boundary-determining point with sub-5% censoring and no completed
+- A boundary-determining point with **sub-5% censoring** and no completed
   tail-sensitivity review **cannot finalize** — it stays `UNCERTAIN`.
-- 2-1 splits are `UNCERTAIN`, not a majority verdict. Near the SLO the split
-  *is* the finding.
 
-### The stop condition, stated before the money is spent
+### Point classification (lock 1A)
 
-If the crossing is unresolved once the ceiling is reached:
+```
+UNDER + UNDER + UNDER  →  UNDER
+OVER  + OVER  + OVER   →  OVER
+any 2-1 split          →  UNCERTAIN
+```
+
+**No majority voting.** Near the SLO the split *is* the finding — the point is
+unstable. Taking the majority would convert an honest UNCERTAIN into a verdict,
+which is the failure the first session already made once.
+
+### The stop condition, stated before the money is spent (lock 2B)
+
+If the crossing is unresolved once `N = 4000` × 3 repeats is spent:
 
 ```
 breach interval = (highest defensible UNDER λ, lowest defensible OVER λ]
 ```
 
-and the session **stops**. It does not escalate. A ≤1% per-run flip rate would
-need N ≈ 7,500, which is above `N_max = 5,000` and therefore unreachable with
-this corpus — so an interval is a legitimate final answer, not a failure.
+and the session **stops**.
 
-### The one pre-authorized escalation
+**`N = 5000` is NOT AUTHORIZED.** There is no escalation of any kind in this
+session — `repeat_policy.json` records `escalation.authorized: false` and
+`escalation.n5000.authorized: false`. An interval is a legitimate final answer,
+not a failure: a ≤1% per-run flip rate would need N ≈ 7,500, which is above
+`N_max = 5,000` and therefore unreachable with this corpus at all.
 
-If **exactly one** boundary-determining λ is `UNCERTAIN` after 3 valid repeats,
-one escalation may be authorized in advance: re-drive that λ alone at
-`N = 5,000` for all 3 repeats. At λ=2 that is +2.1 h.
-
-`repeat_policy.json` currently records `"authorized": null`. **The human sets
-it before the session, not during.**
+**Do not increase N on the meter.**
 
 ---
 
-## 6. Cost, risk, and the branch points
+## 7. Spot preemption — the process-epoch rule (lock 3A)
+
+D4 forbids restarting vLLM between repeats, so the repeatability estimate
+measures arrival/queue variability rather than cold-process variance. A spot
+preemption **forces** a restart. This was an open question in the proposed plan;
+it is now closed.
+
+**Headline repeats from different vLLM process epochs must not be combined into
+one final classification family.**
+
+```
+epoch A:  repeat 1
+          repeat 2
+          PREEMPTED
+                          →  epoch A becomes preserved DIAGNOSTIC evidence
+
+epoch B:  repeat 1
+          repeat 2
+          repeat 3
+                          →  the final classification family
+```
+
+A new process may **not** contribute only `repeat 3` to epoch A's family. If the
+session dies after two complete repeats, the third is not addable — the fresh
+process re-drives all three. The schedules are frozen, so this is exactly
+reproducible; only meter time is lost.
+
+Preempted **mid-repeat**: discard the partial repeat. Its artifacts stay as
+diagnostics.
+
+---
+
+## 8. Secondary scenarios (lock 6A)
+
+Week 2 is **not closed** until all four are accounted for. They are in scope,
+not dropped:
+
+| # | Scenario | Role |
+|---|---|---|
+| 1 | Controlled Poisson headline | **Defines the breach.** Tier B above |
+| 2 | Natural-random secondary | Does the knee survive unconstrained traffic? (~30–50 min) |
+| 3 | Steady-arrival reference | Lower-variance legible reference (~30–60 min) |
+| 4 | Adversarial long-context | Separate scenario — **runs LAST** |
+
+The controlled Poisson workload alone defines the headline breach. The others
+may support interpretation but **may never redefine it**. Secondary points never
+enter the headline classification.
+
+Adversarial is last deliberately: it drives the replica toward saturation, and
+the headline and steady curves are already durably written by then.
+
+If session wall-clock forces a cut, cut from the **bottom** of that table and
+record what was deferred — do not cut the headline to make room.
+
+---
+
+## 9. The no-improvisation matrix
+
+The complete set of authorized responses. **No other mid-session policy change
+is authorized.**
+
+| Condition | Authorized response |
+|---|---|
+| λ=1 already OVER | Add λ=0.5 scout |
+| λ=8 still UNDER | Add λ=16 scout |
+| Authorized scout still fails to bracket | **STOP** |
+| Transient not stable by 60 s | **STOP** + regenerate schedules at a larger boundary |
+| Prefix-cache verification fails | **STOP** — relaunch, re-verify. No headline points until it passes |
+| Shed > 0 | Point invalid / investigate. The cap is shaping results — an instrument finding, not a server one |
+| Driver fails materialized-schedule fidelity | Point invalid / investigate |
+| Censoring > 5% | `CENSORED`; **no ordinary p99** |
+| Censoring 0–5% near boundary | Tail-sensitivity review required; cannot finalize without it |
+| 2–1 repeat split | `UNCERTAIN` |
+| N=4000 unresolved | Report **interval**; stop |
+| Desire to increase N to 5000 | **NOT AUTHORIZED** |
+| Spot preemption during Tier B | Do not combine process epochs (§7) |
+| Code change required | **STOP** — new benchmark SHA + preflight |
+| Historical README conflicts with this plan | **STOP** — surface the conflict |
+
+---
+
+## 10. Cost and risk
 
 | | Estimate |
 |---|---|
 | Total session | **4.3 – 7.2 h** (Tier B dominates) |
-| Instance | `g2-standard-8` + 1× L4, Spot |
+| Instance | `g2-standard-8` + 1× L4, Spot, `us-central1-a` |
 | Rate | ~$0.40–0.50 / h |
 | **Cost** | **~$1.70 – $3.60** |
 | Budget ladder | $10 canary may fire; $150 hard line is not in reach |
 
 **The binding constraint is wall-clock and spot preemption, not money.**
 
-### Pre-authorized branches (no on-meter improvisation beyond these)
+---
 
-| Situation | Action |
-|---|---|
-| Prefix-cache gate fails | Relaunch with `DISABLE_PREFIX_CACHING=1`, re-verify. No headline points until it passes. |
-| Tier A shows every point over | Scout downward (λ 0.5, 0.25) before spending Tier B evidence. |
-| Tier A shows every point under | Scout upward (λ 16, 32). |
-| Warmup transient > 60s | Regenerate Tier B schedules at a larger boundary, offline, then proceed. |
-| Any scout point sheds | Stop. The cap is shaping results; that is an instrument finding, not a server one. |
-| Preempted after ≥2 complete repeats | **Human decision, see below.** |
-| Preempted mid-repeat | Discard the partial repeat. Its artifacts stay as diagnostics. |
+## 11. Artifact gate — what must exist before teardown
 
-### The preemption question this plan cannot resolve alone
+Teardown is irreversible and the instance is spot. Nothing may be torn down
+until all of this is on the laptop and verified:
 
-D4 forbids restarting vLLM between repeats, so the repeatability estimate
-measures arrival/queue variability rather than cold-process variance. A spot
-preemption **forces** a restart. If the session dies after two complete
-repeats, the third cannot be added in a new process and still satisfy D4 as
-written.
+- [ ] Every driven point has its **three** artifacts: `.raw_log.jsonl`,
+      `.samples.jsonl`, `.metrics.json`
+- [ ] `pull_artifacts.sh` completeness check passes (fractional names like
+      `headline_r1_rps1.5.*` survive it — that fix is a precondition of this
+      session, since every headline tag is fractional or repeat-tagged)
+- [ ] Prefix-cache verdict artifact present and says **DISABLED**
+- [ ] vLLM launch log captured, with the **resolved** eager / prefix-cache modes
+- [ ] Unloaded-floor run captured
+- [ ] Scout points captured
+- [ ] Session log records the benchmark SHA and the process epoch of every repeat
 
-Three options, all of which are the human's call and should be decided
-**before** the session:
-
-1. **Report with 2 repeats**, marked `UNCERTAIN` where the policy requires 3.
-2. **Redo all 3 repeats** in a fresh session (the schedules are frozen, so this
-   is exactly reproducible — only meter time is lost).
-3. **Relax D4 with recorded provenance**, accepting the third repeat from a new
-   process and documenting that it carries process-initialization variance the
-   other two do not.
+**Pull incrementally, after each repeat, not only at session end.** The first
+session pulled once at the end and it worked; it worked because nothing went
+wrong. Over a 5-hour spot session that is a bet, and `pull_artifacts.sh` is
+cheap to run repeatedly.
 
 ---
 
-## 7. Artifacts and teardown
+## 12. Teardown
 
-- **Pull incrementally**, after each repeat, not only at session end. The
-  first session pulled once at the end and it worked; it worked because nothing
-  went wrong. Over a 5-hour spot session that is a bet, and
-  `pull_artifacts.sh` is cheap to run repeatedly.
-- Fractional-RPS names (`headline_r1_rps1.5.*`) now survive the completeness
-  checker — that fix is a precondition of this session, since every headline
-  tag is fractional or repeat-tagged.
-- Teardown with `scripts/gpu_session/teardown_week2.sh`, never bare
-  `teardown.sh`, and **verify deletion in the console**.
-- Promote accepted points into `benchmarks/evidence/week2/session_2/` with a
-  hash manifest, the same way session #1's were.
+```bash
+SESSION_TAG=headline bash scripts/gpu_session/pull_artifacts.sh   # one last time
+bash scripts/gpu_session/teardown_week2.sh                        # NOT bare teardown.sh
+```
+
+`teardown_week2.sh` owns Week 2's instance name and **verifies the deletion
+afterwards** rather than trusting the exit code. Bare `scripts/teardown.sh`
+defaults to Week 1's instance name and would leave the Week 2 meter running.
+
+**Verify deletion in the console as well.** The script tells you if the instance
+still exists; believe the console over any exit code.
+
+Afterwards, promote accepted points into `benchmarks/evidence/week2/session_2/`
+with a hash manifest, the same way session #1's were.
 
 ---
 
-## 8. Out of scope, flagged rather than dropped
+## 13. Classification happens offline
 
-`WEEK2_PLAN.md` §2.1 also calls for a **steady-arrival reference curve** and an
-**adversarial long-context scenario**, and §6.2 orders adversarial last. The R4
-continuation README does not mention either.
-
-They are **not** included in the estimates above. Whether session #2 carries
-them, or they move to a later session, is a scope decision for the human — it
-is roughly +30–60 min for steady over the confirmation λ, and the adversarial
-scenario should still run last if it runs at all, since it deliberately drives
-the replica toward saturation.
+After teardown, from the pulled artifacts, via `metrics/classification.py`.
+No percentile is ever computed on the meter, and no verdict is rendered during
+the session. The session collects bytes; the analysis reads them afterwards for
+free.

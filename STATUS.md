@@ -1,5 +1,14 @@
 # Status
 
+> **STATUS: AUTHORITATIVE — WEEK 2**
+>
+> Role: where the project currently is, and the session #1 do-not-cite list.
+>
+> Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
+> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> conflict** — do not reconcile silently.
+
 Where the project currently is. `README.md` describes what the project *is*
 and how it's built, and does not track progress — this file is the only place
 that does, so it's the only place that goes stale.
@@ -30,7 +39,7 @@ when the router regresses and when the eval loses its teeth
 
 ## Week 2 — in progress
 
-**The first GPU session ran on 2026-08-18 and produced diagnostic evidence, not
+**GPU session #1 ran on 2026-08-18 and produced diagnostic evidence, not
 a final breach RPS.** The infrastructure worked — vLLM served, the open-loop
 driver tracked its schedules with zero shed and zero errors at low load, the
 corpus-drift guard fired correctly, and artifacts were pulled and verified
@@ -56,10 +65,12 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | R0 preserve first-session evidence | **Done** — 24 artifacts promoted with hashes to `benchmarks/evidence/week2/first_session/` |
 | R1 corpus strata / R2 p99-vs-N bootstrap / R3 joint report | **Done** — `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md` |
 | Hard Stop R3 — human locks `k`, `L`, `N`, `N_max` | **Cleared 2026-08-19** |
-| R3.5 provenance closeout + missing locks | **In progress** |
-| R4–R11 implementation, regression + controls | Not started |
-| Hard Stop R-PREGPU | Not reached |
-| GPU session #2 (human-owned) | Not scheduled |
+| R3.5 provenance closeout + missing locks | **Done** |
+| R4–R11 implementation, regression + controls | **Done** — `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
+| R-DOC documentation authority cleanup | **Done** — `docs/WEEK2_DOC_INDEX.md` |
+| Hard Stop R-DOC — human verdict on documentation governance | **PASSED 2026-08-19** (human verdict) |
+| Hard Stop R-PREGPU | **Next** — R-DOC is cleared; the benchmark SHA is cut from this tree |
+| GPU session #2 (human-owned) | **Not run.** No instance exists |
 
 ### Locks added at Hard Stop R3
 
@@ -78,14 +89,20 @@ first-session artifacts, which are still read under their original semantics.
 
 Authoritative documents, which take precedence over this summary:
 
+- **`docs/WEEK2_DOC_INDEX.md`** — **start here.** The single index of which Week 2
+  documents govern, which are evidence, and which are historical or superseded
+  and must not be executed. Week 2 carries two design generations; directory
+  names are not authority.
+- **`docs/WEEK2_GPU_SESSION_2_PLAN.md`** — the only current GPU-session runbook.
 - **`WEEK2_PLAN.md`** — the decision record: what was decided and why, what is
   `LOCKED`, and every `[CALIBRATE]` value with its named source.
 - **`WEEK2_EXECUTION.md`** — the execution order: blocks, hard stops, and
   definitions of done. Where the two appear to conflict on the same axis, that
   is a checkpoint to surface, not something to reconcile silently
   (`WEEK2_EXECUTION.md` §"Precedence rule").
-- **`docs/WEEK2_GPU_PREFLIGHT.md`** — the Hard Stop 4 evidence checklist,
-  standing between here and any GPU spend.
+- **`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`** — the R-DOC / R-PREGPU evidence
+  checklist, standing between here and any GPU spend. (Session #1's Hard Stop 4
+  checklist, `docs/WEEK2_GPU_PREFLIGHT.md`, is SUPERSEDED — do not execute it.)
 - **`docs/WEEK2_PRE_GPU_AUDIT.md`** — the pre-GPU audit trail: what the
   2026-08-17 audit found, and how each finding was closed.
 - **`docs/WEEK2_REMEDIATION_REPORT.md`** — what was changed on 2026-08-18 and
@@ -99,8 +116,8 @@ Authoritative documents, which take precedence over this summary:
 
 Work proceeds in blocks separated by **hard stops** — blocking gates where the
 agent produces evidence and a human renders the verdict. The summary table at
-the end of `WEEK2_EXECUTION.md` lists all five and the failure mode each one
-prevents.
+the end of `WEEK2_EXECUTION.md` lists all seven — the original five plus R3 and
+R-DOC — and the failure mode each one prevents.
 
 ### Deliverable
 
@@ -110,8 +127,9 @@ schedule and corpus artifacts.
 
 ### `[CALIBRATE]` values
 
-Tracked with their named sources in `WEEK2_PLAN.md` §8. **All resolved except
-the per-point warmup N**, which is open *by design*:
+Tracked with their named sources in `WEEK2_PLAN.md` §8. **All resolved.** The
+per-point warmup N was the last one open, and the redesign closed it by changing
+its shape rather than by measuring it — see the note under the table:
 
 | Value | State |
 |---|---|
@@ -120,13 +138,22 @@ the per-point warmup N**, which is open *by design*:
 | Measurement window Y | **120s** (2026-08-18) — superseded for the headline by `N = 4,000` (§10.2) |
 | Mock timing spin (Block 0) | **Resolved** — Windows-only fix (2026-08-16) |
 | Loadgen scheduler spin | **Resolved** — platform-specific defaults (2026-08-18) |
-| Per-point warmup N | **Open by design** — from Stage A's GPU transient, in Block F |
+| Per-point warmup N | **Resolved structurally** — frozen 60s boundary, validated forward in Tier A |
 
-The warmup N is resolved post-GPU-session from the Stage A transient plot;
-because the warmup filter is metrics-side and time-based, applying it is a
-re-filter over the committed sidecars rather than another GPU run. It is now
-resolved from **session #2's** transient: session #1's is confounded by the same
-prefix-cache accumulation as its measurement points.
+**This entry changed shape in the redesign, and the old shape is the single most
+dangerous stale instruction in the repo.** Under session #1's superseded
+fixed-duration design it was open by design: measure first, read the
+flatten-point off the Stage A transient afterwards, and apply it as a
+**re-filter over the committed sidecars** — legitimate then, because a
+fixed-duration window held a surplus of samples.
+
+Under exact-N it is not. The 60s boundary is **frozen into the schedules**:
+exactly N arrivals are materialized at or after it, so filtering later discards
+canonical arrivals and silently leaves fewer than N measured samples.
+`metrics/headline_point.py` refuses it. The boundary is instead **validated
+forward** at Hard Stop GPU-1 against session #2's Tier A transient, and if 60s
+proves insufficient the schedules are **regenerated offline at a larger
+boundary** — never re-filtered after the fact (`WEEK2_PLAN.md` §11.4).
 
 ## Known issues
 
@@ -157,6 +184,10 @@ The tolerance has deliberately **not** been widened to hide it.
 
 Items deliberately left open for the human at the start of the metered GPU
 session, rather than defaulted silently — `--enforce-eager` and the
-output-token policy. Each is listed with its trade-off in
-`docs/WEEK2_GPU_PREFLIGHT.md`. (The budget-alert ladder was previously on this
-list; it is now resolved as $10 / $75 / $135 / $150.)
+output-token policy. Both now carry their session #2 resolution in
+`docs/WEEK2_GPU_SESSION_2_PLAN.md` §0 (output `max_tokens` = 512 is locked;
+`--enforce-eager` stays a knob, but whichever mode the server comes up in, every
+point in the session must run that same mode). The original trade-off write-ups
+survive in the superseded `docs/WEEK2_GPU_PREFLIGHT.md` as rationale only.
+(The budget-alert ladder was previously on this list; it is now resolved as
+$10 / $75 / $135 / $150.)

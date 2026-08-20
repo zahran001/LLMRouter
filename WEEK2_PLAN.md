@@ -1,5 +1,14 @@
 # Week 2 — Load Generation & Baseline: Implementation Plan
 
+> **STATUS: AUTHORITATIVE — WEEK 2**
+>
+> Role: the Week 2 decision record — what is measured, what is locked, and why.
+>
+> Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
+> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> conflict** — do not reconcile silently.
+
 Week 1 is closed: transparent router merged to `main`, measurement pipeline
 locked and calibrated, mock→vLLM faithfulness confirmed on real GPU. This
 document is the authoritative plan for Week 2. It follows the same discipline
@@ -15,10 +24,11 @@ artifact carries a provenance note.
 > 500ms SLO — see §10.9 for the explicit list of what did *not* change.
 
 **Status of this document: every design section (§2–§7) is LOCKED and
-implemented.** See §9 for the closeout. The `[CALIBRATE]` values are tracked in
-§8; all are resolved except the per-point warmup N, which is resolved from Stage
-A's GPU transient data in Block F **by design** and is not an open design
-question.
+implemented, and §6 is superseded for session #2 — see §10 and §11.** See §9 for
+the closeout. The `[CALIBRATE]` values are tracked in §8; all are resolved,
+including the per-point warmup N, which is now a **frozen 60-second boundary
+materialized into the exact-N schedules and validated forward in Tier A**
+(§11.4). It is no longer an open value read off a transient after the fact.
 
 > *Historical note.* This line previously read "Sections §3–§7 are scoped but not
 > yet fully designed… Do not implement §3–§7 against this draft; implement §2."
@@ -125,7 +135,16 @@ the sweep, so the *movement* of the breach as RPS climbs is attributable to
 load. The prompt tail sets the curve's floor; RPS moves it. This sentence must
 appear in `BASELINE.md`.
 
-### 2.3 RPS sweep methodology (LOCKED; numbers from Stage A)
+### 2.3 RPS sweep methodology (LOCKED — **SUPERSEDED for session #2 2026-08-19, see §11.5 and the session #2 runbook**)
+
+> **Read §11.5 before implementing this section.** The two-stage coarse→fine
+> sweep below is session #1's discovery procedure, and it is superseded. Session
+> #2 discovers the crossing with a **diagnostic Tier A scout** at λ = 1/2/4/8
+> (N = 500, never classified), pre-authorized fallback λ = 0.5 or 16 **and no
+> other**, then drives **Tier B** at three λ × three repeats × N = 4,000. The
+> scout ladder is bounded in advance precisely because the sweep below was not:
+> its "extend the range live" escape valve is what the no-improvisation matrix
+> now forbids. Operational form: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
 
 - **Two-stage coarse→fine discovery.** The exact RPS range/step is NOT locked in
   advance — it cannot be, because the breach location is unknown, and a fine step
@@ -248,14 +267,22 @@ assumption (see §3 and §4).
 - **2s retained as a secondary severe-degradation reference line** — plotted and
   recorded, not the headline. Preserves the "not just breached but unusable" data
   point without introducing a second breach definition.
-- **Breach RPS = the lowest swept RPS whose full-window (Y-second) p99 TTFT ≥
-  500ms**, resolved to step granularity by the Stage B fine sweep.
-- **Sustained-ness is inherent to the window, not a separate rule:** a p99
-  computed over a Y=120s window cannot be moved by one transient spike; sustained
-  tail elevation is required to move it.
-- **Unloaded TTFT floor is characterized first** (recorded in Stage A). This tells
-  you how large a blowup 500ms represents and whether the knee is sharp and close
-  or shallow and far — informing the Stage B step granularity.
+- **Breach RPS = the lowest swept RPS whose p99 TTFT ≥ 500ms**, resolved to step
+  granularity. *(Originally "full-window (Y-second) p99, resolved by the Stage B
+  fine sweep" — the **basis** is superseded by §10.2: the redesigned headline
+  reads exactly N post-warmup arrivals, not a fixed window, and resolves the
+  crossing with three unanimous repeats rather than a fine sweep. The 500ms
+  threshold and the "lowest swept RPS" rule are unchanged.)*
+- **Sustained-ness is inherent to the measurement basis, not a separate rule:** a
+  p99 over N = 4,000 post-warmup arrivals cannot be moved by one transient spike;
+  sustained tail elevation is required to move it. *(Superseded wording: the same
+  argument was originally made about a Y=120s window — see §10.2 for why the
+  window was replaced, and §10.3 for why sample count, not elapsed time, is what
+  actually protects a p99.)*
+- **Unloaded TTFT floor is characterized first** (session #2 records it in Tier
+  A, before the scout; session #1 recorded it in Stage A). This tells you how
+  large a blowup 500ms represents and whether the knee is sharp and close or
+  shallow and far — informing which three λ Tier B spends its repeats on.
 
 ### 2.7 Chart axis convention (LOCKED — binds Week 4)
 
@@ -383,16 +410,19 @@ reconstructable), target RPS, arrival process, schedule-generation version/confi
   single replica is well within one process).
 
 **Concurrency cap value — RESOLVED: 3000** (set 2026-08-17; Hard Stop 3-class
-read, deferred there pending Stage A's real RPS range, closed at Block E
-pre-flight). Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP`.
+read, deferred there pending session #1's Stage A RPS range, closed at Block E
+pre-flight). Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP`. The value
+carries forward to session #2 unchanged — it was set above a ceiling far higher
+than any λ the scout ladder reaches (§10.9).
 
-*Provenance for the value.* It clears every concurrency level Block C ever
-produced: the uncapped ("natural") sweep peaked at **2380** simultaneous open
-streams at 300 offered RPS against the slow mock, and at **651** at 100 RPS —
-the closest comparable rate to Stage A's 80 RPS ceiling. 3000 is above the
-former and ~4.6× the latter. Stated as the guardrail's own condition (Little's
-Law): at Stage A's top offered point the cap cannot bite until *mean* end-to-end
-response time exceeds **37.5s** (3000 ÷ 80 RPS) — far beyond any latency at
+*Provenance for the value, from session #1's sweep design.* It clears every
+concurrency level Block C ever produced: the uncapped ("natural") sweep peaked
+at **2380** simultaneous open streams at 300 offered RPS against the slow mock,
+and at **651** at 100 RPS — the closest comparable rate to Stage A's 80 RPS
+ceiling. 3000 is above the former and ~4.6× the latter. Stated as the
+guardrail's own condition (Little's Law): at Stage A's top offered point the
+cap cannot bite until *mean* end-to-end response time exceeds **37.5s**
+(3000 ÷ 80 RPS) — far beyond any latency at
 which the 500ms p99 TTFT breach is still an interesting measurement. It is
 therefore provably above offered load through the breach region, per the
 requirement below, while still bounding true runaway.
@@ -609,7 +639,23 @@ a mutated corpus.
 
 ---
 
-## 6. GPU session runbook (LOCKED)
+## 6. GPU session runbook — SUPERSEDED (session #1's runbook, kept as the record)
+
+> **STATUS: SUPERSEDED — DO NOT EXECUTE.** This section is the runbook GPU
+> session #1 ran on 2026-08-18. The session it drove falsified its own design
+> (§10), and it is preserved here as provenance, not as instructions. It is not
+> the current runbook and no part of it may drive session #2.
+>
+> **The one current GPU runbook is `docs/WEEK2_GPU_SESSION_2_PLAN.md`**, with
+> its policy in §11 and `benchmarks/workloads/week2_headline/repeat_policy.json`.
+>
+> What changed, concretely: Stage A/B coarse→fine became a bounded Tier A scout
+> plus Tier B repeats (§11.5); "extend upward live" and mid-session schedule
+> generation are now forbidden by the no-improvisation matrix; the warmup is a
+> frozen 60s boundary rather than a value read off the transient afterwards
+> (§11.4). What carried forward unchanged is listed in §10.9 — the meter
+> collects and never analyzes, durable-on-produce recording, adversarial last,
+> and verified teardown.
 
 Pre-staged and teardown-disciplined, mirroring the Week 1 close-out runbook. The
 GPU is **not** used to figure out the experiment — it executes an already-locked
@@ -630,7 +676,7 @@ clean coarse→fine sweep takes the time it needs. The discipline that matters i
 teardown, not shaving minutes. (Week 2 budget line was ~5 hrs on-demand / ~$4.45;
 treat as a guide, not a ceiling.)
 
-### 6.1 Pre-flight (all free, before the meter starts)
+### 6.1 Pre-flight (SUPERSEDED — session #1; current: `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`)
 
 - **§4 hard gate: all five mock validations green.** The loadgen is proven against
   the mock (arrival shape, open-loop fidelity, cap/shedding, corpus, logging). An
@@ -666,7 +712,7 @@ treat as a guide, not a ceiling.)
 - **Stage A schedules pre-generated and committed** (§5 frozen artifacts — they are
   deterministic, so generate offline, commit, and the session just drives them).
 
-### 6.2 Session sequence (meter running)
+### 6.2 Session sequence (SUPERSEDED — session #1's Stage A/B sweep; current: Tier A/Tier B, §11.5)
 
 1. **Stand up** 1× L4 spot, vLLM Llama-3.2-3B-Instruct, wait for healthy `/health`.
 2. **Confirm config-only swap holds** — router points at vLLM via `UPSTREAM_BASE_URL`
@@ -690,7 +736,7 @@ treat as a guide, not a ceiling.)
    after the baseline + steady are durably written means a destabilized server
    cannot contaminate the measurements that matter most.
 
-### 6.3 Recording plan (LOCKED — durable-on-produce)
+### 6.3 Recording plan (SUPERSEDED as a runbook — session #1; the durable-on-produce principle carries forward, §10.9)
 
 **Every measurement is written to disk the moment it is produced, never buffered in
 memory until session end.** A crash at point 5 must not lose points 1–4.
@@ -709,14 +755,14 @@ Principle: the session produces **raw durable artifacts**; percentiles, breach
 location, warmup-N, and cap-onset confirmation are all computed **offline after
 teardown**. Never pay GPU time to analyze.
 
-### 6.4 Teardown (meter stops)
+### 6.4 Teardown (SUPERSEDED — session #1; current: `scripts/gpu_session/teardown_week2.sh`)
 
 - Run `teardown.sh`. **Verify the instance is actually deleted in the console** — do
   not trust the script's exit code alone.
 - Everything after this is local/free: percentile computation, breach-RPS
   resolution, warmup-N calibration, `BASELINE.md` authoring.
 
-### 6.5 What the session already knows (no on-meter improvisation)
+### 6.5 What the session already knew (SUPERSEDED — session #1; session #2's equivalent is the no-improvisation matrix)
 
 The session starts already knowing: the workload (frozen schedules), the RPS points
 (Stage A coarse set; Stage B derived from the bracket), warmup/window behavior
@@ -758,12 +804,12 @@ Everything else is resolved with named evidence.
 
 | Value | Status | Source |
 |---|---|---|
-| Per-point warmup N | **10s placeholder — OPEN BY DESIGN** | Stage A transient plot (TTFT vs wall-clock, find flatten point). Resolved in Block F, post-teardown. Applying the real N is a **re-filter over the committed sidecars, never a GPU re-run**: the warmup filter is metrics-side and time-based (§2.4), so `scripts/compute_point_metrics.py --warmup-n <N>` re-derives every point |
+| Per-point warmup N | **RESOLVED STRUCTURALLY: 60s frozen boundary** (2026-08-19, lock 4A) | Not a value read off a plot after the run. The 60s boundary is materialized into the exact-N schedules — N arrivals land at or after it — and is **validated forward** against session #2's Tier A transient at Hard Stop GPU-1. If 60s proves insufficient: STOP, regenerate the schedules offline at a larger boundary, and return to pre-GPU approval. Post-hoc re-filtering of headline sidecars is not a valid resolution and `metrics/headline_point.py` refuses it (§11.4) |
 | ~~Measurement window Y~~ | **RESOLVED: 120s** (2026-08-18) — **SUPERSEDED for the headline 2026-08-19 (§10.2)** | Stage A's lowest offered point is 2 RPS, so the window carries `2 × 120 = 240` scheduled requests — 2.4× the ≥100 achieved-sample floor, with headroom for under-delivery before a point goes tail-invalid. Full reasoning in §2.4. *Superseded because its justification rested on the ≥100 floor, which the first session falsified, and because a fixed duration is the mechanism of the prompt-tail confound. Headline basis is now `N = 4,000` exact post-warmup scheduled arrivals* |
 | **Canonical workload `k` / `L` / `N`** | **RESOLVED: k6 (0/50/90/95/99/99.5/100), L = q99 = 11,471 chars, N = 4,000** (2026-08-19) | Read off the R3 evidence package by the human at Hard Stop R3: `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md`. `N` from the ≤5% classification-flip criterion on the conservative 2-RPS bootstrap source; `L` from the measured unloaded TTFT-vs-length relation (§10.1/§10.3) |
 | **Evidence ceiling `N_max`** | **RESOLVED: 5,000** (2026-08-19) | Structural: the pinned corpus holds 5,000 prompts, so that is the largest canonical multiset with no prompt reuse. Not an escalation target (§10.3) |
 | ~~Offered-vs-achieved band~~ | **RESOLVED: ±5%** (2026-08-18) | Block C low-load tracking (`benchmarks/calibration/block_c/calibration_reads.json` → `low_load_tracking`): 0.0% / 0.0% / 0.0% / −0.67% at 0.5/1/2/5 RPS. Deliberately **not** tightened to the measured 0.67% max — the band detects material driver under-delivery, and a band with no headroom would flag healthy points near the breach. Reasoning in §2.5. Constant: `metrics/point.py: DEFAULT_BAND_PCT` |
-| ~~Concurrency cap value~~ | **RESOLVED: 3000** (2026-08-17) | Set above Block C's uncapped peak concurrency (2380 @ 300 RPS; 651 @ 100 RPS) — cannot bite below a 37.5s mean response time at Stage A's 80 RPS ceiling. Full provenance + the `ulimit -n` precondition in §3.3. Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP` |
+| ~~Concurrency cap value~~ | **RESOLVED: 3000** (2026-08-17) | Set above Block C's uncapped peak concurrency (2380 @ 300 RPS; 651 @ 100 RPS) — cannot bite below a 37.5s mean response time at session #1's Stage A 80 RPS ceiling, far above any λ the session #2 scout reaches. Full provenance + the `ulimit -n` precondition in §3.3. Constant: `loadgen/_cli.py: BASELINE_CONCURRENCY_CAP` |
 | ~~Loadgen capability target~~ | **RESOLVED with the cap** (2026-08-17) | Same measurement (see note below). Verified per point rather than assumed: `shed > 0` at any swept point means the cap bit and that point is cap-shaped — flagged automatically by `scripts/compute_point_metrics.py` |
 | Loadgen scheduler spin margin (`loadgen/scheduler.py:SPIN_MARGIN_S`) | 5ms | **Windows-tuned, not yet Linux-calibrated.** Carried forward from Hard Stop 2 review (2026-08-16): same class of A/B as Block 0's mock-timing spin (`mock/timing.py:SPIN_MARGIN_S`) — run it on the Linux e2 VM, same session if convenient. Do not ship the Windows-tuned 5ms onto Linux vLLM runs unverified. |
 
@@ -779,7 +825,7 @@ referenced from two sections.
 Locked: baseline semantics (§2, all seven knobs), loadgen design (§3, mechanism
 and both calibrated values), mock validation (§4, five validations + hard pre-GPU
 gate), trace/replay (§5, Option M frozen-schedule + schedule-plus-corpus
-contract), and the GPU session runbook (§6, single continuous session,
+contract), and session #1's GPU runbook (§6 — superseded, single continuous session,
 durable-on-produce recording, adversarial-last).
 
 **All design sections are locked, and every `[CALIBRATE]` value is resolved
@@ -796,10 +842,14 @@ except the one that is deliberately post-GPU:**
 | Headline prefix-cache policy | **disabled, preflight-enforced** — locked 2026-08-19 (§10.8) |
 | Mock timing spin (Block 0, §7) | **Resolved 2026-08-16** — Windows-only fix; A/B in `benchmarks/calibration/noise_floor/`, read-up in `MOCK_TRUST_BOUNDARY.md` |
 | Loadgen scheduler spin | **Resolved 2026-08-18** — platform-specific defaults in `loadgen/scheduler.py`; A/B in `benchmarks/calibration/scheduler_spin/`, read-up in `BENCHMARKS.md` |
-| **Per-point warmup N** | **OPEN BY DESIGN** — offline from the §6.3 transient data (TTFT vs wall-clock flatten-point), resolved in Block F. Applying it is a metrics-side re-filter over the committed sidecars, never a GPU re-run (§2.4) |
+| **Per-point warmup N** | **RESOLVED: 60s frozen boundary** — materialized into the exact-N schedules and validated forward in Tier A. Post-hoc re-filtering of headline sidecars is not valid and is refused in code (§11.4) |
 
-Nothing further to design. Execution order: §7 Linux calibration → loadgen build →
-§4 mock validations (the gate) → §6 GPU session → offline analysis → `BASELINE.md`.
+Nothing further to design. Execution order as originally written: §7 Linux
+calibration → loadgen build → §4 mock validations (the gate) → §6 GPU session →
+offline analysis → `BASELINE.md`. **The live order is now
+`WEEK2_EXECUTION.md`'s redesign arc** — R0→R11, Hard Stop R-DOC, Hard Stop
+R-PREGPU, Block E2 (GPU session #2, run from
+`docs/WEEK2_GPU_SESSION_2_PLAN.md`), then Block F.
 
 > *Historical note (2026-08-19).* "Nothing further to design" was true of the
 > plan as written and false of the experiment. The first GPU session ran that
@@ -1107,3 +1157,153 @@ pinned corpus content; frozen materialized schedule as replay source of truth;
 raw log + sidecar durability model; the raw log's six-field schema; exact
 benchmark-SHA pinning; human-owned GPU lifecycle; the mock trust boundary; and
 per-point **time-based** warmup.
+
+---
+
+## 11. Session #2 evidence locks (2026-08-19)
+
+Six decisions taken by the human ahead of Hard Stop R-DOC, at the pre-GPU
+documentation cleanup. They are **not proposals**. Each closes a question the
+GPU session #2 plan had left open, and each is encoded machine-readably in
+`benchmarks/workloads/week2_headline/repeat_policy.json` so the runbook and the
+classifier cannot drift apart from this text.
+
+Where §10 records what the *first session falsified*, §11 records what the
+*second session is authorized to do*.
+
+### 11.1 — Repeat classification: agreement, never majority (1A)
+
+Each headline λ receives **three independent repeats**. Final classification
+requires **agreement**:
+
+```
+UNDER + UNDER + UNDER  →  UNDER
+OVER  + OVER  + OVER   →  OVER
+any 2-1 split          →  UNCERTAIN
+```
+
+**Majority voting is not implemented and must not be.** Near the SLO a 2–1
+split *is* the finding: the point is unstable, and unanimity is what makes that
+visible instead of averaging it away. Converting a split into a verdict is
+precisely the error the first session made once already, and the reason `n >=
+100` looked like sufficient evidence at the time.
+
+Three is also the smallest number that can show disagreement *as* disagreement —
+with two, a split is a tie and there is no way to tell which run was unusual.
+
+### 11.2 — `N = 4000` is the ceiling for session #2 (2B)
+
+```
+N = 4000    authorized headline evidence size
+N = 5000    NOT AUTHORIZED
+```
+
+If `N = 4000` under the three-repeat unanimity rule cannot resolve the crossing:
+
+```
+report a breach interval = (highest defensible UNDER λ, lowest defensible OVER λ]
+```
+
+**Do not increase N on the meter.** This supersedes the earlier proposed "one
+pre-authorized escalation" — a single UNCERTAIN boundary λ re-driven at
+`N = 5,000` for all three repeats. That option is withdrawn;
+`repeat_policy.json` now records `escalation.authorized: false` and
+`escalation.n5000.authorized: false` where it previously recorded `null`.
+
+The reasoning that makes an interval respectable rather than a shortfall: a ≤1%
+per-run classification-flip rate would need N ≈ 7,500, which is above
+`N_max = 5,000` — the structural ceiling set by the pinned corpus holding
+exactly 5,000 prompts. The resolution an escalation would buy is not reachable
+with this corpus at any authorized N, so spending 2.1 additional hours to move
+from 4,000 to 5,000 buys a marginal improvement in flip rate and no change in
+kind. An interval is the honest shape of the answer.
+
+### 11.3 — Process epochs are not combinable (3A)
+
+**Headline repeats from different vLLM process epochs must not be combined into
+one final classification family.**
+
+D4 forbids restarting vLLM between repeats, so the repeatability estimate
+measures arrival and queue variability rather than cold-process variance. A spot
+preemption forces a restart, which means the two are no longer the same
+measurement. If Tier B is interrupted after two complete repeats, a new process
+may **not** contribute only `repeat 3`:
+
+```
+epoch A → preserved diagnostic evidence
+epoch B → repeat 1 + repeat 2 + repeat 3 → final family
+```
+
+The schedules are frozen, so re-driving all three in a fresh process is exactly
+reproducible. Only meter time is lost — and meter time is the cheap thing here.
+The alternative, a family whose third member carries process-initialization
+variance the other two do not, would be a silent confound at exactly the
+boundary where the verdict is decided.
+
+### 11.4 — The 60-second warmup boundary is frozen, and validated forward (4A)
+
+The redesigned headline schedules freeze a **60-second warmup boundary**: exactly
+N arrivals are materialized at or after it. Tier A must establish that the
+relevant transient has stabilized by that boundary.
+
+If it has not:
+
+```
+STOP
+pull artifacts
+regenerate schedules with a larger frozen boundary
+re-run the required GPU-free checks
+return to pre-GPU approval
+```
+
+**Post-hoc warmup re-filtering of headline sidecars is superseded and invalid.**
+Under the old fixed-duration design (§2.4) it was sound: the window held a
+surplus of samples, so filtering later simply discarded some. Under exact-N it is
+not, and the failure is quiet — filtering past the frozen boundary discards
+canonical arrivals and leaves fewer than N measured samples, so the run silently
+stops being the size the calibration was read off.
+`metrics/headline_point.py` refuses it rather than letting the count drop.
+
+This is the single most load-bearing stale assumption in the repository: the
+procedure it supersedes is written down in several places, was correct when
+written, and would still run.
+
+### 11.5 — Scout expansion is pre-authorized and bounded (5A)
+
+```
+initial scout:   λ = 1, 2, 4, 8
+fallback:        if λ=1 is already OVER  →  add λ=0.5
+                 if λ=8 is still UNDER   →  add λ=16
+```
+
+If the authorized fallback still fails to establish a useful bracket:
+
+```
+STOP. Return to human review.
+```
+
+**Do not invent additional λ values on the meter.** 0.5 and 16 are the only
+pre-authorized additions — the earlier draft's "0.5, 0.25" and "16, 32" ladders
+are not authorized. The point of pre-authorizing a fallback at all is that the
+boundary between *following the plan* and *improvising* stays legible while the
+meter is running; an open-ended ladder erases it.
+
+### 11.6 — Week 2's secondary scope stays in scope (6A)
+
+Week 2 is not closed until all four intended scenarios are accounted for:
+
+1. controlled Poisson headline,
+2. natural-random secondary,
+3. steady-arrival reference,
+4. adversarial scenario.
+
+**The controlled Poisson workload alone defines the headline breach.** The other
+three may support interpretation but may never redefine it, and secondary points
+never enter the headline classification (§10.7). Adversarial remains last in
+execution order (§2.1, §6.2) — it deliberately drives the replica toward
+saturation, so it runs once the curves that matter are already durably written.
+
+This closes the "out of scope, flagged rather than dropped" question the session
+#2 plan raised: steady and adversarial are *deferred within Week 2*, not dropped
+from it. If session wall-clock forces a cut, the cut comes from the bottom of
+that list and what was deferred is recorded.

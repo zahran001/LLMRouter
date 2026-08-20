@@ -17,22 +17,38 @@ Operational scripts for benchmark infrastructure.
   scheduling lag for both arms.
 - `calibrate_block_c.py` — Block C data generation (shed onset, natural
   concurrency, low-load tracking).
-- `generate_schedules.py` — **the** schedule generator, for any RPS points.
-  `--rps 32 34 36 38` (explicit) or `--rps-start 30 --rps-stop 40 --rps-step 2`
-  (inclusive range). This is what produces Stage B's fine bracket mid-session,
-  so no tracked source has to be edited on the meter — which matters because
-  `run_on_instance.sh bootstrap` refuses a dirty tree.
-- `generate_stage_a_schedules.py` — the committed Stage A coarse schedules. A
-  thin wrapper over `generate_schedules.py`; its only distinguishing content is
-  the RPS list, so Stage A and Stage B cannot drift apart.
+- `generate_schedules.py` — the **fixed-duration** schedule generator, for any
+  RPS points. `--rps 32 34 36 38` (explicit) or `--rps-start 30 --rps-stop 40
+  --rps-step 2` (inclusive range). **Session #1 only:** it produced Stage B's
+  fine bracket mid-session. Session #2's headline uses exact-N schedules from
+  `generate_headline_schedules.py` instead — a fixed window makes request count
+  a function of λ, which is the confound that cost the first session its breach
+  number (`WEEK2_PLAN.md` §10.2).
+- `generate_stage_a_schedules.py` — the committed **session #1** Stage A coarse
+  schedules. A thin wrapper over `generate_schedules.py`; its only
+  distinguishing content is the RPS list, so Stage A and Stage B cannot drift
+  apart. Kept so session #1's workload stays replayable, not because it is how
+  session #2 is run.
 - `compute_point_metrics.py` — recompute per-point metrics offline from the
-  committed raw log + samples sidecar, at the warmup N Block F resolves.
+  committed raw log + samples sidecar. Its `--warmup-n` re-filter applies to
+  **session #1's** fixed-duration artifacts; it must not be used to resolve the
+  redesigned headline's warmup after the fact (`WEEK2_PLAN.md` §11.4).
 
 ## Week 2 redesign — offline calibration (GPU-free)
 
 Blocks R0–R3 of the redesign README. Run in this order; each writes a
 machine-readable JSON beside the last, and the last one assembles them into the
 package the human reads at Hard Stop R3.
+
+## Week 2 documentation governance (Hard Stop R-DOC)
+
+- `show_doc_control_bites.py` — run the four documentation-governance controls
+  (C-DOC-1..4) and PRINT each one going red on a broken document before it goes
+  green on the real one. Mutates a tracked file, runs the real check, restores
+  the original bytes, and hash-verifies the restore. Companion to
+  `tests/redesign/test_week2_doc_state.py`, whose passing checkmarks show the
+  reds only by implication. `docs/WEEK2_DOC_INDEX.md` is what both hold the
+  repository to.
 
 - `promote_first_session_evidence.py` — **R0.** Copy the first GPU session's
   artifacts out of gitignored `benchmarks/runs/` into tracked

@@ -1,3 +1,11 @@
+> **STATUS: HISTORICAL — DO NOT EXECUTE**
+>
+> Role: the pre-session-#1 remediation brief. Already executed; the record is `docs/WEEK2_REMEDIATION_REPORT.md`.
+>
+> This document records an earlier Week 2 state. It is preserved for
+> provenance, and nothing in it may drive GPU session #2.
+> Current entry point: `docs/WEEK2_DOC_INDEX.md`.
+
 You are implementing the final Week 2 pre-GPU remediation for LLMRouter.
 
 This is **not a redesign task**. The experiment architecture and Week 2 decisions are locked. Implement the decisions below, update affected tests/docs, run the required gates, and stop before any GPU action.

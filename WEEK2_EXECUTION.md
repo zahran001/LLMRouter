@@ -1,5 +1,14 @@
 # Week 2 — Execution & Agent Runbook
 
+> **STATUS: AUTHORITATIVE — WEEK 2**
+>
+> Role: execution order, hard stops, and definitions of done.
+>
+> Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
+> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> conflict** — do not reconcile silently.
+
 **Companion to `WEEK2_PLAN.md`.** The plan is the *decision record* (what was
 decided and why). This is the *execution order* (what to build, in what sequence,
 and where to stop).
@@ -74,6 +83,9 @@ Block R9  Drain-separated independent-repeat orchestration
 Block R10 Repeat-level classification + bounded-UNCERTAIN fallback
 Block R11 Natural-random secondary workload
          ── Regression + negative controls (every new control must bite) ──
+Block R-DOC Documentation authority cleanup   (GPU-free)
+         ── HARD STOP R-DOC: documentation governance + human verdict ──
+         ── final regression / benchmark SHA ──
          ── HARD STOP R-PREGPU: new pre-GPU audit + human approval ──
 Block E2 GPU session #2              (HUMAN-RUN; scout tier then confirm tier)
 Block F  Offline analysis + BASELINE.md
@@ -98,6 +110,47 @@ chars; `N` = 4,000 post-warmup scheduled arrivals per run; `N_max` = 5,000
 (structural corpus ceiling). Plus two locks the R3 evidence showed were
 *missing* rather than merely unset: **nearest-rank p99** and **prefix caching
 disabled for the controlled headline**.
+
+### ── HARD STOP R-DOC — documentation authority (PASSED 2026-08-19) ──
+
+**Why this is human-gated:** R4–R11 made the *code* enforce the redesign. They
+could not make the *documents* stop describing the old experiment. Week 2 now
+carries two design generations, four executed implementation briefs, a
+superseded GPU runbook and a superseded pre-flight — every one of which was
+correct when written, and several of which would still run.
+
+R-DOC answers one question:
+
+> Can a fresh-context agent enter the repository and unambiguously determine
+> which documents govern GPU session #2, **without relying on conversation
+> history**?
+
+**Agent produces, then halts:** the documentation map (authoritative /
+executable / evidence / historical / superseded), the repo-wide
+stale-assumption audit with zero unexplained stale hits, the six human locks
+committed into current authority, the documentation-governance test suite,
+every documentation control shown red-then-green, the fresh-context
+integration result, and the full regression totals recorded rather than
+substituted.
+
+**Human verifies and renders the verdict.** The agent does not self-certify a
+documentation gate any more than a measurement one.
+
+**Verdict: PASS, rendered 2026-08-19.** Cleared in two passes — the first
+cleanup's checker reported zero stale hits over documents that still carried
+the superseded warmup re-filter and session #1's Stage A/B runbook, so
+`T-DOC-4`'s exemption scope was rebuilt and the audit re-run. Evidence:
+`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
+
+**Definition of done:** `docs/WEEK2_DOC_INDEX.md` exists and classifies every
+Week 2 process document; exactly one document is the current GPU-session
+runbook; every historical or superseded document says `DO NOT EXECUTE`; the
+locks `1A / 2B / 3A / 4A / 5A / 6A` are in `WEEK2_PLAN.md` §11 and in
+`repeat_policy.json`; and `tests/redesign/test_week2_doc_state.py` passes.
+
+**Order matters:** R-DOC precedes R-PREGPU. The benchmark SHA is cut *after*
+the documentation is correct, so the SHA the session pins to is one whose
+documents describe the experiment it will actually run.
 
 ### ── HARD STOP R-PREGPU — pre-GPU audit for session #2 ──
 
@@ -287,21 +340,23 @@ calibration, which violates the trace-to-source discipline.
   spin-enabled on the Linux e2 VM — before this ships onto Linux vLLM runs. Cheap to
   fold into the same VM session as the cap-value calibration below if convenient.
 
-### ── HARD STOP 3 — [CALIBRATE] resolution ──
+### ── HARD STOP 3 — [CALIBRATE] resolution (session #1 — CLEARED 2026-08-18) ──
 
 **Why this is human-gated:** "where does the curve flatten" and "where does shedding
 onset" have a human eye in them. The agent plots; the human reads the number off the
 plot and records it with provenance.
 
 **Human verifies/sets:** cap value (from shed-onset, with headroom, provably above the
-characterized RPS range); ±5% band; window Y. **Warmup N is deferred to post-session**
-(needs GPU transient) — mark it explicitly as resolved in Block F, not here.
+characterized RPS range); ±5% band; window Y. *(Deferring the warmup N to
+post-session, as this stop originally did, is superseded: session #2 freezes a
+60s boundary into the schedules and validates it forward in Tier A —
+`WEEK2_PLAN.md` §11.4.)*
 
 **Proceed only on explicit human sign-off of the values set so far.**
 
 ---
 
-## Block D — Trace/replay + pre-flight prep (delegable)
+## Block D — Trace/replay + pre-flight prep (session #1 — COMPLETED 2026-08-18)
 
 **Ref:** §5, §6.1.
 
@@ -318,7 +373,7 @@ characterized RPS range); ±5% band; window Y. **Warmup N is deferred to post-se
 **DoD:** replay reproduces a workload byte-identically from a frozen artifact; all
 pre-flight artifacts staged and committed.
 
-### ── HARD STOP 4 — Pre-GPU pre-flight (money about to burn) ──
+### ── HARD STOP 4 — Pre-GPU pre-flight (session #1 — CLEARED; session #2's equivalent is Hard Stop R-PREGPU) ──
 
 **Why this is human-gated:** the next block spends real money against the $150 cap.
 Every item here is a "before the meter starts" confirmation, and the human owns the
@@ -343,7 +398,16 @@ A schedules).
 
 ---
 
-## Block E — GPU session (HUMAN-RUN; agent assists)
+## Block E — GPU session #1 (HUMAN-RUN) — RAN 2026-08-18, SUPERSEDED by Block E2
+
+> **⚠ This block ran, and does not run again (2026-08-19).** It is session #1's
+> sequence, kept as the record of what was done. **Session #2 is Block E2**, and
+> its only runbook is `docs/WEEK2_GPU_SESSION_2_PLAN.md`. Two things below are
+> now explicitly forbidden rather than merely superseded: **generating schedules
+> mid-session** (session #2 drives frozen, committed artifacts; a new schedule
+> means a new benchmark SHA and a stopped session) and **extending the λ range
+> live** (the scout ladder is 1/2/4/8 with 0.5 and 16 pre-authorized and nothing
+> else — lock 5A).
 
 **Ref:** §6.2–§6.4. **The agent does not stand up, drive, or tear down the instance.**
 The agent may assist by generating Stage B schedules on request mid-session and by
@@ -354,7 +418,7 @@ confirming durable writes are landing. Single continuous session; adversarial la
 2. Confirm config-only swap (`UPSTREAM_BASE_URL` only). Any code change = finding, STOP.
 3. **Stage A coarse sweep** — durable per-point writes (§6.3).
 
-### ── HARD STOP 5 — Stage A bracket / escape hatch (mid-session) ──
+### ── HARD STOP 5 — Stage A bracket / escape hatch (session #1 — ESCAPE HATCH TAKEN; superseded by Hard Stop GPU-1) ──
 
 **Why this is human-gated:** this is the one place mid-session judgment is sanctioned.
 Whether the breach is bracketed, or something surprised (breach in an odd place,
@@ -366,6 +430,15 @@ clearly >)? If the whole sweep stayed under → extend upward live. If the first
 point was already over → add lower points. If something genuinely surprised → **invoke
 the escape hatch**: tear down, analyze offline, resume in a second session rather than
 improvising on the meter.
+
+> *Superseded by lock 5A (2026-08-19).* "Extend upward live" and "add lower
+> points" were this stop's authorized responses in session #1. They are not
+> session #2's: the scout ladder is λ = 1/2/4/8, the **only** authorized
+> expansions are λ = 0.5 (if 1 is already OVER) and λ = 16 (if 8 is still
+> UNDER), and if those still fail to bracket the answer is **STOP and return to
+> human review**. Session #2's equivalent gate is **Hard Stop GPU-1**, which
+> also has to answer "is 60s of warmup enough?" — see
+> `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
 
 **On "bracketed, continue":**
 4. **Stage B fine sweep** between the bracketing points (agent generates fine schedules
@@ -397,20 +470,36 @@ improvising on the meter.
 
 **Ref:** §2.6, §6.4, §8. All post-teardown, free.
 
-**Build:**
+**Build (current — after GPU session #2):**
 - Compute per-point p50/p95/p99 TTFT + TPOT from the **raw log + samples sidecar**
   (§3.1 — TTFT lives in the sidecar; the raw log's six fields hold no first-token
-  time, by design); apply the ≥100 achieved-sample validity check; flag any
-  offered-vs-achieved divergent points (Option Y — plot at achieved, log both).
-- Resolve **breach RPS** = lowest swept RPS whose full-window p99 TTFT ≥ 500ms.
-- **Resolve the deferred warmup N** from the GPU transient plot (TTFT vs wall-clock
-  flatten-point) — record with provenance. *(This is a Hard Stop 3-class read; surface
-  the plot for the human to read N off it.)* Applying the resolved N is then a
-  re-filter over the committed sidecars, **never a GPU re-run** — the warmup filter
-  is metrics-side and time-based (§2.4).
-- Author **`BASELINE.md`**: the 500ms-breach problem statement, the realized prompt-
-  length histogram, the two-source-tail-held-constant sentence (§2.2), the offered-vs-
-  achieved footnote, the 2s secondary line, shared-y-axis chart (500ms + 2s lines).
+  time, by design), using **nearest-rank** percentiles (§10.5). Apply
+  **censoring-aware validity** (§10.6): >5% censoring ⇒ `CENSORED`, ordinary p99
+  suppressed. Flag any offered-vs-achieved divergent points against the
+  **materialized** schedule (§10.4 — plot at achieved, log both).
+- Classify each repeat, then each λ, via `metrics/classification.py`:
+  three repeats, **unanimous** agreement, 2–1 ⇒ `UNCERTAIN` (§11.1).
+- Resolve the **breach** = lowest λ classified `OVER`, with the highest `UNDER`
+  below it. If unresolved at `N = 4000`, report the **interval** (§11.2). Do not
+  escalate.
+- Author **`BASELINE.md`**: the 500ms-breach problem statement, the canonical
+  workload's prompt-length profile, the controlled-workload sentence (§10.1),
+  the offered-vs-achieved footnote, the 2s secondary line, shared-y-axis chart
+  (500ms + 2s lines), and the secondary/steady/adversarial curves (§11.6).
+
+> **Superseded procedure, kept for the session #1 record only (2026-08-19).**
+> Block F as originally written applied the **`n >= 100`** achieved-sample check
+> (superseded by calibrated `N = 4000` + repeats, §10.3), linear-interpolation
+> percentiles (superseded by nearest-rank, §10.5), and **resolved the deferred
+> warmup N post-hoc by re-filtering the committed sidecars** (§2.4).
+>
+> **That last step is invalid for the redesigned exact-N headline** and must not
+> be applied to session #2 data. Exactly N arrivals are materialized at or after
+> the frozen 60s boundary, so filtering past it discards canonical arrivals and
+> leaves fewer than N measured samples; `metrics/headline_point.py` refuses it.
+> The warmup boundary is now **validated forward at Hard Stop GPU-1**, and an
+> insufficient boundary is resolved by regenerating schedules offline — never by
+> re-filtering after the fact (§11.4).
 
 **DoD:** `BASELINE.md` states "at X RPS, naive single-replica serving breaches the 500ms
 p99 TTFT SLO," fully sourced, reproducible from committed schedule + corpus artifacts.
@@ -430,7 +519,8 @@ the plot, let the human read the value, don't self-assign it.*
 | 4 | D | Pre-flight green incl. §4 gate; meter ownership | Burning money on an unvalidated loadgen |
 | 5 | E (mid) | Breach bracketed / escape-hatch decision | Mid-session improvisation on the meter |
 | R3 | R2 | `k`, `L`, `N`, `N_max` read off calibration evidence | A workload and a GPU budget chosen by the agent's own judgment |
-| R-PREGPU | R11 | Full redesign evidence package + every new control biting | Paying for a second session that rediscovers its own design flaws |
+| R-DOC | R11 | One unambiguous execution path; every dead doc says `DO NOT EXECUTE` | A fresh agent executing a superseded runbook that was correct when written |
+| R-PREGPU | R-DOC | Full redesign evidence package + every new control biting | Paying for a second session that rediscovers its own design flaws |
 
 **The through-line:** the agent builds the plumbing fast between stops; the stops are
 where the project's *trustworthiness* is established, and those are unskippable and
