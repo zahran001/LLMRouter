@@ -11,7 +11,7 @@ So the failure this suite exists to catch is narrow and specific:
     A fresh agent or operator reads a Week 2 document that was correct when it
     was written, and executes it against GPU session #2.
 
-`docs/WEEK2_DOC_INDEX.md` is the single source of authority, and these tests
+`WEEK2_DOC_INDEX.md` is the single source of authority, and these tests
 hold the repository to it. Each check is paired with the broken variant it has
 to reject -- `scripts/show_doc_control_bites.py` runs those variants and prints
 the reds, because a green that has never gone red proves nothing.
@@ -29,8 +29,8 @@ import pytest
 pytestmark = pytest.mark.redesign
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-INDEX_PATH = REPO_ROOT / "docs" / "WEEK2_DOC_INDEX.md"
-RUNBOOK_PATH = "docs/WEEK2_GPU_SESSION_2_PLAN.md"
+INDEX_PATH = REPO_ROOT / "WEEK2_DOC_INDEX.md"
+RUNBOOK_PATH = "WEEK2_GPU_SESSION_2_PLAN.md"
 POLICY_PATH = REPO_ROOT / "benchmarks" / "workloads" / "week2_headline" / "repeat_policy.json"
 
 STATES = {"AUTHORITATIVE", "EXECUTABLE", "EVIDENCE", "HISTORICAL", "SUPERSEDED"}
@@ -71,7 +71,7 @@ def parse_index_rows(text: str) -> list[dict]:
 @pytest.fixture(scope="module")
 def index_text() -> str:
     assert INDEX_PATH.exists(), (
-        "docs/WEEK2_DOC_INDEX.md is missing -- it is the entry point the whole "
+        "WEEK2_DOC_INDEX.md is missing -- it is the entry point the whole "
         "documentation-authority system hangs off (Hard Stop R-DOC)"
     )
     return INDEX_PATH.read_text(encoding="utf-8")
@@ -623,13 +623,13 @@ def test_the_execution_chain_is_reachable_from_the_root_readme():
     """README -> STATUS -> index -> {plan, execution, runbook, policy}."""
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     assert "STATUS.md" in readme
-    assert "docs/WEEK2_DOC_INDEX.md" in readme, (
+    assert "WEEK2_DOC_INDEX.md" in readme, (
         "a cold reader starting at README.md must be able to find the authority index "
         "without knowing it exists"
     )
 
     status = (REPO_ROOT / "STATUS.md").read_text(encoding="utf-8")
-    assert "docs/WEEK2_DOC_INDEX.md" in status
+    assert "WEEK2_DOC_INDEX.md" in status
     assert RUNBOOK_PATH in status
 
     index = INDEX_PATH.read_text(encoding="utf-8")
@@ -666,6 +666,6 @@ def test_every_week2_process_document_is_in_the_index(rows):
 
     assert not unindexed, (
         "these documents sit where a reader will find them but carry no entry in "
-        "docs/WEEK2_DOC_INDEX.md, so nothing says whether they are current. Add a "
+        "WEEK2_DOC_INDEX.md, so nothing says whether they are current. Add a "
         f"row, or add them to the not-Week-2 allowlist in this test: {unindexed}"
     )

@@ -2,7 +2,7 @@
 #
 # remote_loadgen.sh -- REMOTE script. Runs ON the L4 instance, from the repo
 # clone that run_on_instance.sh puts there. Not invoked by hand: the local
-# wrapper calls it as one simple ssh --command (docs/GPU_SESSION_NOTES.md --
+# wrapper calls it as one simple ssh --command (GPU_SESSION_NOTES.md --
 # chained/nested-quote --command strings intermittently fail with exit 128
 # and no output through the Windows gcloud -> plink chain).
 #

@@ -7,8 +7,8 @@
 > This document records *why* something is believed. It does not govern
 > execution, and any command text below is a record of what was run at the
 > time, not an instruction to run it now.
-> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`.
+> Current execution instructions: `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`.
 
 **This is not baseline evidence.** The session produced **no defensible breach
 RPS**, and nothing in this directory may be cited as one. It is the durable

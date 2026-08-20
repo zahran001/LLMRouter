@@ -12,7 +12,7 @@
 > - machine-readable policy: `benchmarks/workloads/week2_headline/repeat_policy.json`
 >
 > If these appear to conflict: **HALT and surface the conflict. Do not reconcile
-> silently.** Index: `docs/WEEK2_DOC_INDEX.md`.
+> silently.** Index: `WEEK2_DOC_INDEX.md`.
 >
 > **No instance may be created until Hard Stop R-DOC and Hard Stop R-PREGPU have
 > both been passed by a human.** This document being executable describes what it
@@ -29,7 +29,7 @@ below requires you to go read it mid-session**:
 - Locks and semantics: `WEEK2_PLAN.md` §10 (supersessions), §11 (the six locks)
 - Why the redesign exists: `docs/WEEK2_GPU_SESSION_FINDINGS.md`
 - Calibration: `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md`
-- Environment gotchas: `docs/GPU_SESSION_NOTES.md`
+- Environment gotchas: `GPU_SESSION_NOTES.md`
 
 ---
 
@@ -84,7 +84,7 @@ The canonical multiset holds the corpus's natural shape exactly, including the
 ## 1. Preflight (before the meter starts)
 
 Standing Hard Stop 4 checklist plus the redesign items. Full evidence:
-`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
+`WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
 
 | Item | Evidence |
 |---|---|
@@ -96,7 +96,7 @@ Standing Hard Stop 4 checklist plus the redesign items. Full evidence:
 | Schedules committed | `benchmarks/schedules/week2_redesign/` (15 headline + 4 scout + 5 secondary) |
 | Repeat policy signed off | `repeat_policy.json` — **`LOCKED`** |
 | All controls bite | `scripts/show_control_bites.py`, `scripts/show_doc_control_bites.py`, `tests/redesign/` |
-| Regression suites green | see `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| Regression suites green | see `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
 | Quota / budget ladder | $10 canary / $75 / $135 / $150 hard line |
 | Teardown dry-run | `DRY_RUN=1 bash scripts/gpu_session/teardown_week2.sh` |
 

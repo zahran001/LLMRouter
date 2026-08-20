@@ -209,7 +209,7 @@ def c_doc_1() -> None:
     )
     control(
         "C-DOC-1  a document reclassified dead that does not say DO NOT EXECUTE",
-        "docs/WEEK2_DOC_INDEX.md",
+        "WEEK2_DOC_INDEX.md",
         "test_historical_and_superseded_documents_say_do_not_execute",
         lambda t: t.replace(old_row, new_row, 1),
     )
@@ -235,7 +235,7 @@ def c_doc_2() -> None:
 def c_doc_3() -> None:
     scope_control(
         "C-DOC-3  the real stale warmup sentence ('never a GPU re-run')",
-        "docs/WEEK2_GPU_SESSION_2_PLAN.md",
+        "WEEK2_GPU_SESSION_2_PLAN.md",
         stale_block="\n## Warmup resolution\n\n" + REAL_STALE_WARMUP_ROW,
         safe_block=(
             "\n## Warmup resolution\n\n"
@@ -259,7 +259,7 @@ def c_doc_4() -> None:
     new_row = "(working `gcloud` invocation, PuTTY/pscp, flashinfer). Setup reference, **not** the session runbook — it decides no experimental policy | **yes** | — |"
     control(
         "C-DOC-4  a second document is marked the current GPU runbook",
-        "docs/WEEK2_DOC_INDEX.md",
+        "WEEK2_DOC_INDEX.md",
         "test_exactly_one_current_gpu_runbook",
         lambda t: t.replace(old_row, new_row, 1),
     )
@@ -272,7 +272,7 @@ def c_doc_4() -> None:
 def c_doc_5() -> None:
     scope_control(
         "C-DOC-5  a SUPERSEDED row must not exempt its neighbour",
-        "docs/WEEK2_GPU_SESSION_2_PLAN.md",
+        "WEEK2_GPU_SESSION_2_PLAN.md",
         stale_block=(
             "\n## Open calibration values\n\n"
             + REAL_STALE_WARMUP_ROW
@@ -295,7 +295,7 @@ def c_doc_5() -> None:
 def c_doc_6() -> None:
     scope_control(
         "C-DOC-6  an explicitly historical heading still holds provenance",
-        "docs/WEEK2_GPU_SESSION_2_PLAN.md",
+        "WEEK2_GPU_SESSION_2_PLAN.md",
         # Same stale text, no heading marker: must be rejected.
         stale_block=(
             "\n## How warmup was resolved\n\n"

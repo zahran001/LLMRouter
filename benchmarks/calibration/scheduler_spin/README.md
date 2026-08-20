@@ -80,7 +80,7 @@ numbers do not transfer to real vLLM.
   negligible against a 50ms inter-arrival gap, and the 5ms arm's *worst* case is
   6× worse (36.6ms vs 5.7ms). At 80 RPS the arms are indistinguishable.
 - **It has a real cost in this project's topology.** Week 2 drives the loadgen
-  **on the GPU instance** (`docs/WEEK2_GPU_SESSION_2_PLAN.md`), so a 5ms busy-wait
+  **on the GPU instance** (`WEEK2_GPU_SESSION_2_PLAN.md`), so a 5ms busy-wait
   per send burns ~40% of a core at 80 RPS *on the same box as vLLM* — spending
   CPU that the thing being measured needs, for no measured benefit.
 - Consistent with Block 0's independent finding that the mock's busy-wait is a

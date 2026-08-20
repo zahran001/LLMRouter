@@ -230,9 +230,9 @@ PYTHON=.venv/Scripts/python scripts/router_eval.sh 5    # 5x determinism check
 ```
 
 Standing up real vLLM on a GPU? Two files, in this order.
-`docs/WEEK2_DOC_INDEX.md` tells you which documents govern the session — Week 2
+`WEEK2_DOC_INDEX.md` tells you which documents govern the session — Week 2
 carries two design generations and several superseded runbooks that would still
-run. Then `docs/GPU_SESSION_NOTES.md`, which carries the exact working
+run. Then `GPU_SESSION_NOTES.md`, which carries the exact working
 `gcloud`/vLLM invocation plus several environment-specific failures already
 worked out, each one hit for real rather than anticipated.
 
@@ -254,7 +254,7 @@ Architecture Decision Records live in `docs/adr/`:
 | Document | What it is |
 |---|---|
 | `STATUS.md` | Current phase and progress |
-| `docs/WEEK2_DOC_INDEX.md` | **Which Week 2 documents govern** — authority, evidence, and what must not be executed |
+| `WEEK2_DOC_INDEX.md` | **Which Week 2 documents govern** — authority, evidence, and what must not be executed |
 | `docs/architecture.md` | System architecture |
 | `WEEK1_MEASUREMENT_SPEC.md` | Authoritative TTFT/TPOT and streaming-contract definitions |
 | `METRICS_TEST_SUITE.md` | How the measurement instrument is proven correct |
@@ -262,9 +262,9 @@ Architecture Decision Records live in `docs/adr/`:
 | `BENCHMARKS.md` | Calibrated constants and their measured provenance |
 | `WEEK2_PLAN.md` | Baseline and load-generator decision record (`LOCKED` / `[CALIBRATE]`) |
 | `WEEK2_EXECUTION.md` | Execution order, blocks, and hard stops |
-| `docs/WEEK2_GPU_SESSION_2_PLAN.md` | The current — and only — GPU-session runbook |
+| `WEEK2_GPU_SESSION_2_PLAN.md` | The current — and only — GPU-session runbook |
 | `LOADGEN_PATTERN_VALIDATION.md` | Load-generator validation procedure |
-| `docs/GPU_SESSION_NOTES.md` | Hard-won GCP + vLLM operational knowledge |
+| `GPU_SESSION_NOTES.md` | Hard-won GCP + vLLM operational knowledge |
 
 ## License
 

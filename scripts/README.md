@@ -47,7 +47,7 @@ package the human reads at Hard Stop R3.
   green on the real one. Mutates a tracked file, runs the real check, restores
   the original bytes, and hash-verifies the restore. Companion to
   `tests/redesign/test_week2_doc_state.py`, whose passing checkmarks show the
-  reds only by implication. `docs/WEEK2_DOC_INDEX.md` is what both hold the
+  reds only by implication. `WEEK2_DOC_INDEX.md` is what both hold the
   repository to.
 
 - `promote_first_session_evidence.py` — **R0.** Copy the first GPU session's
@@ -138,7 +138,7 @@ In session order:
 
 1. `create_instance.sh` — stand up the L4.
 2. `setup_and_launch_vllm.sh` — **remote**; installs vLLM and serves, with the
-   three flashinfer workarounds from `docs/GPU_SESSION_NOTES.md`. Eager mode
+   three flashinfer workarounds from `GPU_SESSION_NOTES.md`. Eager mode
    is the `ENFORCE_EAGER` env knob (default `1` = `--enforce-eager`, Week 1's
    proven config); `ENFORCE_EAGER=0` is the non-eager first attempt
    session #1's runbook §3.2 called for (removed 2026-08-20; in git history at 39ed3f1).
@@ -161,6 +161,6 @@ In session order:
 
 `remote_loadgen.sh` runs *on* the instance (from the clone) and does the real
 work; the local wrapper only issues simple one-command ssh calls, per
-`docs/GPU_SESSION_NOTES.md`. `tunnel.sh` is no longer the measurement path —
+`GPU_SESSION_NOTES.md`. `tunnel.sh` is no longer the measurement path —
 the loadgen drives on-instance over loopback so WAN latency and SSH
-multiplexing stay out of TTFT (`docs/WEEK2_GPU_SESSION_2_PLAN.md`).
+multiplexing stay out of TTFT (`WEEK2_GPU_SESSION_2_PLAN.md`).

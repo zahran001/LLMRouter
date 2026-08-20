@@ -2,11 +2,11 @@
 #
 # setup_and_launch_vllm.sh -- REMOTE script. scp this to the instance, then
 # run it via `gcloud compute ssh INSTANCE --command="bash setup_and_launch_vllm.sh"`
-# (docs/GPU_SESSION_NOTES.md: keep --command to one simple command; do the
+# (GPU_SESSION_NOTES.md: keep --command to one simple command; do the
 # real work in a scripted file instead of a complex inline string).
 #
 # Encodes the three flashinfer workarounds hit during the Week 1
-# faithfulness check (docs/GPU_SESSION_NOTES.md, "vLLM 0.27.1 + this
+# faithfulness check (GPU_SESSION_NOTES.md, "vLLM 0.27.1 + this
 # environment: three real crashes"). All three are almost certainly still
 # needed -- confirmed by a quick check at session start (see below) before
 # assuming otherwise.

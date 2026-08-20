@@ -7,8 +7,8 @@
 > This document records *why* something is believed. It does not govern
 > execution, and any command text below is a record of what was run at the
 > time, not an instruction to run it now.
-> Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`.
+> Current execution instructions: `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`.
 
 **Status: halted for human review at Hard Stop R-PREGPU.** No GPU instance was
 created. Nothing was committed.
@@ -383,7 +383,7 @@ vendored file is a build input rather than evidence.
 
 ## 9. Proposed session #2
 
-Full plan: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+Full plan: `WEEK2_GPU_SESSION_2_PLAN.md`.
 
 ```
 preflight + standup + prefix-cache gate            ~20 min

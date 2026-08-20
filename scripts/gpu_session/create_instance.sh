@@ -5,7 +5,7 @@
 # drive, or tear down this instance (WEEK2_EXECUTION.md Block E preamble).
 #
 # Recipe confirmed working in the Week 1 faithfulness check
-# (docs/GPU_SESSION_NOTES.md): common-cuXXX DLVM image (drivers preinstalled,
+# (GPU_SESSION_NOTES.md): common-cuXXX DLVM image (drivers preinstalled,
 # no docker/pip), gN-standard-* machine type bundles the L4.
 
 set -euo pipefail

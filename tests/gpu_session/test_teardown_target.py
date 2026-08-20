@@ -118,8 +118,8 @@ def test_wrapper_supports_a_dry_run():
         REPO_ROOT / "scripts" / "README.md",
         # docs/WEEK2_GPU_PREFLIGHT.md was here until 2026-08-20, when session
         # #1's pre-flight was deleted. Its successor is covered below.
-        REPO_ROOT / "docs" / "WEEK2_GPU_SESSION_2_PREFLIGHT.md",
-        REPO_ROOT / "docs" / "WEEK2_GPU_SESSION_2_PLAN.md",
+        REPO_ROOT / "WEEK2_GPU_SESSION_2_PREFLIGHT.md",
+        REPO_ROOT / "WEEK2_GPU_SESSION_2_PLAN.md",
     ],
 )
 def test_no_week2_runbook_path_recommends_the_bare_generic_teardown(path):

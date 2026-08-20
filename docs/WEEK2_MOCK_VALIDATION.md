@@ -5,8 +5,8 @@
 > Role: the V1–V5 mock-validation procedure and its negative controls (GPU-free).
 >
 > Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
-> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> and gating `WEEK2_EXECUTION.md` · GPU commands `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
 > conflict** — do not reconcile silently.
 
 **Companion to `MOCK_TRUST_BOUNDARY.md`.** That doc is the *principle* (what

@@ -5,8 +5,8 @@
 > Role: where the project currently is, and the session #1 do-not-cite list.
 >
 > Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
-> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> and gating `WEEK2_EXECUTION.md` · GPU commands `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
 > conflict** — do not reconcile silently.
 
 Where the project currently is. `README.md` describes what the project *is*
@@ -67,7 +67,7 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | Hard Stop R3 — human locks `k`, `L`, `N`, `N_max` | **Cleared 2026-08-19** |
 | R3.5 provenance closeout + missing locks | **Done** |
 | R4–R11 implementation, regression + controls | **Done** — `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
-| R-DOC documentation authority cleanup | **Done** — `docs/WEEK2_DOC_INDEX.md` |
+| R-DOC documentation authority cleanup | **Done** — `WEEK2_DOC_INDEX.md` |
 | Hard Stop R-DOC — human verdict on documentation governance | **PASSED 2026-08-19** (human verdict) |
 | Hard Stop R-PREGPU | **Next** — R-DOC is cleared; the benchmark SHA is cut from this tree |
 | GPU session #2 (human-owned) | **Not run.** No instance exists |
@@ -89,18 +89,18 @@ first-session artifacts, which are still read under their original semantics.
 
 Authoritative documents, which take precedence over this summary:
 
-- **`docs/WEEK2_DOC_INDEX.md`** — **start here.** The single index of which Week 2
+- **`WEEK2_DOC_INDEX.md`** — **start here.** The single index of which Week 2
   documents govern, which are evidence, and which are historical or superseded
   and must not be executed. Week 2 carries two design generations; directory
   names are not authority.
-- **`docs/WEEK2_GPU_SESSION_2_PLAN.md`** — the only current GPU-session runbook.
+- **`WEEK2_GPU_SESSION_2_PLAN.md`** — the only current GPU-session runbook.
 - **`WEEK2_PLAN.md`** — the decision record: what was decided and why, what is
   `LOCKED`, and every `[CALIBRATE]` value with its named source.
 - **`WEEK2_EXECUTION.md`** — the execution order: blocks, hard stops, and
   definitions of done. Where the two appear to conflict on the same axis, that
   is a checkpoint to surface, not something to reconcile silently
   (`WEEK2_EXECUTION.md` §"Precedence rule").
-- **`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`** — the R-DOC / R-PREGPU evidence
+- **`WEEK2_GPU_SESSION_2_PREFLIGHT.md`** — the R-DOC / R-PREGPU evidence
   checklist, standing between here and any GPU spend. (Session #1's Hard Stop 4
   checklist was deleted on 2026-08-20 — removed 2026-08-20; in git history at 39ed3f1.)
 - **`docs/WEEK2_PRE_GPU_AUDIT.md`** — the pre-GPU audit trail: what the
@@ -185,7 +185,7 @@ The tolerance has deliberately **not** been widened to hide it.
 Items deliberately left open for the human at the start of the metered GPU
 session, rather than defaulted silently — `--enforce-eager` and the
 output-token policy. Both now carry their session #2 resolution in
-`docs/WEEK2_GPU_SESSION_2_PLAN.md` §0 (output `max_tokens` = 512 is locked;
+`WEEK2_GPU_SESSION_2_PLAN.md` §0 (output `max_tokens` = 512 is locked;
 `--enforce-eager` stays a knob, but whichever mode the server comes up in, every
 point in the session must run that same mode). The original trade-off write-ups
 survive only in git history (removed 2026-08-20; in git history at 39ed3f1), as rationale.

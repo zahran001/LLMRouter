@@ -2,7 +2,7 @@
 #
 # tunnel.sh -- SSH tunnel to the vLLM port, so the loadgen (and router) can
 # reach it at http://127.0.0.1:8000 without opening a firewall rule
-# (docs/GPU_SESSION_NOTES.md: nothing to remember to clean up, dead the
+# (GPU_SESSION_NOTES.md: nothing to remember to clean up, dead the
 # moment this process exits). Run in its own terminal; leave it running for
 # the duration of the session.
 #

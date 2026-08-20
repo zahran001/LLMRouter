@@ -6,8 +6,8 @@
 > the environment-specific failures already worked out. **Setup reference, not
 > the session runbook:** it decides no experimental policy.
 >
-> The GPU session #2 runbook is `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`.
+> The GPU session #2 runbook is `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`.
 
 Operational knowledge from standing up a real vLLM instance on GCP for the
 Week 1 faithfulness check (`docs/archive/week1/WEEK1_CLOSEOUT.md`). Every

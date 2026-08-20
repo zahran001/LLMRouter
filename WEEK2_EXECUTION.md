@@ -5,8 +5,8 @@
 > Role: execution order, hard stops, and definitions of done.
 >
 > Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
-> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> and gating `WEEK2_EXECUTION.md` · GPU commands `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
 > conflict** — do not reconcile silently.
 
 **Companion to `WEEK2_PLAN.md`.** The plan is the *decision record* (what was
@@ -140,9 +140,9 @@ documentation gate any more than a measurement one.
 cleanup's checker reported zero stale hits over documents that still carried
 the superseded warmup re-filter and session #1's Stage A/B runbook, so
 `T-DOC-4`'s exemption scope was rebuilt and the audit re-run. Evidence:
-`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
+`WEEK2_GPU_SESSION_2_PREFLIGHT.md`.
 
-**Definition of done:** `docs/WEEK2_DOC_INDEX.md` exists and classifies every
+**Definition of done:** `WEEK2_DOC_INDEX.md` exists and classifies every
 Week 2 process document; exactly one document is the current GPU-session
 runbook; every historical or superseded document says `DO NOT EXECUTE`; the
 locks `1A / 2B / 3A / 4A / 5A / 6A` are in `WEEK2_PLAN.md` §11 and in
@@ -366,7 +366,7 @@ post-session, as this stop originally did, is superseded: session #2 freezes a
   sequence), NOT latency identity. Validate schedule references the pinned corpus by
   version.
 - **Pre-flight staging** (§6.1): stage the vLLM launch sequence from
-  `docs/GPU_SESSION_NOTES.md`; size `--max-model-len` to actual test traffic (longest
+  `GPU_SESSION_NOTES.md`; size `--max-model-len` to actual test traffic (longest
   corpus prompt + max output); stage `teardown.sh` and dry-run-verify its target
   name/zone; pre-generate and commit the Stage A coarse schedules.
 
@@ -402,7 +402,7 @@ A schedules).
 
 > **⚠ This block ran, and does not run again (2026-08-19).** It is session #1's
 > sequence, kept as the record of what was done. **Session #2 is Block E2**, and
-> its only runbook is `docs/WEEK2_GPU_SESSION_2_PLAN.md`. Two things below are
+> its only runbook is `WEEK2_GPU_SESSION_2_PLAN.md`. Two things below are
 > now explicitly forbidden rather than merely superseded: **generating schedules
 > mid-session** (session #2 drives frozen, committed artifacts; a new schedule
 > means a new benchmark SHA and a stopped session) and **extending the λ range
@@ -438,7 +438,7 @@ improvising on the meter.
 > UNDER), and if those still fail to bracket the answer is **STOP and return to
 > human review**. Session #2's equivalent gate is **Hard Stop GPU-1**, which
 > also has to answer "is 60s of warmup enough?" — see
-> `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> `WEEK2_GPU_SESSION_2_PLAN.md`.
 
 **On "bracketed, continue":**
 4. **Stage B fine sweep** between the bracketing points (agent generates fine schedules

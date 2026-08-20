@@ -5,8 +5,8 @@
 > Role: the Week 2 decision record — what is measured, what is locked, and why.
 >
 > Current document authority: experiment semantics `WEEK2_PLAN.md` · execution
-> and gating `WEEK2_EXECUTION.md` · GPU commands `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
-> Index: `docs/WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
+> and gating `WEEK2_EXECUTION.md` · GPU commands `WEEK2_GPU_SESSION_2_PLAN.md`.
+> Index: `WEEK2_DOC_INDEX.md`. If these appear to conflict, **HALT and surface the
 > conflict** — do not reconcile silently.
 
 Week 1 is closed: transparent router merged to `main`, measurement pipeline
@@ -144,7 +144,7 @@ appear in `BASELINE.md`.
 > other**, then drives **Tier B** at three λ × three repeats × N = 4,000. The
 > scout ladder is bounded in advance precisely because the sweep below was not:
 > its "extend the range live" escape valve is what the no-improvisation matrix
-> now forbids. Operational form: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
+> now forbids. Operational form: `WEEK2_GPU_SESSION_2_PLAN.md`.
 
 - **Two-stage coarse→fine discovery.** The exact RPS range/step is NOT locked in
   advance — it cannot be, because the breach location is unknown, and a fine step
@@ -646,7 +646,7 @@ a mutated corpus.
 > (§10), and it is preserved here as provenance, not as instructions. It is not
 > the current runbook and no part of it may drive session #2.
 >
-> **The one current GPU runbook is `docs/WEEK2_GPU_SESSION_2_PLAN.md`**, with
+> **The one current GPU runbook is `WEEK2_GPU_SESSION_2_PLAN.md`**, with
 > its policy in §11 and `benchmarks/workloads/week2_headline/repeat_policy.json`.
 >
 > What changed, concretely: Stage A/B coarse→fine became a bounded Tier A scout
@@ -676,7 +676,7 @@ clean coarse→fine sweep takes the time it needs. The discipline that matters i
 teardown, not shaving minutes. (Week 2 budget line was ~5 hrs on-demand / ~$4.45;
 treat as a guide, not a ceiling.)
 
-### 6.1 Pre-flight (SUPERSEDED — session #1; current: `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`)
+### 6.1 Pre-flight (SUPERSEDED — session #1; current: `WEEK2_GPU_SESSION_2_PREFLIGHT.md`)
 
 - **§4 hard gate: all five mock validations green.** The loadgen is proven against
   the mock (arrival shape, open-loop fidelity, cap/shedding, corpus, logging). An
@@ -702,7 +702,7 @@ treat as a guide, not a ceiling.)
   budget evaluation is not real-time, and the alerts are email-only. Verified
   teardown (§6.4, `scripts/gpu_session/teardown_week2.sh`) remains the actual
   control.
-- **Launch staged** from `docs/GPU_SESSION_NOTES.md` (working `gcloud` + vLLM
+- **Launch staged** from `GPU_SESSION_NOTES.md` (working `gcloud` + vLLM
   sequence, environment-specific bugs already worked around).
 - **`--max-model-len` sized to actual test traffic** (longest corpus prompt + max
   output tokens), NOT "small enough to boot" as in Week 1's single-request check. A
@@ -857,7 +857,7 @@ calibration → loadgen build → §4 mock validations (the gate) → §6 GPU se
 offline analysis → `BASELINE.md`. **The live order is now
 `WEEK2_EXECUTION.md`'s redesign arc** — R0→R11, Hard Stop R-DOC, Hard Stop
 R-PREGPU, Block E2 (GPU session #2, run from
-`docs/WEEK2_GPU_SESSION_2_PLAN.md`), then Block F.
+`WEEK2_GPU_SESSION_2_PLAN.md`), then Block F.
 
 > *Historical note (2026-08-19).* "Nothing further to design" was true of the
 > plan as written and false of the experiment. The first GPU session ran that

@@ -33,7 +33,7 @@ README.md                              what the project is
 STATUS.md                              where the project currently is
   │
   ▼
-docs/WEEK2_DOC_INDEX.md                (this file) which documents govern
+WEEK2_DOC_INDEX.md                     (this file) which documents govern
   │
   ├── Experimental authority ────────  WEEK2_PLAN.md
   │      what is measured, what is locked, and why
@@ -41,7 +41,7 @@ docs/WEEK2_DOC_INDEX.md                (this file) which documents govern
   ├── Ordering / hard stops ─────────  WEEK2_EXECUTION.md
   │      block order, gates, definitions of done
   │
-  ├── Current GPU mechanics ─────────  docs/WEEK2_GPU_SESSION_2_PLAN.md
+  ├── Current GPU mechanics ─────────  WEEK2_GPU_SESSION_2_PLAN.md
   │      THE session #2 runbook — the one file to keep open on the meter
   │
   └── Machine-readable policy ───────  benchmarks/workloads/week2_headline/
@@ -93,7 +93,7 @@ say yes.
 | `STATUS.md` | AUTHORITATIVE | Where the project currently is; the session #1 do-not-cite list | no | — |
 | `WEEK2_PLAN.md` | AUTHORITATIVE | The decision record: workload, p99 definition, censoring, N, prefix-cache policy, repeat meaning, secondary scope, supersession provenance | no | — |
 | `WEEK2_EXECUTION.md` | AUTHORITATIVE | Execution order, hard stops (R0→R11, R-DOC, R-PREGPU), definitions of done | no | — |
-| `docs/WEEK2_DOC_INDEX.md` | AUTHORITATIVE | This index | no | — |
+| `WEEK2_DOC_INDEX.md` | AUTHORITATIVE | This index | no | — |
 | `docs/WEEK2_MOCK_VALIDATION.md` | AUTHORITATIVE | The V1–V5 mock-validation procedure and its negative controls (GPU-free) | no | — |
 | `benchmarks/workloads/week2_headline/repeat_policy.json` | AUTHORITATIVE | Machine-readable repeat/evidence policy — `"status": "LOCKED"` | no | — |
 
@@ -101,14 +101,14 @@ say yes.
 
 | Path | State | Role | Runbook? | Superseded by |
 |---|---|---|---|---|
-| `docs/WEEK2_GPU_SESSION_2_PLAN.md` | EXECUTABLE | **The** GPU session #2 runbook. Self-contained: benchmark identity, server and client configuration, Tier A/B, validity states, the no-improvisation matrix, artifact gate, teardown | **yes** | — |
-| `docs/GPU_SESSION_NOTES.md` | EXECUTABLE | GCP + vLLM environment knowledge (working `gcloud` invocation, PuTTY/pscp, flashinfer). Setup reference, **not** the session runbook — it decides no experimental policy | no | — |
+| `WEEK2_GPU_SESSION_2_PLAN.md` | EXECUTABLE | **The** GPU session #2 runbook. Self-contained: benchmark identity, server and client configuration, Tier A/B, validity states, the no-improvisation matrix, artifact gate, teardown | **yes** | — |
+| `GPU_SESSION_NOTES.md` | EXECUTABLE | GCP + vLLM environment knowledge (working `gcloud` invocation, PuTTY/pscp, flashinfer). Setup reference, **not** the session runbook — it decides no experimental policy | no | — |
 
 ### Evidence — why we believe things
 
 | Path | State | Role | Runbook? | Superseded by |
 |---|---|---|---|---|
-| `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
+| `WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
 | `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation of GPU session #1: what it falsified, what survives | no | — |
 | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` | EVIDENCE | R3-closeout and R4→R11 implementation evidence | no | — |
 | `docs/WEEK2_PRE_GPU_AUDIT.md` | EVIDENCE | The 2026-08-17 pre-GPU audit and how each finding was closed | no | — |
@@ -130,14 +130,14 @@ git log --diff-filter=D --name-only 39ed3f1..   # the full list
 
 | Removed | Was | What it was | Where its content lives now |
 |---|---|---|---|
-| `WEEK2_GPU_IMPLEMENTATION_README.md` | SUPERSEDED | Session #1's GPU runbook (Stage A/B sweep, post-hoc warmup) | `docs/WEEK2_GPU_SESSION_2_PLAN.md` |
-| `docs/WEEK2_GPU_PREFLIGHT.md` | SUPERSEDED | Session #1's Hard Stop 4 checklist, incl. its `GPU SESSION READY` verdict | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| `WEEK2_GPU_IMPLEMENTATION_README.md` | SUPERSEDED | Session #1's GPU runbook (Stage A/B sweep, post-hoc warmup) | `WEEK2_GPU_SESSION_2_PLAN.md` |
+| `docs/WEEK2_GPU_PREFLIGHT.md` | SUPERSEDED | Session #1's Hard Stop 4 checklist, incl. its `GPU SESSION READY` verdict | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
 | `WEEK2_GPU_REDESIGN_HANDOFF.md` | HISTORICAL | The brief that opened the redesign after session #1 | `WEEK2_PLAN.md` §10 |
 | `WEEK2_GPU_REDESIGN_IMPLEMENTATION_README_UPDATED.md` | HISTORICAL | The R0–R3 implementation brief | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
 | `WEEK2_R3_CLOSEOUT_AND_R4_IMPLEMENTATION_README.md` | HISTORICAL | The R4→R11 implementation brief | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
 | `Week 2 Pre-GPU Remediation.md` | HISTORICAL | The pre-session-#1 remediation brief | `docs/WEEK2_REMEDIATION_REPORT.md` |
-| `Week 2 Pre-GPU Documentation Cleanup — Implementation README.md` | HISTORICAL | The brief for the documentation cleanup | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
-| `Agent Prompt — Fix T-DOC-4 and Close Documentation Drift.md` | HISTORICAL | The brief for the T-DOC-4 scope fix | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| `Week 2 Pre-GPU Documentation Cleanup — Implementation README.md` | HISTORICAL | The brief for the documentation cleanup | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| `Agent Prompt — Fix T-DOC-4 and Close Documentation Drift.md` | HISTORICAL | The brief for the T-DOC-4 scope fix | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
 
 Removal is a stronger guarantee than a banner: a document that is not in the
 working tree cannot be found, read, or followed by mistake. The **rule** stays
@@ -158,7 +158,7 @@ first regardless.
 The dependency runs one way, and only one way:
 
 ```
-docs/WEEK2_GPU_SESSION_2_PLAN.md  ──references──▶  evidence documents
+WEEK2_GPU_SESSION_2_PLAN.md  ──references──▶  evidence documents
                                                    (for rationale)
 
 evidence documents  ──X──▶  execution
@@ -212,7 +212,7 @@ current document may present any of them as a live result:
 4. `docs/WEEK2_GPU_SESSION_FINDINGS.md` — why the experiment was redesigned.
 5. `WEEK2_PLAN.md` §10 and §11 — every supersession, and the six locks.
 6. `WEEK2_EXECUTION.md` — the block order and the hard stops still ahead.
-7. `docs/WEEK2_GPU_SESSION_2_PLAN.md` — only when a GPU session is actually
+7. `WEEK2_GPU_SESSION_2_PLAN.md` — only when a GPU session is actually
    authorized.
 
 If a document you found is not in §3, it is not a Week 2 process document —
