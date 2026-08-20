@@ -1,24 +1,38 @@
 {
   "what": "Redesigned Week 2 schedule families (R4 README R5/R6/R11).",
-  "generated_at": "2026-08-19T06:27:01+00:00",
+  "generated_at": "2026-08-20T00:20:23+00:00",
   "headline": {
     "schedule_scheme_version": "headline-schedule-v2",
     "tier": "A_scout_diagnostic_only",
     "canonical_workload": "benchmarks/workloads/week2_scout/canonical_v1.json",
     "canonical_membership_id": "e9470f8f85f228358567c61ae4b0b67040942f4858747cc6076ecea94237de67",
     "lambdas": [
+      0.5,
       1.0,
       2.0,
       4.0,
-      8.0
+      8.0,
+      16.0
     ],
     "repeats": 1,
     "warmup_s": 60.0,
     "arrival_seed_base": 20260819000,
     "assignment_seed_base": 20260819500,
     "seed_rule": "arrival_seed = base + repeat_id; assignment_seed = base + repeat_id",
-    "total_schedule_duration_s": 1207.4989410510307,
+    "total_schedule_duration_s": 2386.6326874021215,
     "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/scout/headline_r1_rps0.5.schedule.json",
+        "sha256": "99af6b29dc25bbb3eb6935dc0c16782d5803b071ed4c6bc20451b2c974009600",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 0.5,
+        "materialized_schedule_count": 530,
+        "materialized_warmup_count": 30,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 1090.2109826145042,
+        "materialized_schedule_rps": 0.48533747789320114,
+        "nominal_realization_delta_pct": -2.9325044213597717
+      },
       {
         "path": "benchmarks/schedules/week2_redesign/scout/headline_r1_rps1.schedule.json",
         "sha256": "b2aacbcc921962308e34673159e119d7ff0dc99d9bcfa4d6cc1d3084a82ee757",
@@ -66,6 +80,18 @@
         "materialized_schedule_duration_s": 120.31577838325143,
         "materialized_schedule_rps": 8.289704840132524,
         "nominal_realization_delta_pct": 3.6213105016565494
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/scout/headline_r1_rps16.schedule.json",
+        "sha256": "5014194b69fdfda85e3b5d1de2505ca3ad59dcdc083d7c8433126de75b9b888e",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 16.0,
+        "materialized_schedule_count": 1458,
+        "materialized_warmup_count": 958,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 88.92276373658645,
+        "materialized_schedule_rps": 17.287421235181434,
+        "nominal_realization_delta_pct": 8.04638271988396
       }
     ]
   }
