@@ -14,7 +14,7 @@
 created. Nothing was committed.
 
 This is the §12 deliverable of
-`WEEK2_R3_CLOSEOUT_AND_R4_IMPLEMENTATION_README.md`: the evidence that the
+the R4→R11 implementation brief (removed 2026-08-20; in git history at 39ed3f1): the evidence that the
 redesign is implemented, that the old instrument still works, and that every
 new load-bearing control has been shown to bite.
 

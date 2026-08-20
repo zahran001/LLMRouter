@@ -14,7 +14,7 @@
 **Remediation completed 2026-08-18.** All blockers closed; the audit's findings
 are preserved below as the record of what was wrong and how it was fixed.
 
-`docs/WEEK2_GPU_PREFLIGHT.md` is the Hard Stop 4 *evidence checklist*; this is
+Session #1's Hard Stop 4 *evidence checklist* (removed 2026-08-20; in git history at 39ed3f1) was the companion; this is
 the *audit trail* behind it.
 
 ---

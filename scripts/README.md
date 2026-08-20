@@ -141,7 +141,7 @@ In session order:
    three flashinfer workarounds from `docs/GPU_SESSION_NOTES.md`. Eager mode
    is the `ENFORCE_EAGER` env knob (default `1` = `--enforce-eager`, Week 1's
    proven config); `ENFORCE_EAGER=0` is the non-eager first attempt
-   `WEEK2_GPU_IMPLEMENTATION_README.md` §3.2 calls for.
+   session #1's runbook §3.2 called for (removed 2026-08-20; in git history at 39ed3f1).
 3. `run_on_instance.sh bootstrap` — clone the repo on the instance pinned to
    this commit, install the driver's deps.
 4. `run_on_instance.sh check` — deps, fd limit, GPU, vLLM health.
@@ -163,4 +163,4 @@ In session order:
 work; the local wrapper only issues simple one-command ssh calls, per
 `docs/GPU_SESSION_NOTES.md`. `tunnel.sh` is no longer the measurement path —
 the loadgen drives on-instance over loopback so WAN latency and SSH
-multiplexing stay out of TTFT (`docs/WEEK2_GPU_PREFLIGHT.md` §9).
+multiplexing stay out of TTFT (`docs/WEEK2_GPU_SESSION_2_PLAN.md`).

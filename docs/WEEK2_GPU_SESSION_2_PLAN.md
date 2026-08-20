@@ -64,7 +64,7 @@ The canonical multiset holds the corpus's natural shape exactly, including the
 | `--max-model-len` | **20000** — backed by exact tokenizer evidence: 10,482 max input + 512 output + 1,099 margin = 12,093 ≤ 20,000 **PASS** |
 | Output `max_tokens` | **512** (locked policy) |
 | Prefix caching | **DISABLED** — `DISABLE_PREFIX_CACHING=1` → `--no-enable-prefix-caching` |
-| `--enforce-eager` | `ENFORCE_EAGER` knob. Week 1's proven config is eager; `WEEK2_GPU_IMPLEMENTATION_README.md` §3.2's "try non-eager first" is **not** binding on this session. Whichever mode the server comes up in, **every point in the session must run the same mode** — the launch script echoes the resolved mode; record it |
+| `--enforce-eager` | `ENFORCE_EAGER` knob. Week 1's proven config is eager; session #1's runbook (removed 2026-08-20; in git history at 39ed3f1) said "try non-eager first"; that is **not** binding on this session. Whichever mode the server comes up in, **every point in the session must run the same mode** — the launch script echoes the resolved mode; record it |
 | Sampler | `VLLM_USE_FLASHINFER_SAMPLER=0`, flashinfer uninstalled (three real crashes, `GPU_SESSION_NOTES.md`) |
 | Network topology | **on-instance loopback**, `http://127.0.0.1:8000`. Never the SSH tunnel — it folds WAN RTT into every TTFT and multiplexes 3000 streams down one TCP connection |
 

@@ -2,7 +2,7 @@
 #
 # pull_artifacts.sh -- LOCAL. Copy the session's durable artifacts off the
 # instance and verify they are complete, BEFORE teardown
-# (WEEK2_PLAN.md 6.3/6.4, docs/WEEK2_GPU_PREFLIGHT.md 9).
+# (WEEK2_PLAN.md 6.3/6.4, docs/WEEK2_GPU_SESSION_2_PLAN.md).
 #
 # Running the loadgen on the instance means the artifacts are born on a disk
 # that gets deleted with it. This is the step that makes them survive, and

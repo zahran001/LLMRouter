@@ -15,7 +15,7 @@
 # PROVEN-working config from Week 1, but Week 1's own note flags it as "the
 # right setting for a single-request faithfulness check, not a perf run":
 # it disables CUDA graph capture, which a sustained-load measurement wants
-# back. WEEK2_GPU_IMPLEMENTATION_README.md 3.2 therefore attempts non-eager
+# back. Session #1's runbook 3.2 therefore attempted non-eager
 # FIRST and forbids an automatic fallback -- a non-eager failure is evidence
 # to surface, not something to paper over.
 #

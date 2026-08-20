@@ -694,7 +694,8 @@ treat as a guide, not a ceiling.)
   single session lands in the $5–15 range and a $50 first-warning would never
   trigger at all — an alert ladder whose lowest rung is above the expected spend
   is decorative. $75/$135 keep the same escalating shape above it. Recorded here
-  rather than left as a doc-vs-reality mismatch (`docs/WEEK2_GPU_PREFLIGHT.md`
+  rather than left as a doc-vs-reality mismatch (session #1's pre-flight,
+  removed 2026-08-20; in git history at 39ed3f1,
   §2 carries the live `gcloud` evidence).
 
   These are a **tripwire, not a stop** — nothing here halts an instance, GCP

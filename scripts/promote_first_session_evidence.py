@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Promote the first GPU session's artifacts into tracked diagnostic evidence
-(Redesign README Block R0; WEEK2_GPU_REDESIGN_HANDOFF.md §12/§17C).
+(Redesign README Block R0; redesign handoff §12/§17C, removed 2026-08-20).
 
 The 2026-08-18 session's artifacts were pulled off the instance before
 teardown into `benchmarks/runs/`, which is gitignored -- so they exist only

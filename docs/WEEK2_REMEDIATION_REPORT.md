@@ -24,7 +24,7 @@ created.
 **Document map.** `WEEK2_PLAN.md` is the decision record and
 `WEEK2_EXECUTION.md` the execution order — both authoritative.
 `docs/WEEK2_PRE_GPU_AUDIT.md` is the audit trail (what was wrong).
-`docs/WEEK2_GPU_PREFLIGHT.md` is the Hard Stop 4 evidence checklist. **This
+Session #1's Hard Stop 4 evidence checklist (removed 2026-08-20; in git history at 39ed3f1) was its companion. **This
 document is the record of what was changed and what it proved.**
 
 ---
@@ -34,7 +34,7 @@ document is the record of what was changed and what it proved.**
 ### D1 — Week 2 teardown ownership
 
 **Files:** **+`scripts/gpu_session/teardown_week2.sh`** · `pull_artifacts.sh` ·
-`run_on_instance.sh` · `scripts/README.md` · `docs/WEEK2_GPU_PREFLIGHT.md` §5
+`run_on_instance.sh` · `scripts/README.md` · session #1's pre-flight §5
 
 `scripts/teardown.sh` stays a generic deletion primitive (Week 1 still depends
 on its default). A Week 2 wrapper now owns `llmrouter-vllm-l4-week2` /
@@ -114,7 +114,7 @@ the meter*.
 ### D5 — Budget alert policy
 
 **Files:** `WEEK2_PLAN.md` §6.1 · `WEEK2_EXECUTION.md` ·
-`docs/WEEK2_GPU_PREFLIGHT.md` §2
+session #1's pre-flight §2
 
 Authoritative policy is now **$10 canary / $75 / $135 / $150 hard line**, and
 the docs were changed to match the live ladder rather than the reverse. No

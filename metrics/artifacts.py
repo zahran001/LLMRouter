@@ -1,5 +1,5 @@
 """Per-point artifact naming and byte-stable artifact writing
-(WEEK2_GPU_REDESIGN_HANDOFF.md §11/§17B; R4 README P2).
+(redesign handoff §11/§17B, removed 2026-08-20; R4 README P2).
 
 Two concerns, both about the *files* rather than their contents: recovering
 a point tag from a filename, and writing an artifact whose bytes do not

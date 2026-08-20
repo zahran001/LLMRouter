@@ -116,23 +116,40 @@ say yes.
 | `benchmarks/evidence/week2/first_session/README.md` | EVIDENCE | The promoted session #1 artifacts and what each may be cited for | no | — |
 | `benchmarks/calibration/week2_redesign/R3_EVIDENCE_PACKAGE.md` | EVIDENCE | The offline calibration `k` / `L` / `N` / `N_max` were read off at Hard Stop R3 | no | — |
 
-### Superseded — procedure that would still run, and must not
+### Removed — the dead documents are gone from the working tree
 
-| Path | State | Role | Runbook? | Superseded by |
-|---|---|---|---|---|
-| `WEEK2_GPU_IMPLEMENTATION_README.md` | SUPERSEDED | The GPU session **#1** runbook: Stage A/B sweep, post-hoc warmup resolution, teardown, `BASELINE.md`. Its Stage A/B design was falsified by the session it ran | no | `docs/WEEK2_GPU_SESSION_2_PLAN.md` |
-| `docs/WEEK2_GPU_PREFLIGHT.md` | SUPERSEDED | The Hard Stop **4** pre-flight checklist for session #1, including its `GPU SESSION READY` verdict | no | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+**Deleted 2026-08-20 by human decision.** Eight documents — two `SUPERSEDED`,
+six `HISTORICAL` — were removed rather than kept banner-marked. They are not
+lost: every one is intact in git history and recoverable at any time.
 
-### Historical — records of states the project has left
+```bash
+git show 39ed3f1:WEEK2_GPU_IMPLEMENTATION_README.md
+git show 39ed3f1:docs/WEEK2_GPU_PREFLIGHT.md
+git log --diff-filter=D --name-only 39ed3f1..   # the full list
+```
 
-| Path | State | Role | Runbook? | Superseded by |
-|---|---|---|---|---|
-| `WEEK2_GPU_REDESIGN_HANDOFF.md` | HISTORICAL | The brief that opened the redesign after session #1 | no | `WEEK2_PLAN.md` §10 |
-| `WEEK2_GPU_REDESIGN_IMPLEMENTATION_README_UPDATED.md` | HISTORICAL | The R0–R3 implementation brief (executed) | no | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
-| `WEEK2_R3_CLOSEOUT_AND_R4_IMPLEMENTATION_README.md` | HISTORICAL | The R4→R11 implementation brief (executed) | no | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
-| `Week 2 Pre-GPU Remediation.md` | HISTORICAL | The pre-session-#1 remediation brief (executed) | no | `docs/WEEK2_REMEDIATION_REPORT.md` |
-| `Week 2 Pre-GPU Documentation Cleanup — Implementation README.md` | HISTORICAL | The brief for this documentation cleanup (executed) | no | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
-| `Agent Prompt — Fix T-DOC-4 and Close Documentation Drift.md` | HISTORICAL | The brief for the T-DOC-4 scope fix, after the first cleanup's checker was found to pass over real stale text (executed) | no | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| Removed | Was | What it was | Where its content lives now |
+|---|---|---|---|
+| `WEEK2_GPU_IMPLEMENTATION_README.md` | SUPERSEDED | Session #1's GPU runbook (Stage A/B sweep, post-hoc warmup) | `docs/WEEK2_GPU_SESSION_2_PLAN.md` |
+| `docs/WEEK2_GPU_PREFLIGHT.md` | SUPERSEDED | Session #1's Hard Stop 4 checklist, incl. its `GPU SESSION READY` verdict | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| `WEEK2_GPU_REDESIGN_HANDOFF.md` | HISTORICAL | The brief that opened the redesign after session #1 | `WEEK2_PLAN.md` §10 |
+| `WEEK2_GPU_REDESIGN_IMPLEMENTATION_README_UPDATED.md` | HISTORICAL | The R0–R3 implementation brief | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
+| `WEEK2_R3_CLOSEOUT_AND_R4_IMPLEMENTATION_README.md` | HISTORICAL | The R4→R11 implementation brief | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
+| `Week 2 Pre-GPU Remediation.md` | HISTORICAL | The pre-session-#1 remediation brief | `docs/WEEK2_REMEDIATION_REPORT.md` |
+| `Week 2 Pre-GPU Documentation Cleanup — Implementation README.md` | HISTORICAL | The brief for the documentation cleanup | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| `Agent Prompt — Fix T-DOC-4 and Close Documentation Drift.md` | HISTORICAL | The brief for the T-DOC-4 scope fix | `docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+
+Removal is a stronger guarantee than a banner: a document that is not in the
+working tree cannot be found, read, or followed by mistake. The **rule** stays
+in force for anything added later — §2's states, the `DO NOT EXECUTE`
+requirement, and `tests/redesign/test_week2_doc_state.py` all still apply the
+moment a `HISTORICAL` or `SUPERSEDED` row reappears in §3.
+
+What is genuinely lost is provenance-at-a-glance: the reasoning behind each
+superseded decision now needs `git show` rather than a scroll. The decisions
+themselves are not affected — every one is recorded in `WEEK2_PLAN.md` §10 and
+§11, and in the evidence packages above, which is where a reader should look
+first regardless.
 
 ---
 

@@ -11,7 +11,7 @@ reports them as passing tests, which shows the reds only by implication. This
 runs the broken variant and the real one side by side and PRINTS what each
 does, so the failure is legible rather than inferred.
 
-    C-DOC-1  strip DO NOT EXECUTE from a superseded runbook
+    C-DOC-1  a document reclassified dead that does not refuse execution
     C-DOC-2  authorize N=5000 in the machine-readable policy
     C-DOC-3  the REAL stale warmup sentence, and its corrected form
     C-DOC-4  mark a second document as the current GPU runbook
@@ -193,11 +193,25 @@ def scope_control(name: str, rel_path: str, stale_block: str, safe_block: str,
 # ---------------------------------------------------------------------------
 
 def c_doc_1() -> None:
+    # The dead documents were deleted on 2026-08-20, so this control no longer
+    # has a superseded runbook to un-mark. It keeps its teeth by going the other
+    # way: promote a live EVIDENCE document to HISTORICAL in the index and leave
+    # its banner alone. The check must notice that a document now classified
+    # dead does not refuse execution -- which is the same failure the old
+    # mutation produced, reached from the index side instead of the file side.
+    old_row = (
+        "| `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation "
+        "of GPU session #1: what it falsified, what survives | no | — |"
+    )
+    new_row = (
+        "| `docs/WEEK2_GPU_SESSION_FINDINGS.md` | HISTORICAL | The permanent interpretation "
+        "of GPU session #1: what it falsified, what survives | no | — |"
+    )
     control(
-        "C-DOC-1  superseded runbook stops saying DO NOT EXECUTE",
-        "WEEK2_GPU_IMPLEMENTATION_README.md",
+        "C-DOC-1  a document reclassified dead that does not say DO NOT EXECUTE",
+        "docs/WEEK2_DOC_INDEX.md",
         "test_historical_and_superseded_documents_say_do_not_execute",
-        lambda t: t.replace("STATUS: SUPERSEDED — DO NOT EXECUTE", "STATUS: SUPERSEDED", 1),
+        lambda t: t.replace(old_row, new_row, 1),
     )
 
 
@@ -238,16 +252,11 @@ def c_doc_3() -> None:
 # ---------------------------------------------------------------------------
 
 def c_doc_4() -> None:
-    # Promote the superseded session #1 pre-flight into a second runbook row.
-    old_row = (
-        "| `docs/WEEK2_GPU_PREFLIGHT.md` | SUPERSEDED | The Hard Stop **4** pre-flight "
-        "checklist for session #1, including its `GPU SESSION READY` verdict | no | "
-        "`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md` |"
-    )
-    new_row = (
-        "| `docs/WEEK2_GPU_PREFLIGHT.md` | EXECUTABLE | The Hard Stop **4** pre-flight "
-        "checklist for session #1, including its `GPU SESSION READY` verdict | **yes** | — |"
-    )
+    # Promote the environment-notes document -- EXECUTABLE but explicitly not a
+    # runbook -- into a second runbook row. It is the realistic mistake: the one
+    # live document a reader could plausibly confuse with the session plan.
+    old_row = "(working `gcloud` invocation, PuTTY/pscp, flashinfer). Setup reference, **not** the session runbook — it decides no experimental policy | no | — |"
+    new_row = "(working `gcloud` invocation, PuTTY/pscp, flashinfer). Setup reference, **not** the session runbook — it decides no experimental policy | **yes** | — |"
     control(
         "C-DOC-4  a second document is marked the current GPU runbook",
         "docs/WEEK2_DOC_INDEX.md",

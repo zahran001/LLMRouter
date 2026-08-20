@@ -137,12 +137,18 @@ def test_every_indexed_document_declares_its_state(rows):
 def test_historical_and_superseded_documents_say_do_not_execute(rows):
     """Uniform rule: every dead document says so, whether or not it looks like a
     runbook. 'Does this contain runbook-like commands?' is a judgment call, and
-    a judgment call is the thing that fails at 2am on a metered session."""
-    dead = [r for r in rows if r["state"] in DEAD_STATES]
-    assert dead, "no historical/superseded documents classified -- the index cannot be right"
+    a judgment call is the thing that fails at 2am on a metered session.
 
+    As of 2026-08-20 the dead documents were **deleted** rather than kept
+    banner-marked -- removal is the stronger guarantee, since a file that is not
+    in the tree cannot be followed by mistake. So the index may legitimately
+    carry no dead rows, and this check is written to bite from either side: any
+    dead row must carry the banner, and any file *declaring* a dead state must
+    be indexed. Neither an unmarked dead row nor an unindexed dead file passes.
+    """
     offenders = []
-    for row in dead:
+
+    for row in [r for r in rows if r["state"] in DEAD_STATES]:
         path = REPO_ROOT / row["path"]
         if not path.exists():
             continue
@@ -151,6 +157,15 @@ def test_historical_and_superseded_documents_say_do_not_execute(rows):
             offenders.append(f"{row['path']} ({row['state']}): no 'DO NOT EXECUTE'")
         elif "WEEK2_DOC_INDEX.md" not in head and "WEEK2_GPU_SESSION_2_PLAN.md" not in head:
             offenders.append(f"{row['path']} ({row['state']}): does not point anywhere current")
+
+    # The other direction: a file that calls itself dead must be in the index,
+    # or the index is not the authority it claims to be.
+    indexed = {r["path"] for r in rows}
+    for path in sorted(REPO_ROOT.glob("*.md")) + sorted((REPO_ROOT / "docs").glob("*.md")):
+        rel = str(path.relative_to(REPO_ROOT)).replace("\\", "/")
+        state = declared_state(path)
+        if state in DEAD_STATES and rel not in indexed:
+            offenders.append(f"{rel}: declares {state} but the index does not list it")
 
     assert not offenders, (
         "a dead document must both refuse execution and say where to go instead; "

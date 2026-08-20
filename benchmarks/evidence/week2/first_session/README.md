@@ -14,7 +14,8 @@
 RPS**, and nothing in this directory may be cited as one. It is the durable
 record of an experiment whose *statistical design* was falsified while it ran,
 kept because the falsification is itself the finding
-(`WEEK2_GPU_REDESIGN_HANDOFF.md` §13).
+(the redesign handoff §13 — removed 2026-08-20; in git history at 39ed3f1; the note inside `MANIFEST.json` still
+cites it by name, and is left byte-identical because it is hashed).
 
 ## Why it is here at all
 

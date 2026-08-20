@@ -7,7 +7,7 @@ move: a 120s window at 1 RPS drew ~116 prompts and zero above 10k chars,
 the same window at 10 RPS drew ~1316 and fourteen. A p99 over a few hundred
 samples is decided by its top few requests, so the two points were not
 comparable no matter how carefully the seed was pinned
-(WEEK2_GPU_REDESIGN_HANDOFF.md 7).
+(redesign handoff 7, removed 2026-08-20).
 
 The redesign fixes that by choosing a canonical prompt multiset whose
 composition is fixed by construction rather than by luck (README D2/D3).

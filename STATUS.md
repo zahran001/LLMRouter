@@ -102,7 +102,7 @@ Authoritative documents, which take precedence over this summary:
   (`WEEK2_EXECUTION.md` §"Precedence rule").
 - **`docs/WEEK2_GPU_SESSION_2_PREFLIGHT.md`** — the R-DOC / R-PREGPU evidence
   checklist, standing between here and any GPU spend. (Session #1's Hard Stop 4
-  checklist, `docs/WEEK2_GPU_PREFLIGHT.md`, is SUPERSEDED — do not execute it.)
+  checklist was deleted on 2026-08-20 — removed 2026-08-20; in git history at 39ed3f1.)
 - **`docs/WEEK2_PRE_GPU_AUDIT.md`** — the pre-GPU audit trail: what the
   2026-08-17 audit found, and how each finding was closed.
 - **`docs/WEEK2_REMEDIATION_REPORT.md`** — what was changed on 2026-08-18 and
@@ -188,6 +188,6 @@ output-token policy. Both now carry their session #2 resolution in
 `docs/WEEK2_GPU_SESSION_2_PLAN.md` §0 (output `max_tokens` = 512 is locked;
 `--enforce-eager` stays a knob, but whichever mode the server comes up in, every
 point in the session must run that same mode). The original trade-off write-ups
-survive in the superseded `docs/WEEK2_GPU_PREFLIGHT.md` as rationale only.
+survive only in git history (removed 2026-08-20; in git history at 39ed3f1), as rationale.
 (The budget-alert ladder was previously on this list; it is now resolved as
 $10 / $75 / $135 / $150.)

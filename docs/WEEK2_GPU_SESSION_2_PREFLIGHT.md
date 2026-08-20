@@ -10,9 +10,9 @@
 > Current execution instructions: `docs/WEEK2_GPU_SESSION_2_PLAN.md`.
 > Index: `docs/WEEK2_DOC_INDEX.md`.
 
-A short evidence checklist, not another design document. It replaces
-`docs/WEEK2_GPU_PREFLIGHT.md`, which was session #1's Hard Stop 4 checklist and
-is now SUPERSEDED.
+A short evidence checklist, not another design document. It replaces session
+#1's Hard Stop 4 checklist, which was superseded and then deleted on
+2026-08-20 (recoverable: `git show 39ed3f1:docs/WEEK2_GPU_PREFLIGHT.md`).
 
 **Produced 2026-08-19 at the completion of the pre-GPU documentation cleanup.**
 
@@ -45,7 +45,7 @@ benchmark SHA cannot be skipped by accident.
 
 | Item | Result |
 |---|---|
-| Documents classified | **23** Week 2 process documents, in `docs/WEEK2_DOC_INDEX.md` |
+| Documents classified | **15** live Week 2 process documents, in `docs/WEEK2_DOC_INDEX.md`; the 8 dead ones were deleted 2026-08-20 |
 | Index completeness | **PASS** — no unindexed markdown at repo root or in `docs/`; new files fail closed |
 | Current GPU runbooks | **1** — `docs/WEEK2_GPU_SESSION_2_PLAN.md` |
 | Stale-assumption scan | **PASS on the third pass** — 29 hits (second) + 4 lead-ins (third), all resolved, 0 unexplained (§ below) |
@@ -60,17 +60,22 @@ benchmark SHA cannot be skipped by accident.
 | `AUTHORITATIVE` | 6 | `STATUS.md`, `WEEK2_PLAN.md`, `WEEK2_EXECUTION.md`, `docs/WEEK2_DOC_INDEX.md`, `docs/WEEK2_MOCK_VALIDATION.md`, `repeat_policy.json` |
 | `EXECUTABLE` | 2 | `docs/WEEK2_GPU_SESSION_2_PLAN.md` **(the runbook)**, `docs/GPU_SESSION_NOTES.md` (setup reference) |
 | `EVIDENCE` | 7 | session #2 preflight (this file), session #1 findings, R4 evidence package, pre-GPU audit, remediation report, first-session artifact README, R3 evidence package |
-| `SUPERSEDED` | 2 | `WEEK2_GPU_IMPLEMENTATION_README.md`, `docs/WEEK2_GPU_PREFLIGHT.md` |
-| `HISTORICAL` | 6 | redesign handoff, R0–R3 brief, R4–R11 brief, pre-GPU remediation brief, this cleanup's brief, the T-DOC-4 fix brief |
+| `SUPERSEDED` | 0 | Both deleted 2026-08-20 (session #1's runbook and its pre-flight) |
+| `HISTORICAL` | 0 | All six briefs deleted 2026-08-20 |
 
-All 8 `SUPERSEDED`/`HISTORICAL` documents carry `DO NOT EXECUTE` and redirect to
-the index or the current runbook. Every banner is verified against the index by
-`test_every_indexed_document_declares_its_state` — a document and the index
-cannot disagree about the document's own authority without failing the suite.
+**The dead documents were deleted rather than banner-marked (2026-08-20, human
+decision).** Removal is the stronger guarantee — a file absent from the working
+tree cannot be found, read or followed by mistake — and all eight remain
+recoverable from git at `39ed3f1`. The `DO NOT EXECUTE` rule stays in force for
+anything added later: `test_historical_and_superseded_documents_say_do_not_execute`
+now bites from both directions, rejecting a dead index row without the banner
+**and** a file declaring a dead state that the index does not list. Every banner
+is still verified against the index by `test_every_indexed_document_declares_its_state`.
 
 ### The three documents that were actually dangerous
 
-Worth naming, because the rest of the classification is bookkeeping:
+Worth naming, because the rest of the classification is bookkeeping. All three
+are now either deleted or explicitly marked:
 
 1. **`WEEK2_GPU_IMPLEMENTATION_README.md`** — a complete GPU runbook (phases
    E-1 → E4, approval gates, teardown, `BASELINE.md` authoring). It would have
@@ -365,8 +370,8 @@ four hops resolve, and all ten policy facts a cold reviewer must report —
 `UNCERTAIN`, the 60s frozen boundary, no post-hoc re-filter, no cross-epoch
 combination, scout 1/2/4/8, fallback 0.5 and 16 — are findable **on that chain**,
 without opening a historical document. Both documents a reviewer must not pick
-(`WEEK2_GPU_IMPLEMENTATION_README.md`, `docs/WEEK2_GPU_PREFLIGHT.md`) refuse
-execution in their first 40 lines.
+— session #1's runbook and its pre-flight — no longer exist in the working
+tree at all.
 
 **The human-facing half is outstanding**, and is the human's to run — the brief
 (§16) calls it "a required human-facing control," and an agent that just built

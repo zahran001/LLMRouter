@@ -31,7 +31,7 @@ Session-operational notes:
   environment-specific bugs already worked around.
 - **`WEEK2_GPU_SESSION_2_PREFLIGHT.md`** — the R-DOC / R-PREGPU evidence
   checklist for session #2.
-- **`WEEK2_GPU_PREFLIGHT.md`** — session #1's Hard Stop 4 checklist.
+- *(`WEEK2_GPU_PREFLIGHT.md` — session #1's Hard Stop 4 checklist — removed 2026-08-20; in git history at 39ed3f1.)*
   **SUPERSEDED — do not execute.**
 - **`WEEK2_PRE_GPU_AUDIT.md`**, **`WEEK2_REMEDIATION_REPORT.md`** — the
   pre-session-#1 audit trail.

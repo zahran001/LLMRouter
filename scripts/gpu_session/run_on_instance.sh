@@ -2,7 +2,7 @@
 #
 # run_on_instance.sh -- LOCAL wrapper. Drives the loadgen ON the L4 instance
 # instead of through the SSH tunnel (WEEK2_EXECUTION.md Block E,
-# docs/WEEK2_GPU_PREFLIGHT.md 9).
+# docs/WEEK2_GPU_SESSION_2_PLAN.md).
 #
 # Why on-instance: the tunnel would fold WAN round-trip into every TTFT and
 # multiplex up to 3000 concurrent streams through one TCP connection. At
