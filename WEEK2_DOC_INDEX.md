@@ -110,6 +110,7 @@ say yes.
 |---|---|---|---|---|
 | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
 | `WEEK2_GPU_SESSION_2_REPORT.md` | EVIDENCE | The 2026-08-22 GPU session #2 first-attempt report: what ran, the Tier B all-`CENSORED` finding, why the session stopped after repeat 1, and the resulting schedule redesign | no | — |
+| `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN_DRAFT.md` | EVIDENCE | Proposed attempt-2 redesign (sustained scout tier, duration+count schedule rule, `OVER_CENSORED` state). §14 decisions unlocked — not executable until promoted | no | — |
 | `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation of GPU session #1: what it falsified, what survives | no | — |
 | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` | EVIDENCE | R3-closeout and R4→R11 implementation evidence | no | — |
 | `docs/WEEK2_PRE_GPU_AUDIT.md` | EVIDENCE | The 2026-08-17 pre-GPU audit and how each finding was closed | no | — |
