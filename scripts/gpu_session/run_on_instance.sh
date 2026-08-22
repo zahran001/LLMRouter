@@ -6,7 +6,7 @@
 #
 # Why on-instance: the tunnel would fold WAN round-trip into every TTFT and
 # multiplex up to 3000 concurrent streams through one TCP connection. At
-# Stage A's upper points that characterizes the tunnel rather than the
+# session #1 Stage A's upper points that characterizes the tunnel rather than the
 # replica, and it biases the breach metric upward -- i.e. toward declaring a
 # breach that is the client's. On-instance the driver talks to
 # 127.0.0.1:8000 over loopback. tunnel.sh stays useful for poking /health or
@@ -26,7 +26,11 @@ set -euo pipefail
 INSTANCE_NAME="${INSTANCE_NAME:-llmrouter-vllm-l4-week2}"
 ZONE="${ZONE:-us-central1-a}"
 REPO_URL="${REPO_URL:-https://github.com/zahran001/LLMRouter.git}"
-SESSION_TAG="${SESSION_TAG:-stage_a}"
+# No default. It used to fall back to session #1's `stage_a`, which made every
+# per-command fallback below dead code and silently filed a session #2 point
+# under a session #1 tag if the operator forgot to set it. Each command now
+# supplies its own name.
+SESSION_TAG="${SESSION_TAG:-}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STAGE_A_DIR="benchmarks/schedules/stage_a"
@@ -39,9 +43,24 @@ usage: run_on_instance.sh <command> [args]
   check              run the remote env-check (deps, fd limit, GPU, vLLM health)
   verify-cache       REFUSE the session if prefix caching is live (L6) -- run
                      this BEFORE any headline point
-  run <schedule>     drive one schedule, repo-relative path. The way to drive a
-                     Tier A scout or a secondary point
+  floor              drive the unloaded intrinsic floor -- every canonical
+                     prompt once, sequentially, at concurrency 1. No arrival
+                     process: the floor is defined by the absence of queueing
+  scout <schedule>   drive ONE frozen Tier A scout schedule through the
+                     session #2 measurement path -- same schedule semantics and
+                     same validity gates as the headline family, stamped
+                     DIAGNOSTIC so it can never enter the classification
                      (e.g. benchmarks/schedules/week2_redesign/scout/headline_r1_rps2.schedule.json)
+  steady <schedule>  drive ONE frozen steady-reference point (v2 exact-N).
+                     Same gates as scout/headline; DIAGNOSTIC
+  secondary <schedule>
+                     drive ONE frozen natural-random secondary point (v1)
+  adversarial <schedule>
+                     drive ONE frozen adversarial long-context point (v1).
+                     Runs LAST -- it drives the replica toward saturation
+  run <schedule>     drive one LEGACY v1 schedule with no scenario check.
+                     Refuses a session #2 schedule. Prefer the named scenario
+                     commands, which validate the artifact's role
   headline <lambda>... drive the frozen headline repeat family through the
                      drain-gated runner (session #2, R9). Repeat-major.
   stage-a            SESSION #1 ONLY -- drives the superseded fixed-duration
@@ -130,7 +149,48 @@ cmd_run() {
   [ -n "${EXTRA_BODY:-}" ] && env_prefix="EXTRA_BODY='$EXTRA_BODY' "
   [ -n "${LOADGEN_MODEL:-}" ] && env_prefix="${env_prefix}LOADGEN_MODEL='$LOADGEN_MODEL' "
 
-  ssh_cmd "${env_prefix}bash $remote_repo/scripts/gpu_session/remote_loadgen.sh run $remote_repo/$schedule $SESSION_TAG"
+  ssh_cmd "${env_prefix}bash $remote_repo/scripts/gpu_session/remote_loadgen.sh run $remote_repo/$schedule ${SESSION_TAG:-legacy}"
+}
+
+cmd_floor() {
+  local home
+  home="$(remote_home)"
+  local env_prefix=""
+  [ -n "${EXTRA_BODY:-}" ] && env_prefix="EXTRA_BODY='$EXTRA_BODY' "
+  [ -n "${LOADGEN_MODEL:-}" ] && env_prefix="${env_prefix}LOADGEN_MODEL='$LOADGEN_MODEL' "
+  [ -n "${PROCESS_EPOCH:-}" ] && env_prefix="${env_prefix}PROCESS_EPOCH='$PROCESS_EPOCH' "
+
+  echo "Unloaded floor over the canonical headline workload: 4,000 prompts, one at a"
+  echo "time, concurrency 1. DIAGNOSTIC -- it is the curve's starting point, not a"
+  echo "point on it. The driver refuses to start unless the prefix-cache verdict says"
+  echo "DISABLED, because a warm cache is what invalidated session #1's floor."
+  echo
+  ssh_cmd "${env_prefix}bash $home/LLMRouter/scripts/gpu_session/remote_loadgen.sh floor ${SESSION_TAG:-floor}"
+}
+
+cmd_scenario() {
+  local scenario="$1"
+  local schedule="${2:-}"
+  [ -n "$schedule" ] || {
+    echo "usage: run_on_instance.sh $scenario <repo-relative schedule path>" >&2
+    echo "  the schedule must have been generated FOR this scenario -- it is checked" >&2
+    echo "  against the artifact's own provenance, not against its directory." >&2
+    exit 1
+  }
+  [ -f "$REPO_ROOT/$schedule" ] || { echo "FATAL: $schedule not found locally -- is it committed?" >&2; exit 1; }
+
+  local home
+  home="$(remote_home)"
+  local remote_repo="$home/LLMRouter"
+  local env_prefix=""
+  [ -n "${EXTRA_BODY:-}" ] && env_prefix="EXTRA_BODY='$EXTRA_BODY' "
+  [ -n "${LOADGEN_MODEL:-}" ] && env_prefix="${env_prefix}LOADGEN_MODEL='$LOADGEN_MODEL' "
+
+  echo "Session #2 '$scenario' point. DIAGNOSTIC: it may support interpretation of the"
+  echo "headline breach and may never redefine it. The scenario is validated against the"
+  echo "schedule's own provenance before anything is driven."
+  echo
+  ssh_cmd "${env_prefix}bash $remote_repo/scripts/gpu_session/remote_loadgen.sh $scenario $remote_repo/$schedule ${SESSION_TAG:-$scenario}"
 }
 
 cmd_verify_cache() {
@@ -201,7 +261,8 @@ WARN
   read -r -p "Type 'replay-session-1' to continue: " confirm
   [ "$confirm" = "replay-session-1" ] || { echo "aborted." >&2; exit 1; }
 
-  # Ascending RPS deliberately: the low anchor characterizes the unloaded
+  # SUPERSEDED (session #1). Ascending RPS deliberately: the low anchor
+  # characterizes the unloaded
   # TTFT floor before any queueing exists (WEEK2_PLAN.md 2.6), and if the
   # session dies partway the points you kept are the cheap informative ones.
   local rps_points=(2 5 10 20 30 40 60 80)
@@ -228,6 +289,11 @@ case "${1:-}" in
   bootstrap)    shift; cmd_bootstrap "$@" ;;
   check)        shift; cmd_check "$@" ;;
   verify-cache) shift; cmd_verify_cache "$@" ;;
+  floor)        shift; cmd_floor "$@" ;;
+  scout)        shift; cmd_scenario scout "$@" ;;
+  steady)       shift; cmd_scenario steady "$@" ;;
+  secondary)    shift; cmd_scenario secondary "$@" ;;
+  adversarial)  shift; cmd_scenario adversarial "$@" ;;
   run)          shift; cmd_run "$@" ;;
   headline)     shift; cmd_headline "$@" ;;
   stage-a)      shift; cmd_stage_a "$@" ;;

@@ -361,7 +361,8 @@ def control_censoring_suppression() -> None:
     prov = {"nominal_lambda_rps": 10.0, "warmup_boundary_s": 0.0,
             "materialized_schedule_count": n, "materialized_post_warmup_count": n,
             "post_warmup_target_count": n, "materialized_schedule_duration_s": 20.0}
-    record = headline_point_metrics(raw, samples, prov, warmup_n_s=0.0)
+    record = headline_point_metrics(raw, samples, prov, warmup_n_s=0.0,
+                                    scheduled_offsets=[i * 0.01 for i in range(n)])
     survivors = n - censored
 
     report(
@@ -392,7 +393,9 @@ def control_driver_fidelity_denominator() -> None:
         samples = [{"request_id": i, "send_time": i * step, "ttft_ms": 120.0,
                     "tpot_samples_ms": [], "content_chunk_count": 3, "error": None}
                    for i in range(n_sent)]
-        return headline_point_metrics(raw, samples, prov, warmup_n_s=0.0)
+        return headline_point_metrics(
+            raw, samples, prov, warmup_n_s=0.0,
+            scheduled_offsets=[i * step for i in range(materialized)])
 
     dropped = record(200, 248, 130.0, 2.0)      # driver lost 48 sends
     realization = record(248, 248, 130.0, 2.0)  # the first session's 2-RPS point
@@ -450,11 +453,22 @@ def control_repeat_drain_and_ceiling() -> None:
                            inflight_probe=lambda: 0, sleep=lambda _s: None,
                            clock=tick).run(plans)
 
+    from metrics.classification import HeadlineEvidenceSpec
+
+    membership = "m" * 64
     policy = RepeatPolicy(min_valid_repeats=3, n_per_run=4000, n_max=5000,
-                          max_repeats_authorized=3)
+                          max_repeats_authorized=3,
+                          headline=HeadlineEvidenceSpec(membership_id=membership,
+                                                        percentile_population_n=4000))
 
     def rep(i, lam, state, p99):
-        return {"repeat_id": i, "canonical_prompt_membership_id": "m",
+        return {"record_version": "headline-point-v1",
+                "evidence_class": "headline_evidence",
+                "may_define_headline_breach": True,
+                "schedule_scheme_version": "headline-schedule-v2",
+                "process_epoch": "vllm-start-1000",
+                "percentile_population_n": 4000,
+                "repeat_id": i, "canonical_prompt_membership_id": membership,
                 "arrival_seed": 1000 + i, "assignment_seed": 2000 + i,
                 "nominal_lambda_rps": lam, "point_state": state, "ttft_p99_ms": p99,
                 "n_ttft_observed": 4000, "ttft_censoring_rate": 0.0,

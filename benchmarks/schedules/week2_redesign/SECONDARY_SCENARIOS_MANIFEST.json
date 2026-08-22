@@ -1,0 +1,95 @@
+{
+  "what": "Frozen session #2 secondary scenarios: steady reference and adversarial long-context flood (lock 6A).",
+  "generated_at": "2026-08-21T23:10:19+00:00",
+  "decision_provenance": "Operating points are human decisions recorded 2026-08-21; WEEK2_PLAN.md 2.1 constrains the shape of both scenarios but names no lambda for either.",
+  "steady": {
+    "schedule_scheme_version": "headline-schedule-v2",
+    "workload_class": "secondary_steady_reference",
+    "canonical_workload": "benchmarks/workloads/week2_scout/canonical_v1.json",
+    "lambdas": [
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      4.0
+    ],
+    "warmup_boundary_s": 60.0,
+    "post_warmup_target_count": 500,
+    "arrival_seed_base": 20260821100,
+    "assignment_seed_base": 20260821600,
+    "never_defines_headline_breach": true,
+    "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps1.5.schedule.json",
+        "sha256": "370614a96325a88cb4e3389c626ed354ba453bfcfc5eb8fd39371d256bdfbbce",
+        "nominal_lambda_rps": 1.5,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 590,
+        "materialized_warmup_count": 90,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 393.33333333333576
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps2.schedule.json",
+        "sha256": "29c63a00dac4f9c32db1b0d3a353498ca53364e29ccf535ed9e73c5b0550a203",
+        "nominal_lambda_rps": 2.0,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 619,
+        "materialized_warmup_count": 119,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 309.5
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps2.5.schedule.json",
+        "sha256": "82ef315354a4822570c9d5d3e0b1f369ae772c9f13a2692a98408c3ddf169f13",
+        "nominal_lambda_rps": 2.5,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 650,
+        "materialized_warmup_count": 150,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 260.00000000000233
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps3.schedule.json",
+        "sha256": "bbea20297c960815ff300175b68f120cd6eeb49940e0f5aa630fc4ca857a45fd",
+        "nominal_lambda_rps": 3.0,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 679,
+        "materialized_warmup_count": 179,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 226.3333333333354
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps4.schedule.json",
+        "sha256": "71f232cfa67ac5d4879ee1d522ea1d8ca7387c5fac994d479608accae85b06c4",
+        "nominal_lambda_rps": 4.0,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 739,
+        "materialized_warmup_count": 239,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 184.75
+      }
+    ]
+  },
+  "adversarial": {
+    "schedule_scheme_version": "loadgen-schedule-v1",
+    "workload_class": "adversarial_long_context",
+    "nominal_lambda_rps": 2.0,
+    "duration_s": 600.0,
+    "seed": 20260821900,
+    "long_context_cut": "corpus q90 char_len, fixed constant",
+    "execution_order": "LAST -- it drives the replica toward saturation",
+    "never_defines_headline_breach": true,
+    "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/adversarial/adversarial_rps2.schedule.json",
+        "sha256": "2861a59c986c6b0f72ccb7ea6c8c8a30f080bf85661c002f8cf3154221de94fb",
+        "nominal_lambda_rps": 2.0,
+        "arrival_process": "adversarial",
+        "duration_s": 600.0,
+        "n_scheduled": 1212,
+        "long_context": true
+      }
+    ]
+  }
+}

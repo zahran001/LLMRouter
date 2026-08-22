@@ -147,7 +147,8 @@ def test_live_and_offline_use_the_same_function(near_boundary_sample):
         "post_warmup_target_count": len(raw),
         "materialized_schedule_duration_s": float(len(raw)),
     }
-    record = headline_point_metrics(raw, samples, schedule_provenance, warmup_n_s=warmup)
+    record = headline_point_metrics(raw, samples, schedule_provenance, warmup_n_s=warmup,
+                                    scheduled_offsets=[float(i) for i in range(len(raw))])
 
     assert record["ttft_p99_ms"] == percentile_nearest_rank(near_boundary_sample, 99)
     assert record["percentile"]["percentile_method"] == "nearest_rank"

@@ -63,7 +63,7 @@ from loadgen.corpus import Corpus
 from loadgen.schedule import Schedule, ScheduleEntry
 from metrics.artifacts import write_json_artifact
 
-# A NEW format version, not an edit to the old one. Legacy Stage A schedules
+# A NEW format version, not an edit to the old one. Session #1's legacy Stage A schedules
 # stay `loadgen-schedule-v1` and keep parsing under their own contract; the
 # reader refuses an unknown version rather than coercing it (README R5).
 HEADLINE_SCHEDULE_SCHEME_VERSION = "headline-schedule-v2"
@@ -157,6 +157,44 @@ def materialize_exact_n(nominal_lambda_rps: float, warmup_s: float, n: int,
     return offsets, len(offsets) - n
 
 
+def materialize_exact_n_steady(nominal_lambda_rps: float, warmup_s: float, n: int
+                               ) -> tuple[list[float], int]:
+    """Fixed-interval offsets containing EXACTLY `n` arrivals at or after `warmup_s`.
+
+    The steady counterpart of `materialize_exact_n`, and deliberately the same
+    shape: exact-N is a property of the schedule, not of the arrival process,
+    so the steady reference is measured over the same size population under
+    the same gates. Only the gaps change — constant `1/λ` instead of
+    exponential draws.
+
+    No RNG at all. That is what makes steady the *legible* reference: its
+    duration is `n/λ` exactly, so any spread it shows is the server's, with
+    none of the finite-Poisson realization variance the headline curve
+    carries (§2.1).
+    """
+    if nominal_lambda_rps <= 0:
+        raise HeadlineScheduleError(f"nominal lambda must be positive, got {nominal_lambda_rps}")
+    if n <= 0:
+        raise HeadlineScheduleError(f"N must be positive, got {n}")
+    if warmup_s < 0:
+        raise HeadlineScheduleError(f"warmup must be non-negative, got {warmup_s}")
+
+    gap = 1.0 / nominal_lambda_rps
+    offsets: list[float] = []
+    post_warmup = 0
+    t = 0.0
+    while post_warmup < n:
+        t += gap
+        offsets.append(t)
+        if t >= warmup_s:
+            post_warmup += 1
+
+    return offsets, len(offsets) - n
+
+
+ARRIVAL_PROCESSES = ("poisson", "steady")
+
+
 def build_headline_schedule(
     *,
     canonical: dict,
@@ -164,8 +202,22 @@ def build_headline_schedule(
     identity: RepeatIdentity,
     nominal_lambda_rps: float,
     warmup_s: float,
+    arrival_process: str = "poisson",
+    workload_class: str = "headline_controlled",
 ) -> Schedule:
-    """One frozen headline schedule: warmup traffic + exactly N canonical arrivals."""
+    """One frozen exact-N schedule: warmup traffic + exactly N canonical arrivals.
+
+    `arrival_process` and `workload_class` default to the headline family's
+    values, so the controlled Poisson curve is byte-identical to what this
+    generator produced before steady existed. The steady reference passes
+    `"steady"` / `"secondary_steady_reference"`; nothing else about the
+    materialization, the permutation, the warmup draw or the provenance
+    changes, which is exactly what makes the two curves comparable as an
+    arrival-process contrast rather than as two different experiments.
+    """
+    if arrival_process not in ARRIVAL_PROCESSES:
+        raise HeadlineScheduleError(
+            f"unknown arrival_process {arrival_process!r}; expected one of {ARRIVAL_PROCESSES}")
     if canonical["scheme_version"] != CANONICAL_SCHEME_VERSION:
         raise HeadlineScheduleError(
             f"canonical workload is {canonical['scheme_version']!r}, this generator implements "
@@ -181,7 +233,14 @@ def build_headline_schedule(
         raise HeadlineScheduleError(f"workload declares N={n} but carries {len(membership)} prompts")
 
     arrival_rng, warmup_rng = derive_headline_streams(identity.arrival_seed, identity.repeat_id)
-    offsets, n_warmup = materialize_exact_n(nominal_lambda_rps, warmup_s, n, arrival_rng)
+    if arrival_process == "steady":
+        # arrival_rng is derived but unused: the warmup stream is child 1 of
+        # the same seed sequence, so consuming child 0 keeps the stream layout
+        # identical between the two processes rather than making the warmup
+        # draw depend on which arrival process was chosen.
+        offsets, n_warmup = materialize_exact_n_steady(nominal_lambda_rps, warmup_s, n)
+    else:
+        offsets, n_warmup = materialize_exact_n(nominal_lambda_rps, warmup_s, n, arrival_rng)
 
     order = canonical_permutation(membership, identity.assignment_seed)
 
@@ -219,11 +278,11 @@ def build_headline_schedule(
         "schedule_scheme_version": HEADLINE_SCHEDULE_SCHEME_VERSION,
         "rng_scheme_version": HEADLINE_RNG_SCHEME_VERSION,
         "canonical_scheme_version": canonical["scheme_version"],
-        "workload_class": "headline_controlled",
+        "workload_class": workload_class,
         # --- repeat identity (R5) -------------------------------------------
         **identity.to_dict(),
         # --- workload parameters --------------------------------------------
-        "arrival_process": "poisson",
+        "arrival_process": arrival_process,
         "nominal_lambda_rps": nominal_lambda_rps,
         "warmup_boundary_s": warmup_s,
         "post_warmup_target_count": n,
@@ -245,9 +304,14 @@ def build_headline_schedule(
         # --- the invariant, stated in the artifact itself ---------------------
         "n_is_a_schedule_generation_constraint": True,
         "runtime_stop_condition": "schedule issuance exhausted",
-        "note": "duration_s is an OUTCOME of the Poisson realization, not an input. Runtime "
-                "must drive every entry and must not stop on completions, samples, errors or "
-                "censoring (WEEK2_PLAN.md 10.2).",
+        "note": ("duration_s is an OUTCOME of the Poisson realization, not an input. Runtime "
+                 "must drive every entry and must not stop on completions, samples, errors or "
+                 "censoring (WEEK2_PLAN.md 10.2)."
+                 if arrival_process == "poisson" else
+                 "steady arrivals: gaps are exactly 1/lambda, so duration_s is deterministic "
+                 "(n/lambda + warmup) rather than a realization outcome. Runtime must still "
+                 "drive every entry and must not stop on completions, samples, errors or "
+                 "censoring (WEEK2_PLAN.md 10.2)."),
         # --- back-compat for readers that predate v2 --------------------------
         # `duration_s` and `target_rps` keep their legacy names so the existing
         # scheduler and point-metrics code read a v2 schedule without special

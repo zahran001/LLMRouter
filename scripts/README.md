@@ -114,6 +114,25 @@ on the dev box before the session.
 - `gpu_session/verify_prefix_cache_disabled.py` — **L6.** Runs on the instance
   and refuses the session if a replayed long prompt comes back faster than its
   first serving. The CLI flag is not accepted as evidence.
+- `gpu_session/drive_headline_family.py` — **R9.** Tier B: the frozen repeat
+  family, repeat-major, drain-gated on the server's own in-flight counters.
+- `gpu_session/drive_scenario_point.py` — one frozen session #2 exact-N point,
+  scout or steady. Shares `loadgen/redesign_point.py` with Tier B, so a v2
+  schedule is interpreted identically whichever scenario drives it; only the
+  recorded `evidence_class` differs, and only that decides what the point may
+  be used for.
+- `gpu_session/drive_unloaded_floor.py` — the unloaded intrinsic floor: every
+  canonical prompt once, sequentially, at concurrency 1. No arrival process —
+  the floor is defined by the absence of queueing.
+- `gpu_session/scenario_contract.py` — one table saying what each scenario may
+  drive and with what authority; `gpu_session/check_scenario.py` applies it to
+  the legacy v1 path. Roles come from the artifact's provenance, never from the
+  directory it sits in: `headline/` and `scout/` hold files with identical
+  names, the same scheme and the same `workload_class`, and differ only in
+  canonical membership.
+- `generate_secondary_scenarios.py` — freezes the steady reference and the
+  adversarial scenario. `--verify` re-checks the committed bytes against the
+  manifest **and** against a fresh regeneration.
 
 ## `hooks/` — repo hooks
 
@@ -145,10 +164,22 @@ In session order:
 3. `run_on_instance.sh bootstrap` — clone the repo on the instance pinned to
    this commit, install the driver's deps.
 4. `run_on_instance.sh check` — deps, fd limit, GPU, vLLM health.
-5. `run_on_instance.sh stage-a` — drive the Stage A sweep.
-6. `pull_artifacts.sh` — copy the artifacts back and verify them **before**
+5. `run_on_instance.sh verify-cache` — **L6.** No point may be driven before
+   this passes.
+6. `run_on_instance.sh scout <schedule>` — one Tier A scout point. Session #2
+   measurement semantics, stamped `scout_diagnostic` so it can never enter the
+   headline classification.
+7. `run_on_instance.sh headline <λ...>` — the Tier B repeat family, repeat-major
+   and drain-gated.
+8. `run_on_instance.sh run <schedule>` — one **legacy v1** schedule (the
+   secondary natural-random points). Refuses a session #2 schedule, which would
+   otherwise be read with the legacy 10s warmup placeholder.
+9. `pull_artifacts.sh` — copy the artifacts back and verify them **before**
    teardown.
-7. `teardown_week2.sh` — delete the L4 and **verify** it is gone.
+10. `teardown_week2.sh` — delete the L4 and **verify** it is gone.
+
+`run_on_instance.sh stage-a` drives session #1's **superseded** fixed-duration
+sweep and requires a typed confirmation. It is not part of session #2.
 
 > **Always `gpu_session/teardown_week2.sh`, never bare `../teardown.sh`.**
 > `teardown.sh` is the generic deletion primitive and still defaults to Week 1's

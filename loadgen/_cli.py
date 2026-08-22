@@ -29,18 +29,27 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SCHEDULE_DIR = REPO_ROOT / "benchmarks" / "schedules"
 DEFAULT_LOG_DIR = REPO_ROOT / "benchmarks" / "runs"
 
-# [CALIBRATE] (§2.4), same placeholder the committed Stage A schedules were
-# sized against (scripts/generate_stage_a_schedules.py: WARMUP_N_PLACEHOLDER_S).
-# The real N comes off the Block F transient plot; because the filter is
-# metrics-side and time-based, resolving N later means re-running
-# scripts/compute_point_metrics.py over the committed sidecars, NOT re-running
-# anything on the GPU.
+# The session #1 placeholder the committed Stage A schedules were sized
+# against (scripts/generate_stage_a_schedules.py: WARMUP_N_PLACEHOLDER_S).
+#
+# SCOPE: this module drives `loadgen-schedule-v1` schedules only -- the Stage A
+# artifacts and the secondary natural-random points. Session #2's frozen
+# exact-N schedules carry their own `warmup_boundary_s` (60s) and are driven
+# through `loadgen/redesign_point.py`, which reads the boundary off the
+# schedule and never consults this constant.
+#
+# The re-filter that used to be documented here -- resolve the real warmup
+# afterwards by re-running compute_point_metrics over the committed sidecars
+# -- was valid under the fixed-duration design and is forbidden for the
+# redesigned headline (lock 4A): past the frozen boundary it discards
+# canonical arrivals and silently leaves fewer than N measured samples.
+# `metrics/headline_point.py` refuses it outright.
 DEFAULT_WARMUP_N_S = 10.0
 
 # Resolved 2026-08-17 (WEEK2_PLAN.md §3.3, §8) -- no longer [CALIBRATE].
 # Above every concurrency level Block C's uncapped sweep produced (peak 2380
 # simultaneous streams at 300 RPS; 651 at 100 RPS), and by Little's Law it
-# cannot bite at Stage A's 80 RPS ceiling until mean response time exceeds
+# cannot bite at session #1 Stage A's 80 RPS ceiling until mean response time exceeds
 # 37.5s. A default rather than a required flag so the eight hand-run Stage A
 # points cannot disagree with each other by a typo; every point record still
 # logs the cap it actually ran with (provenance.concurrency_cap).
@@ -53,10 +62,16 @@ BASELINE_CONCURRENCY_CAP = 3000
 
 
 def add_common_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--rps", type=float, required=True, help="target offered RPS")
-    parser.add_argument("--duration", type=float, required=True, dest="duration_s",
-                         help="total schedule duration in seconds (warmup + measurement window, one continuous schedule -- §2.4)")
-    parser.add_argument("--seed", type=int, required=True, help="master seed for arrival_rng/corpus_rng derivation")
+    # Generation inputs, not replay inputs. Required to BUILD a schedule;
+    # meaningless when one is being re-driven, because the frozen artifact
+    # already records what it was built with. Passing hand-extracted copies
+    # alongside `--schedule-in` only creates a second source of truth that can
+    # disagree with the first -- so they are optional here and validated in
+    # `build_or_load_schedule` against what was actually asked for.
+    parser.add_argument("--rps", type=float, default=None, help="target offered RPS (generation)")
+    parser.add_argument("--duration", type=float, default=None, dest="duration_s",
+                         help="total schedule duration in seconds (warmup + measurement window, one continuous schedule -- §2.4). Generation only")
+    parser.add_argument("--seed", type=int, default=None, help="master seed for arrival_rng/corpus_rng derivation (generation only)")
     parser.add_argument("--base-url", default="http://127.0.0.1:9001", help="mock or vLLM base URL")
     parser.add_argument("--corpus", default=str(DEFAULT_CORPUS_PATH))
     parser.add_argument("--concurrency-cap", type=int, default=BASELINE_CONCURRENCY_CAP, dest="concurrency_cap",
@@ -75,9 +90,11 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
                               "run. NOTE: this also disables the sample sidecar and the per-point metrics record, "
                               "i.e. the run produces NO TTFT. Never use it for a baseline sweep point (§6.3)")
     parser.add_argument("--warmup-n", type=float, default=DEFAULT_WARMUP_N_S, dest="warmup_n_s",
-                         help=f"seconds discarded from the front of the window, by send timestamp (§2.4); "
-                              f"default {DEFAULT_WARMUP_N_S} is the [CALIBRATE] placeholder -- recompute offline "
-                              f"once Block F resolves the real N")
+                         help=f"seconds discarded from the front of the window, by send timestamp (§2.4). "
+                              f"loadgen-schedule-v1 ONLY -- the legacy session #1 semantics. It is "
+                              f"invalid for the session #2 exact-N headline, where the boundary is "
+                              f"frozen into the schedule and filtering past it discards canonical "
+                              f"arrivals (lock 4A); metrics/headline_point.py refuses it")
     parser.add_argument("--min-samples", type=int, default=MIN_TAIL_SAMPLES, dest="min_samples",
                          help="achieved post-warmup sample floor below which tail percentiles are not reportable (§2.4)")
     parser.add_argument("--band-pct", type=float, default=DEFAULT_BAND_PCT, dest="band_pct",
@@ -100,7 +117,10 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
 def _tag(args: argparse.Namespace, arrival_process: str) -> str:
     if args.tag:
         return args.tag
-    return f"{arrival_process}_rps{args.rps:g}_seed{args.seed}"
+    # A replay may have no seed to name itself with -- the seed belongs to the
+    # generation that produced the frozen file, not to this run of it.
+    suffix = f"_seed{args.seed}" if args.seed is not None else "_replay"
+    return f"{arrival_process}_rps{args.rps:g}{suffix}"
 
 
 def build_or_load_schedule(args: argparse.Namespace, arrival_process: str, long_context: bool = False) -> tuple[Schedule, "Corpus"]:
@@ -109,8 +129,37 @@ def build_or_load_schedule(args: argparse.Namespace, arrival_process: str, long_
     if args.schedule_in:
         schedule = Schedule.load(args.schedule_in)
         schedule.validate_corpus_version(corpus)  # raises on drift -- §5's reproducibility contract
+
+        # The frozen schedule is the source of truth for what was offered.
+        # Anything the caller did not supply is filled from its provenance
+        # rather than defaulted, and anything the caller DID supply must agree
+        # -- a silent mismatch would put one number in the point record and a
+        # different one in the artifact it claims to describe.
+        prov = schedule.provenance
+        for flag, attr, key in (("--rps", "rps", "target_rps"),
+                                ("--duration", "duration_s", "duration_s")):
+            frozen = prov.get(key)
+            supplied = getattr(args, attr)
+            if supplied is None:
+                if frozen is None:
+                    raise SystemExit(
+                        f"{args.schedule_in} has no provenance.{key} and {flag} was not given; "
+                        "the point record cannot state what was offered.")
+                setattr(args, attr, float(frozen))
+            elif frozen is not None and abs(float(supplied) - float(frozen)) > 1e-9:
+                raise SystemExit(
+                    f"{flag}={supplied} contradicts the frozen schedule's {key}={frozen}. "
+                    "A replay does not get to restate what was offered; drop the flag.")
+
         print(f"replaying frozen schedule {args.schedule_in} ({len(schedule.entries)} entries)", file=sys.stderr)
         return schedule, corpus
+
+    missing = [flag for flag, attr in (("--rps", "rps"), ("--duration", "duration_s"),
+                                       ("--seed", "seed")) if getattr(args, attr) is None]
+    if missing:
+        raise SystemExit(
+            f"generating a schedule requires {', '.join(missing)}. (They are optional only "
+            "with --schedule-in, where the frozen artifact already carries them.)")
 
     builder = build_poisson_schedule if arrival_process == "poisson" else build_steady_schedule
     schedule = builder(args.rps, args.duration_s, args.seed, corpus, long_context=long_context)

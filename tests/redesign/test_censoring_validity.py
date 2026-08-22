@@ -59,12 +59,17 @@ def _rows(n_issued: int, n_censored: int, ttft_ms: float, censored_error="ReadTi
         else:
             samples.append({"request_id": i, "send_time": float(i) * 0.01, "ttft_ms": ttft_ms,
                             "tpot_samples_ms": [], "content_chunk_count": 5, "error": None})
-    return raw, samples
+    # Offsets mirror the send times: these fixtures have no scheduling lag, so
+    # scheduled-offset membership and send-time filtering coincide. The tests
+    # that pull them apart live in test_exact_n_membership.py.
+    offsets = [float(i) * 0.01 for i in range(n_issued)]
+    return raw, samples, offsets
 
 
 def _record(n_censored: int, ttft_ms: float = 300.0, **kw):
-    raw, samples = _rows(N, n_censored, ttft_ms)
-    return headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0, **kw)
+    raw, samples, offsets = _rows(N, n_censored, ttft_ms)
+    return headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0,
+                                  scheduled_offsets=offsets, **kw)
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +124,9 @@ def test_the_first_sessions_saturated_points_would_now_be_censored(rate):
 
 
 def test_no_observations_at_all_is_uncertain_not_a_breach():
-    raw, samples = _rows(N, N, 0.0)
-    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0)
+    raw, samples, offsets = _rows(N, N, 0.0)
+    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0,
+                                    scheduled_offsets=offsets)
     assert record["point_state"] in (CENSORED, UNCERTAIN)
     assert record["ttft_p99_ms"] is None
 
@@ -134,8 +140,9 @@ def test_control_survivor_only_p99_is_refused_above_the_gate():
     """The exact shape of the first session's invalid points: plenty of
     surviving samples, all fast, with the slow ones timed out and gone."""
     n_censored = int(N * 0.33)
-    raw, samples = _rows(N, n_censored, ttft_ms=120.0)
-    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0)
+    raw, samples, offsets = _rows(N, n_censored, ttft_ms=120.0)
+    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0,
+                                    scheduled_offsets=offsets)
 
     survivors = [s for s in samples if s["ttft_ms"] is not None]
     assert len(survivors) > 100, (
@@ -151,7 +158,7 @@ def test_control_survivor_only_p99_is_refused_above_the_gate():
 def test_control_the_old_min_samples_rule_would_have_passed_it():
     """Shows the specific inadequacy, rather than asserting it in prose."""
     n_censored = int(N * 0.33)
-    raw, samples = _rows(N, n_censored, ttft_ms=120.0)
+    raw, samples, offsets = _rows(N, n_censored, ttft_ms=120.0)
     survivors = [s for s in samples if s["ttft_ms"] is not None]
 
     from metrics.point import MIN_TAIL_SAMPLES
@@ -159,7 +166,8 @@ def test_control_the_old_min_samples_rule_would_have_passed_it():
     assert len(survivors) >= MIN_TAIL_SAMPLES, (
         "the old n>=100 gate would have blessed this point"
     )
-    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0)
+    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0,
+                                    scheduled_offsets=offsets)
     assert record["point_state"] == CENSORED, "the new gate must not"
 
 
@@ -180,8 +188,9 @@ def test_error_categories_are_reported_separately_from_the_rate():
     """The rate decides whether a p99 may be published; the categories say
     whether the cause was the server or the client. A run that hit EMFILE is a
     finding about the instrument, not about saturation."""
-    raw, samples = _rows(N, 9, 300.0, censored_error="ConnectError: refused")
-    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0)
+    raw, samples, offsets = _rows(N, 9, 300.0, censored_error="ConnectError: refused")
+    record = headline_point_metrics(raw, samples, _schedule_provenance(), warmup_n_s=0.0,
+                                    scheduled_offsets=offsets)
     assert record["error_categories"] == {"ConnectError": 9}
     assert record["ttft_censoring_rate"] == pytest.approx(9 / N)
 

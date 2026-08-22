@@ -37,9 +37,26 @@ choosing a number over the evidence.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
-from metrics.headline_point import CENSORED, OVER, UNCERTAIN, UNDER
+from loadgen.headline_schedule import HEADLINE_SCHEDULE_SCHEME_VERSION
+from metrics.headline_point import (
+    CENSORED,
+    CENSORING_HARD_GATE,
+    HEADLINE_EVIDENCE,
+    HEADLINE_POINT_RECORD_VERSION,
+    OVER,
+    UNCERTAIN,
+    UNDER,
+)
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+HEADLINE_WORKLOAD_PATH = (REPO_ROOT / "benchmarks" / "workloads" / "week2_headline"
+                          / "canonical_v1.json")
+HEADLINE_POLICY_PATH = (REPO_ROOT / "benchmarks" / "workloads" / "week2_headline"
+                        / "repeat_policy.json")
 
 # A repeat that could not measure anything is never pooled with ones that
 # could -- averaging a censored repeat into valid ones manufactures a clean
@@ -58,6 +75,34 @@ class RepeatPolicy:
     n_max: int = 5000
     max_repeats_authorized: int = 3
     max_ttft_p99_spread_ms: float | None = None
+    # Which artifacts are even eligible. Deliberately has NO default: a policy
+    # that does not say which workload defines the headline cannot be used to
+    # classify one, and defaulting it would reintroduce exactly the fail-open
+    # this field exists to close.
+    headline: HeadlineEvidenceSpec | None = None
+
+    @classmethod
+    def from_frozen(cls, policy_path: Path | str = HEADLINE_POLICY_PATH,
+                    workload_path: Path | str = HEADLINE_WORKLOAD_PATH) -> "RepeatPolicy":
+        """The production constructor: every value from a recorded decision."""
+        raw = json.loads(Path(policy_path).read_text(encoding="utf-8"))["policy"]
+        return cls(
+            min_valid_repeats=int(raw["min_valid_repeats"]),
+            require_unanimous=bool(raw["require_unanimous"]),
+            n_per_run=int(raw["n_per_run"]),
+            n_max=int(raw["n_max"]),
+            max_repeats_authorized=int(raw["max_repeats_authorized"]),
+            max_ttft_p99_spread_ms=raw["max_ttft_p99_spread_ms"],
+            headline=HeadlineEvidenceSpec.from_frozen(workload_path, policy_path),
+        )
+
+    def require_headline_spec(self) -> HeadlineEvidenceSpec:
+        if self.headline is None:
+            raise NotHeadlineEvidence(
+                "this RepeatPolicy states no headline evidence spec, so it cannot verify that a "
+                "record belongs to the headline workload. Build it with "
+                "RepeatPolicy.from_frozen(), or pass an explicit HeadlineEvidenceSpec.")
+        return self.headline
 
     def to_dict(self) -> dict:
         return {
@@ -67,6 +112,13 @@ class RepeatPolicy:
             "n_max": self.n_max,
             "max_repeats_authorized": self.max_repeats_authorized,
             "max_ttft_p99_spread_ms": self.max_ttft_p99_spread_ms,
+            "headline_evidence_spec": (
+                None if self.headline is None else {
+                    "membership_id": self.headline.membership_id,
+                    "percentile_population_n": self.headline.percentile_population_n,
+                    "schedule_scheme_version": self.headline.schedule_scheme_version,
+                    "record_version": self.headline.record_version,
+                }),
         }
 
     def evidence_ceiling_reached(self, n_used: int, repeats_used: int) -> bool:
@@ -104,6 +156,7 @@ class PointAggregate:
             "per_repeat": [
                 {
                     "repeat_id": r.get("repeat_id"),
+                    "evidence_class": r.get("evidence_class"),
                     "state": r.get("point_state"),
                     "reason": r.get("point_state_reason"),
                     "ttft_p99_ms": r.get("ttft_p99_ms"),
@@ -126,6 +179,137 @@ class PointAggregate:
         }
 
 
+class NotHeadlineEvidence(ValueError):
+    """A record that did not prove it may define the Session #2 breach."""
+
+
+@dataclass(frozen=True)
+class HeadlineEvidenceSpec:
+    """What a record must **prove** before it may define the breach.
+
+    Fail-closed by construction. The classifier does not ask "is there
+    anything wrong with this record"; it asks "has this record demonstrated
+    every property of session #2 headline evidence", and anything unproven —
+    missing, null, or unrecognised — fails.
+
+    That direction matters because `records_by_lambda` is assembled from files
+    on disk after teardown, in a directory tree where the scout family's
+    filenames (`headline_r1_rps2.metrics.json`) are indistinguishable from the
+    headline family's, and where session #1's promoted artifacts sit two
+    directories away. A permissive default here is not a small bug: it is the
+    breach number being computed from the wrong workload while every field in
+    the report still looks plausible.
+    """
+
+    membership_id: str
+    percentile_population_n: int
+    schedule_scheme_version: str = HEADLINE_SCHEDULE_SCHEME_VERSION
+    record_version: str = HEADLINE_POINT_RECORD_VERSION
+
+    @classmethod
+    def from_frozen(cls, workload_path: Path | str = HEADLINE_WORKLOAD_PATH,
+                    policy_path: Path | str = HEADLINE_POLICY_PATH) -> "HeadlineEvidenceSpec":
+        """Read the expectation off the frozen artifacts, not off a constant.
+
+        The canonical workload is the only authority on which membership is
+        the headline one, and `repeat_policy.json` is the only authority on N.
+        Hard-coding either here would let the code and the frozen inputs drift
+        apart silently — and the drift would be invisible precisely when it
+        mattered, because both would still be internally consistent.
+        """
+        workload = json.loads(Path(workload_path).read_text(encoding="utf-8"))
+        policy = json.loads(Path(policy_path).read_text(encoding="utf-8"))
+        return cls(membership_id=workload["membership_id"],
+                   percentile_population_n=int(policy["policy"]["n_per_run"]))
+
+
+def _headline_evidence_only(records: list[dict], spec: HeadlineEvidenceSpec) -> None:
+    """Refuse anything that has not proven it is session #2 headline evidence.
+
+    Every check is an equality against `spec`, and every absent field is a
+    failure rather than a pass. The rejected populations this is built for:
+
+      scout_diagnostic     same reader, same `point_state` vocabulary, N=500
+                           at one repeat -- a ~34% per-run flip rate, which
+                           locates a bracket and cannot support a verdict
+      secondary/adversarial  never define the breach (lock 6A)
+      session #1 records   produced by the frozen `metrics/point.py`; they
+                           carry no `record_version`, no `evidence_class`, and
+                           a different percentile convention
+      scout membership     a scout schedule pushed through a headline entry
+                           point gets the headline stamp but keeps the scout
+                           workload -- caught on membership, not on the stamp
+    """
+    for record in records:
+        problems: list[str] = []
+
+        evidence_class = record.get("evidence_class")
+        if evidence_class != HEADLINE_EVIDENCE:
+            problems.append(
+                f"evidence_class={evidence_class!r}, expected {HEADLINE_EVIDENCE!r}")
+        # Checked independently of `evidence_class` rather than derived from
+        # it: the two are written together, so requiring both means a record
+        # hand-edited to flip one still fails on the other.
+        if record.get("may_define_headline_breach") is not True:
+            problems.append(
+                f"may_define_headline_breach={record.get('may_define_headline_breach')!r}, "
+                "expected True")
+
+        if record.get("record_version") != spec.record_version:
+            problems.append(
+                f"record_version={record.get('record_version')!r}, expected "
+                f"{spec.record_version!r} (a session #1 record carries none)")
+
+        if record.get("schedule_scheme_version") != spec.schedule_scheme_version:
+            problems.append(
+                f"schedule_scheme_version={record.get('schedule_scheme_version')!r}, expected "
+                f"{spec.schedule_scheme_version!r}")
+
+        membership = record.get("canonical_prompt_membership_id")
+        if membership != spec.membership_id:
+            problems.append(
+                f"canonical_prompt_membership_id={_short(membership)}, expected "
+                f"{_short(spec.membership_id)} -- this is not the headline workload")
+
+        population = record.get("percentile_population_n")
+        if population != spec.percentile_population_n:
+            problems.append(
+                f"percentile_population_n={population!r}, expected "
+                f"{spec.percentile_population_n}")
+
+        # Lock 3A is only enforceable if the record says which server process
+        # produced it. A spot preemption forces a vLLM restart mid-family, so
+        # this is the expected failure mode rather than a hypothetical.
+        if not record.get("process_epoch"):
+            problems.append(
+                "process_epoch is absent -- without it, repeats from different vLLM "
+                "processes cannot be told apart (lock 3A)")
+
+        # Presence, not just truth. `.get(key, True)` would let a record that
+        # never computed a gate pass the gate.
+        for gate in ("schedule_delivery_ok", "exact_n_honoured"):
+            if gate not in record:
+                problems.append(f"{gate} is absent -- the gate was never computed")
+            elif not isinstance(record[gate], bool):
+                problems.append(f"{gate}={record[gate]!r} is not a boolean")
+        if not isinstance(record.get("ttft_censoring_rate"), (int, float)):
+            problems.append(
+                f"ttft_censoring_rate={record.get('ttft_censoring_rate')!r} is not a number")
+
+        if problems:
+            raise NotHeadlineEvidence(
+                f"repeat_id={record.get('repeat_id')!r} is not session #2 headline evidence "
+                "and may not enter the classification family:\n  - "
+                + "\n  - ".join(problems)
+                + "\nOnly the controlled Poisson headline family defines the breach "
+                  "(repeat_policy.json, secondary_scope.headline_defining). Diagnostic and "
+                  "session #1 records stay readable through their own analysis paths.")
+
+
+def _short(value) -> str:
+    return f"{value[:16]}..." if isinstance(value, str) and len(value) > 16 else repr(value)
+
+
 def _independent_repeats(records: list[dict]) -> None:
     """Refuse anything that is not actually a set of independent repeats.
 
@@ -146,6 +330,16 @@ def _independent_repeats(records: list[dict]) -> None:
             "membership exactly; re-drawing prompts across repeats reintroduces the realized-"
             "tail variance the canonical construction removes")
 
+    epochs = {r.get("process_epoch") for r in records}
+    if len(epochs) > 1:
+        raise ValueError(
+            f"repeats span {len(epochs)} vLLM process epochs {sorted(map(str, epochs))} -- "
+            "lock 3A forbids combining them into one classification family. A restart resets "
+            "the engine state the repeats were meant to hold constant, so process-"
+            "initialization variance would enter one repeat and not the others, silently, at "
+            "exactly the boundary where the verdict is decided. Re-drive all repeats in the "
+            "fresh process; the schedules are frozen, so only meter time is lost.")
+
     if len(records) > 1:
         arrivals = [r.get("arrival_seed") for r in records]
         assignments = [r.get("assignment_seed") for r in records]
@@ -162,6 +356,7 @@ def classify_point(records: list[dict], policy: RepeatPolicy,
     """Aggregate one nominal λ's repeats into a single state."""
     if not records:
         raise ValueError("classify_point: no repeat records")
+    _headline_evidence_only(records, policy.require_headline_spec())
     _independent_repeats(records)
 
     lambdas = {r["nominal_lambda_rps"] for r in records}
@@ -171,11 +366,15 @@ def classify_point(records: list[dict], policy: RepeatPolicy,
 
     valid, excluded = [], []
     for record in records:
+        # Direct indexing, not `.get(key, True)`: `_headline_evidence_only`
+        # has already proven both keys are present and boolean, and a default
+        # here would be a second place for a missing gate to read as a passing
+        # one.
         if record.get("point_state") not in MEASURABLE_STATES:
             excluded.append(record)
-        elif not record.get("schedule_delivery_ok", True):
+        elif not record["schedule_delivery_ok"]:
             excluded.append(record)
-        elif not record.get("exact_n_honoured", True):
+        elif not record["exact_n_honoured"]:
             excluded.append(record)
         else:
             valid.append(record)
@@ -183,9 +382,19 @@ def classify_point(records: list[dict], policy: RepeatPolicy,
     p99s = [r["ttft_p99_ms"] for r in valid if r.get("ttft_p99_ms") is not None]
     spread = (max(p99s) - min(p99s)) if len(p99s) > 1 else None
 
+    # Derived from the censoring rate, not read from a stamped boolean.
+    #
+    # `r.get("tail_censoring_warning")` returned None for a record that never
+    # stamped the flag, None is falsy, and the point then finalized with no
+    # review -- the same `.get(key, truthy)` shape this module removed
+    # elsewhere, surviving in the one gate that decides whether a boundary
+    # point may finalize. `ttft_censoring_rate` is proven present and numeric
+    # by `_headline_evidence_only`, so the warning can be recomputed instead
+    # of trusted.
     pending = [
         r.get("repeat_id") for r in valid
-        if r.get("tail_censoring_warning") and r.get("tail_censoring_review_status") != "COMPLETE"
+        if 0.0 < float(r["ttft_censoring_rate"]) <= CENSORING_HARD_GATE
+        and r.get("tail_censoring_review_status") != "COMPLETE"
     ]
 
     aggregate = PointAggregate(
@@ -256,6 +465,21 @@ def resolve_breach(records_by_lambda: dict[float, list[dict]], policy: RepeatPol
     Doing it in one pass would either apply the gate everywhere (rejecting
     points far from the crossing for irrelevant censoring) or nowhere.
     """
+    # The caller builds `records_by_lambda` by hand after teardown -- there is
+    # no loader in the repo that does it -- so the key is the one part of the
+    # input nothing has validated. Everything below reports at the key, so a
+    # mis-keyed entry would publish a breach interval naming a lambda that no
+    # record was measured at.
+    for lam, recs in records_by_lambda.items():
+        for record in recs:
+            actual = record.get("nominal_lambda_rps")
+            if actual is None or abs(float(actual) - float(lam)) > 1e-9:
+                raise ValueError(
+                    f"records_by_lambda[{lam}] contains a record measured at "
+                    f"nominal_lambda_rps={actual!r}. The breach interval is reported at the "
+                    "key, so a mis-keyed record would publish a lambda nothing was measured "
+                    "at.")
+
     provisional = {lam: classify_point(recs, policy)
                    for lam, recs in sorted(records_by_lambda.items())}
 
@@ -301,7 +525,10 @@ def resolve_breach(records_by_lambda: dict[float, list[dict]], policy: RepeatPol
             "resolution": "NO_BREACH_OBSERVED",
             "breach_interval": None,
             "message": "no λ was classified OVER. The swept range does not contain the "
-                       "crossing; extend upward before spending more evidence on these points.",
+                       "crossing. This is an OFFLINE conclusion about a finished session, "
+                       "not an instruction to extend the sweep live -- inventing λ values on "
+                       "the meter is forbidden (lock 5A). A wider range needs regenerated "
+                       "schedules, a new benchmark SHA and a fresh session.",
         })
         return result
 
@@ -309,8 +536,10 @@ def resolve_breach(records_by_lambda: dict[float, list[dict]], policy: RepeatPol
         result.update({
             "resolution": "NO_UNDER_ANCHOR",
             "breach_interval": None,
-            "message": "no λ was classified UNDER. The crossing is at or below the lowest swept "
-                       "point; extend downward.",
+            "message": "no λ was classified UNDER. The crossing is at or below the lowest "
+                       "swept point. Offline conclusion only: extending the range means "
+                       "regenerated schedules and a new session, never a live decision "
+                       "(lock 5A).",
         })
         return result
 

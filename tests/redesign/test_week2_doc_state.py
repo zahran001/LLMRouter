@@ -268,6 +268,11 @@ STALE_CONCEPTS = {
     ),
     "post-hoc warmup re-filtering": _concept(
         r"re-?filter\w*\s+(?:over\s+)?(?:the\s+)?(?:committed\s+|headline\s+)?sidecars"
+        # The same claim with none of the same words: "re-running
+        # compute_point_metrics over the committed sidecars". This is the form
+        # that survived in loadgen/_cli.py, above the constant the scout path
+        # used.
+        r"|re-?run\w*[^\n]{0,80}over\s+(?:the\s+)?committed\s+sidecars"
         r"|resolve\s+(?:the\s+)?warmup\s+(?:after|later)"
         r"|--warmup-n\b"
         # The four survivors of the first fix: the *rows* were corrected while
@@ -281,6 +286,17 @@ STALE_CONCEPTS = {
         r"must not be (?:applied|used)",
         r"refuses it",
         r"never re-?filtered after the fact",
+    ),
+    # Added 2026-08-21. The Tier A defect was a *shell* line, not a document:
+    # `remote_loadgen.sh` read `provenance.master_seed` from a schedule format
+    # that does not carry it. A scan that only reads Markdown could never have
+    # seen it, and the comment above it asserted the replay contract that made
+    # it look correct.
+    "legacy master_seed on a replay path": _concept(
+        r"master_seed",
+        r"loadgen-schedule-v1|legacy|v1 provenance|generation",
+        r"do(?:es)? not carry it",
+        r"never asks",
     ),
     "prefix caching enabled": _concept(
         r"prefix cach(?:e|ing)\s+(?:is\s+)?enabled|enable_prefix_caching\s*=\s*True",
@@ -327,13 +343,23 @@ STALE_CONCEPTS = {
         r"platform-dispatched",
     ),
     "session #1 Stage A/B sweep": _concept(r"\bStage [AB]\b"),
+    # Both take an explicit prohibition as a denial. A document that names the
+    # forbidden action IN ORDER TO forbid it is the correct way to write the
+    # rule down; without this, stating the rule at all fails the scan, which
+    # pushes the rule out of the documents instead of out of the behaviour.
     "on-meter lambda improvisation": _concept(
-        r"extend\s+(?:the sweep\s+)?upward|add lower points"
+        r"extend\s+(?:the sweep\s+)?upward|add lower points",
+        r"\bforbidden\b",
+        r"NOT AUTHORIZED",
+        r"(?:must not|may not|never)\s+\w+",
     ),
     "mid-session schedule generation": _concept(
         r"generate\s+(?:fine|Stage B)\s+schedules"
         r"|schedules?[^\n]{0,40}mid-session"
-        r"|mid-session[^\n]{0,40}schedules?"
+        r"|mid-session[^\n]{0,40}schedules?",
+        r"\bforbidden\b",
+        r"new benchmark SHA",
+        r"(?:must not|may not|never)\s+\w+",
     ),
 }
 
@@ -368,12 +394,19 @@ _LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 _FENCE = re.compile(r"^\s*(?:```|~~~)")
 
 
-def iter_units(text: str) -> list:
+def iter_units(text: str, code: bool = False) -> list:
     """Split a document into (heading, unit) pairs.
 
     A *unit* is the smallest block a reader takes in as one claim: a table row,
     a list item, a paragraph, a fenced block. It is the largest scope a local
     exemption may cover -- one row may not vouch for the next.
+
+    `code=True` for Python and shell sources, where `#` starts a COMMENT rather
+    than a heading. Without it every comment line is read as a heading and its
+    text is never scanned at all -- which would make the whole active-code scan
+    inert while looking green, since a stale claim in a comment is exactly what
+    it exists to find. (Found by its own control, which is why the control is
+    built from the real pre-fix text.)
     """
     units: list = []
     heading = ""
@@ -399,7 +432,7 @@ def iter_units(text: str) -> list:
         if in_fence:
             cur.append((i, line))
             continue
-        if line.startswith("#"):
+        if line.startswith("#") and not code:
             close()
             heading = line
             continue
@@ -418,10 +451,10 @@ def iter_units(text: str) -> list:
     return units
 
 
-def scan_text(label: str, text: str) -> list:
+def scan_text(label: str, text: str, code: bool = False) -> list:
     """Every stale claim in one document that nothing local marks as dead."""
     violations = []
-    for heading, unit in iter_units(text):
+    for heading, unit in iter_units(text, code=code):
         if HISTORICAL_HEADING.search(heading):
             continue  # rule 1: the heading owns its whole section
         unit_text = "\n".join(line for _, line in unit)
@@ -669,3 +702,114 @@ def test_every_week2_process_document_is_in_the_index(rows):
         "WEEK2_DOC_INDEX.md, so nothing says whether they are current. Add a "
         f"row, or add them to the not-Week-2 allowlist in this test: {unindexed}"
     )
+
+
+# ---------------------------------------------------------------------------
+# T-DOC-7 -- the scan covers ACTIVE CODE, not only Markdown
+# ---------------------------------------------------------------------------
+#
+# Added 2026-08-21, because the defect that triggered this pass lived in a
+# shell script. `remote_loadgen.sh` read `provenance.master_seed` from a
+# schedule format that has never carried it, and `loadgen/_cli.py` documented
+# the post-hoc warmup re-filter -- lock 4A's forbidden resolution -- in a
+# comment sitting directly above the constant the scout path used. Both were
+# invisible to a scanner that only globs `*.md`.
+#
+# Scope is deliberately narrow: the modules and scripts a session #2 stage
+# actually executes. The legacy session #1 generators are excluded by name and
+# with a reason, not by a wildcard -- they are correct under their own frozen
+# semantics, and rewriting them to satisfy this scan would be falsifying
+# history to make a test green.
+
+ACTIVE_CODE = (
+    "loadgen/_cli.py",
+    "loadgen/redesign_point.py",
+    "loadgen/headline_schedule.py",
+    "loadgen/prefix_cache.py",
+    "loadgen/repeat_runner.py",
+    "metrics/headline_point.py",
+    "metrics/floor_point.py",
+    "metrics/classification.py",
+    "scripts/gpu_session/remote_loadgen.sh",
+    "scripts/gpu_session/run_on_instance.sh",
+    "scripts/gpu_session/drive_scenario_point.py",
+    "scripts/gpu_session/drive_headline_family.py",
+    "scripts/gpu_session/drive_unloaded_floor.py",
+    "scripts/gpu_session/scenario_contract.py",
+    "scripts/gpu_session/check_scenario.py",
+    "scripts/gpu_session/verify_prefix_cache_disabled.py",
+    "scripts/generate_secondary_scenarios.py",
+)
+
+# Excluded, each for a stated reason. A wildcard here would let a genuinely
+# stale active file hide behind a pattern.
+CODE_EXCLUDED = {
+    "metrics/point.py": "frozen session #1 reader; its semantics ARE the stale ones, and "
+                        "session #1's promoted artifacts are read under them",
+    "scripts/generate_schedules.py": "session #1 Stage A/B generator, kept to replay history",
+    "scripts/generate_stage_a_schedules.py": "same",
+    "scripts/compute_point_metrics.py": "offline recompute for session #1 records",
+    "loadgen/steady.py": "v1 entry point; the session #2 steady reference is frozen "
+                         "and driven through drive_scenario_point.py",
+    "loadgen/adversarial.py": "v1 entry point; the session #2 adversarial scenario is frozen",
+    "loadgen/poisson.py": "v1 entry point, used for the frozen v1 secondary replays",
+}
+
+
+def test_active_code_does_not_assert_stale_headline_semantics():
+    violations = []
+    for rel in ACTIVE_CODE:
+        path = REPO_ROOT / rel
+        assert path.exists(), f"{rel} is in the active-code scan list but does not exist"
+        violations += scan_text(rel, path.read_text(encoding="utf-8"), code=True)
+
+    assert not violations, (
+        "active code asserts semantics the redesign superseded. A stale comment above a "
+        "live constant is how the Tier A defect survived review:\n  "
+        + "\n  ".join(violations)
+    )
+
+
+def test_the_active_code_scan_list_covers_every_session_2_driver():
+    """A driver that is not scanned is a driver whose comments nobody checks."""
+    gpu_session = REPO_ROOT / "scripts" / "gpu_session"
+    drivers = {f"scripts/gpu_session/{p.name}" for p in gpu_session.glob("*.py")}
+    drivers |= {f"scripts/gpu_session/{p.name}" for p in gpu_session.glob("*.sh")}
+    unscanned = drivers - set(ACTIVE_CODE) - set(CODE_EXCLUDED)
+    # Instance lifecycle scripts decide no measurement semantics.
+    lifecycle = {"scripts/gpu_session/create_instance.sh",
+                 "scripts/gpu_session/teardown_week2.sh",
+                 "scripts/gpu_session/pull_artifacts.sh",
+                 "scripts/gpu_session/setup_and_launch_vllm.sh",
+                 "scripts/gpu_session/tunnel.sh"}
+    unscanned -= lifecycle
+    assert not unscanned, (
+        f"these session #2 scripts are neither scanned nor explicitly excluded: {unscanned}")
+
+
+def test_control_the_code_scan_catches_the_defect_it_was_built_from():
+    """Non-vacuity, against the two real pre-fix texts.
+
+    Both are quoted from what was actually in the tree on 2026-08-21, not
+    invented to match the pattern -- the mistake C-DOC-3 was rebuilt to avoid.
+    """
+    shell_defect = (
+        '  # Offered RPS / duration / seed come from the schedule\'s OWN provenance,\n'
+        '  # never from the filename or a hand-typed flag.\n'
+        '  seed="$(py -c \'import json,sys; '
+        'print(json.load(open(sys.argv[1]))["provenance"]["master_seed"])\' "$schedule")"\n'
+    )
+    assert scan_text("remote_loadgen.sh", shell_defect, code=True), (
+        "the code scan does not catch the master_seed extraction that broke Tier A")
+
+    comment_defect = (
+        "# [CALIBRATE], same placeholder the committed Stage A schedules were\n"
+        "# sized against. The real N comes off the Block F transient plot; because\n"
+        "# the filter is metrics-side and time-based, resolving N later means\n"
+        "# re-running compute_point_metrics.py over the committed sidecars, NOT\n"
+        "# re-running anything on the GPU.\n"
+        "DEFAULT_WARMUP_N_S = 10.0\n"
+    )
+    assert scan_text("_cli.py", comment_defect, code=True), (
+        "the code scan does not catch the post-hoc re-filter comment that sat above the "
+        "constant the scout path used")

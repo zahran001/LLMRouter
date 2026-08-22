@@ -50,6 +50,77 @@ ENABLED = "PREFIX_CACHING_ENABLED"
 AMBIGUOUS = "AMBIGUOUS"
 
 
+def require_prefix_cache_disabled(verdict_path) -> dict:
+    """L6, enforced by the drivers rather than by memory.
+
+    Lives here rather than in one driver so Tier A and Tier B cannot diverge
+    on what counts as evidence. A second copy could drift into accepting a
+    verdict the other rejects, and the whole point of the gate is that it
+    cannot be satisfied by remembering to run something.
+
+    `AMBIGUOUS` is refused alongside `ENABLED`: "not obviously cached" is not
+    evidence of "not cached".
+    """
+    import json
+    from pathlib import Path
+
+    verdict_path = Path(verdict_path)
+    if not verdict_path.exists():
+        raise SystemExit(
+            f"REFUSED: no prefix-cache verdict at {verdict_path}.\n"
+            "Run scripts/gpu_session/verify_prefix_cache_disabled.py first. Exact prompt "
+            "replay is this experiment's central control; a live cache changes the cost it "
+            "controls as a function of run order (WEEK2_PLAN.md 10.8).")
+    verdict = json.loads(verdict_path.read_text(encoding="utf-8"))
+    if verdict.get("verdict") != DISABLED:
+        raise SystemExit(
+            f"REFUSED: prefix-cache verdict is {verdict.get('verdict')!r}, not {DISABLED}.\n"
+            "Relaunch vLLM with DISABLE_PREFIX_CACHING=1 and re-verify.")
+    return verdict
+
+
+# Prometheus' standard process metric. vLLM exposes it, and it changes iff the
+# server process was restarted -- the event lock 3A cares about, and the one a
+# spot preemption forces.
+_PROCESS_START_RE = None
+
+
+def server_process_epoch(base_url: str, override: str | None = None) -> str:
+    """An identifier for the vLLM process a point is being driven against.
+
+    Read from the server rather than passed, so it cannot be stale: if vLLM is
+    restarted mid-session the next point picks up a different value on its own,
+    and `metrics/classification.py` refuses to combine epochs offline.
+
+    Lives beside the prefix-cache gate because both are "ask the running server
+    what it actually is" checks, and both must be identical in every driver --
+    the floor, the scout, the steady reference and the headline family all
+    stamp the same value or the epoch cannot be compared across them.
+
+    Falls back to an explicit token, then to a marker that is deliberately NOT
+    a plausible epoch: a driver that could not identify the process must not
+    hand out an identifier that looks like it did.
+    """
+    global _PROCESS_START_RE
+    if override:
+        return override
+    import re
+
+    import httpx
+
+    if _PROCESS_START_RE is None:
+        _PROCESS_START_RE = re.compile(r"^process_start_time_seconds\s+([\d.eE+-]+)", re.M)
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            text = client.get(f"{base_url.rstrip('/')}/metrics").text
+        match = _PROCESS_START_RE.search(text)
+        if match:
+            return f"vllm-start-{float(match.group(1)):.0f}"
+    except Exception:  # noqa: BLE001 -- recorded as unknown, never guessed
+        pass
+    return "UNKNOWN-PROCESS-EPOCH"
+
+
 @dataclass(frozen=True)
 class ProbeResult:
     """One prompt, served twice, at concurrency 1."""
@@ -123,7 +194,11 @@ def evaluate(probes: list[ProbeResult],
         reasons.append(f"Prometheus reports 0 hits over {metrics_queries} queries")
 
     if engine_config_flag is True:
-        reasons.append("the engine config line reports enable_prefix_caching=True")
+        # Reporting the flag, not endorsing it: prefix caching must not be
+        # enabled for the controlled headline (L6, WEEK2_PLAN.md 10.8), and
+        # this branch exists to say so loudly.
+        reasons.append("the engine config line reports enable_prefix_caching=True, which "
+                       "must not be enabled for the controlled headline")
         verdict = ENABLED
     elif engine_config_flag is False:
         reasons.append("the engine config line reports enable_prefix_caching=False")

@@ -69,8 +69,27 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | R4–R11 implementation, regression + controls | **Done** — `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` |
 | R-DOC documentation authority cleanup | **Done** — `WEEK2_DOC_INDEX.md` |
 | Hard Stop R-DOC — human verdict on documentation governance | **PASSED 2026-08-19** (human verdict) |
-| Hard Stop R-PREGPU | **Next** — R-DOC is cleared; the benchmark SHA is cut from this tree |
+| Tier A execution-path remediation | **Done 2026-08-21** — scout and headline share one session #2 measurement path |
+| Final pre-GPU remediation, Phases A–G | **Done 2026-08-21** — `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md` |
+| Hard Stop R-PREGPU | **Next** — R-DOC needs re-running too: this pass changed an executable document |
 | GPU session #2 (human-owned) | **Not run.** No instance exists |
+
+### What the final pre-GPU pass changed
+
+| Phase | Closed |
+|---|---|
+| A | Headline classification **fails closed**. A record must prove evidence class, authority flag, record version, schedule scheme, canonical membership, N, and the presence of both validity gates. Missing provenance is refused, never defaulted |
+| B | The p99 population comes from the **frozen schedule** (`scheduled_offset >= warmup_boundary_s`), not from wall-clock send time. Late warmup sends can no longer enter the estimator; late canonical sends can no longer leave it |
+| C | The unloaded floor has a real command: `run_on_instance.sh floor`. Canonical membership, concurrency 1, sequential, no arrival process |
+| D | Steady and adversarial are **frozen and committed**. Nothing is generated on the meter. Their operating points were human decisions taken 2026-08-21, because §2.1 names a λ for neither |
+| E | One contract test drives the runbook as a system, plus the cross-role controls |
+| F | The stale-semantic scan now covers **active code**, not only Markdown — the defect that opened this pass was a shell line |
+
+**Two locks gained enforcement rather than only prose.** Lock 3A (no
+cross-process-epoch families) was unenforceable: no record carried a process
+epoch and `vllm_restarted_between_repeats` was a hardcoded `False`. Both are now
+measured. Lock 4A's forbidden re-filter is refused in both directions — a warmup
+value above *or* below the frozen boundary.
 
 ### Locks added at Hard Stop R3
 

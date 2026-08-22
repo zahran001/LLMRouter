@@ -440,10 +440,33 @@ the end it covers. Worst case if one fires is 18 minutes at λ=0.5.
 
 ---
 
+## Superseded numbers — the final pre-GPU remediation moved them
+
+**Everything below this heading predates the 2026-08-21 remediation pass**
+(Phases A–G, `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md`). The evidence it
+records is still the evidence R-DOC was rendered on, but three classes of
+figure in it are now stale, and are corrected here rather than edited in place
+so the R-DOC verdict keeps its original basis:
+
+| Stale in the sections below | Current |
+|---|---|
+| Non-router suite **321 passed** | see the remediation report — the pass added Phases A–F test modules |
+| Schedules committed: **15 headline + 6 scout + 5 secondary = 26** | **32** — plus 5 steady and 1 adversarial (`SECONDARY_SCENARIOS_MANIFEST.json`) |
+| "the only thing left is the GPU run" | Two hard stops remain: **R-DOC must be re-run** (this pass changed an executable document) and **R-PREGPU** is still unrendered |
+| Benchmark SHA cut at the R-DOC closeout | Superseded: the remediation pass is a new commit and therefore a **new benchmark SHA** |
+
+The four scenarios lock 6A keeps in scope are all executable from committed
+artifacts now; at the time this document was written, two of them had no
+committed input at all and the unloaded floor had no command.
+
+---
+
 ## Verdict
 
 ```
 HARD STOP R-DOC:    PASS -- human verdict, 2026-08-19
+                    RE-RUN REQUIRED -- the 2026-08-21 remediation changed
+                    WEEK2_GPU_SESSION_2_PLAN.md, an EXECUTABLE document
 HARD STOP R-PREGPU: NEXT -- not yet rendered
 ```
 

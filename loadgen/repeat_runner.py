@@ -79,8 +79,17 @@ class RepeatRunReport:
     drain_events: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
+        # Computed from the epochs the points actually recorded, never
+        # asserted. This was a hardcoded `False` -- the same inert-check
+        # anti-pattern the drain probe exists to avoid ("green forever,
+        # proving nothing"), sitting on the one claim lock 3A depends on.
+        # `None` when no point reported an epoch: unknown is not "no".
+        epochs = [p.get("process_epoch") for p in self.points if p.get("process_epoch")]
+        restarted = None if not epochs else len(set(epochs)) > 1
+
         return {
-            "vllm_restarted_between_repeats": False,
+            "vllm_restarted_between_repeats": restarted,
+            "process_epochs_observed": sorted(set(epochs)),
             "repeat_separation": "drain to in-flight = 0, then the next repeat's own "
                                  "time-based warmup",
             "plans": self.plans,

@@ -45,11 +45,8 @@ Usage (on the instance):
 from __future__ import annotations
 
 import argparse
-import asyncio
-import json
 import re
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -60,15 +57,22 @@ import httpx  # noqa: E402
 
 from loadgen.corpus import load_corpus  # noqa: E402
 from loadgen.headline_schedule import load_headline_schedule  # noqa: E402
-from loadgen.log import RunLogger, SampleLogger, read_log, read_samples  # noqa: E402
-from loadgen.prefix_cache import DISABLED  # noqa: E402
+from loadgen.prefix_cache import (  # noqa: E402
+    require_prefix_cache_disabled,
+    server_process_epoch,
+)
+from loadgen.redesign_point import (  # noqa: E402
+    BASELINE_CONCURRENCY_CAP,
+    HEADLINE_EVIDENCE,
+    RedesignScheduleError,
+    drive_redesign_point,
+    report_point,
+    require_exact_n,
+)
 from loadgen.repeat_runner import RepeatPlan, RepeatRunner  # noqa: E402
-from loadgen.scheduler import OpenLoopScheduler  # noqa: E402
 from metrics.artifacts import write_json_artifact  # noqa: E402
-from metrics.headline_point import headline_point_metrics  # noqa: E402
 
 DEFAULT_SCHEDULE_DIR = REPO_ROOT / "benchmarks" / "schedules" / "week2_redesign" / "headline"
-BASELINE_CONCURRENCY_CAP = 3000
 
 RUNNING_RE = re.compile(r"^vllm:num_requests_running\{[^}]*\}\s+([\d.eE+-]+)", re.M)
 WAITING_RE = re.compile(r"^vllm:num_requests_waiting\{[^}]*\}\s+([\d.eE+-]+)", re.M)
@@ -102,22 +106,6 @@ class ServerInflightProbe:
         self.client.close()
 
 
-def require_prefix_cache_disabled(verdict_path: Path) -> dict:
-    """L6, enforced by the driver rather than by memory."""
-    if not verdict_path.exists():
-        raise SystemExit(
-            f"REFUSED: no prefix-cache verdict at {verdict_path}.\n"
-            "Run scripts/gpu_session/verify_prefix_cache_disabled.py first. Exact prompt "
-            "replay is this experiment's central control; a live cache changes the cost it "
-            "controls as a function of run order (WEEK2_PLAN.md 10.8).")
-    verdict = json.loads(verdict_path.read_text(encoding="utf-8"))
-    if verdict.get("verdict") != DISABLED:
-        raise SystemExit(
-            f"REFUSED: prefix-cache verdict is {verdict.get('verdict')!r}, not {DISABLED}.\n"
-            "Relaunch vLLM with DISABLE_PREFIX_CACHING=1 and re-verify.")
-    return verdict
-
-
 def discover(schedule_dir: Path, repeat_ids: list[int], lambdas: list[float]) -> dict:
     """Load the frozen schedules for the requested (repeat, λ) grid.
 
@@ -145,81 +133,37 @@ def discover(schedule_dir: Path, repeat_ids: list[int], lambdas: list[float]) ->
             "must share membership exactly, or they are not comparable.")
 
     for (repeat_id, lam), (path, schedule) in sorted(found.items()):
-        prov = schedule.provenance
-        if prov["materialized_post_warmup_count"] != prov["post_warmup_target_count"]:
-            raise SystemExit(
-                f"{path.name}: {prov['materialized_post_warmup_count']} post-warmup arrivals, "
-                f"expected exactly {prov['post_warmup_target_count']}. The exact-N contract is "
-                "broken in the frozen artifact; regenerate rather than driving it.")
+        try:
+            require_exact_n(path.name, schedule.provenance)
+        except RedesignScheduleError as exc:
+            raise SystemExit(str(exc)) from exc
 
     return found
 
 
 def drive_point(schedule, corpus, args, out_dir: Path, tag: str) -> dict:
-    """One λ point: drive the complete frozen schedule, then record it."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    raw_path = out_dir / f"{tag}.raw_log.jsonl"
-    samples_path = out_dir / f"{tag}.samples.jsonl"
-    metrics_path = out_dir / f"{tag}.metrics.json"
+    """One λ point: drive the complete frozen schedule, then record it.
 
-    extra_body = json.loads(args.extra_body) if args.extra_body else {}
-    sample_logger = SampleLogger(samples_path)
-    scheduler = OpenLoopScheduler(
-        schedule=schedule,
-        corpus=corpus,
+    The mechanics live in `loadgen/redesign_point.py`, shared with Tier A. All
+    this layer adds is the evidence class: a headline point is the only kind
+    that may define the breach.
+    """
+    record = drive_redesign_point(
+        schedule,
+        corpus,
+        out_dir=out_dir,
+        tag=tag,
+        evidence_class=HEADLINE_EVIDENCE,
         base_url=args.base_url,
-        logger=RunLogger(raw_path),
-        sample_logger=sample_logger,
-        concurrency_cap=args.concurrency_cap,
         model=args.model,
+        schedule_path=schedule_path_of(schedule, args),
+        concurrency_cap=args.concurrency_cap,
         timeout_s=args.timeout_s,
-        capture_samples=True,
-        extra_body=extra_body,
+        extra_body=args.extra_body,
+        warmup_n_s=args.warmup_n_s,
+        process_epoch=args.process_epoch,
     )
-
-    started = time.time()
-    result = asyncio.run(scheduler.run())
-    scheduler.logger.close()
-    sample_logger.close()
-
-    prov = schedule.provenance
-    record = headline_point_metrics(
-        raw_rows=read_log(raw_path),
-        sample_rows=read_samples(samples_path),
-        schedule_provenance=prov,
-        warmup_n_s=args.warmup_n_s if args.warmup_n_s is not None else prov["warmup_boundary_s"],
-        provenance={
-            "tag": tag,
-            "schedule_path": str(schedule_path_of(schedule, args)),
-            "raw_log_path": str(raw_path),
-            "samples_path": str(samples_path),
-            "base_url": args.base_url,
-            "model": args.model,
-            "concurrency_cap": args.concurrency_cap,
-            "timeout_s": args.timeout_s,
-            "wall_clock_s": time.time() - started,
-            "wall_clock_drain_s": result.wall_clock_drain_s,
-            "n_scheduled_driven": result.n_scheduled,
-            "n_sent": result.n_sent,
-            "n_shed": result.n_shed,
-            "n_errored": result.n_errored,
-        },
-    )
-    write_json_artifact(metrics_path, record)
-
-    print(f"    issued {result.n_sent + result.n_errored}/{result.n_scheduled} "
-          f"(shed {result.n_shed}, errored {result.n_errored})  "
-          f"state={record['point_state']}  "
-          f"p99={record['ttft_p99_ms'] if record['ttft_p99_ms'] is None else round(record['ttft_p99_ms'], 1)}ms  "
-          f"censoring={record['ttft_censoring_rate']:.1%}")
-
-    if result.n_shed:
-        print("    WARNING: the concurrency cap bit. This point is cap-shaped, not "
-              "server-shaped (WEEK2_PLAN.md 3.3).")
-    if not record["schedule_delivery_ok"]:
-        print(f"    WARNING: driver delivered {record['schedule_delivery_divergence_pct']:+.1f}% "
-              "against the materialized schedule -- this repeat is excluded from "
-              "classification.")
+    report_point(record)
     return record
 
 
@@ -244,16 +188,25 @@ def main() -> None:
     parser.add_argument("--timeout-s", type=float, default=60.0)
     parser.add_argument("--extra-body", default=None)
     parser.add_argument("--warmup-n-s", type=float, default=None,
-                        help="metrics-side warmup; defaults to each schedule's frozen boundary. "
-                             "Cannot exceed it -- that would discard canonical arrivals.")
+                        help="metrics-side warmup. Defaults to each schedule's frozen boundary "
+                             "and must EQUAL it: membership comes from the schedule, so any "
+                             "other value changes nothing while the record claims it did. "
+                             "Post-hoc re-filtering is not a valid resolution (lock 4A).")
     parser.add_argument("--prefix-cache-verdict", type=Path,
                         default=REPO_ROOT / "benchmarks" / "runs" / "preflight"
                         / "prefix_cache_verdict.json")
     parser.add_argument("--drain-timeout-s", type=float, default=300.0)
+    parser.add_argument("--process-epoch", default=None,
+                        help="override the server process epoch; by default it is read from "
+                             "the server's own process_start_time_seconds, so a restart "
+                             "mid-family is detected rather than asserted away")
     args = parser.parse_args()
 
     verdict = require_prefix_cache_disabled(args.prefix_cache_verdict)
     print(f"prefix cache: {verdict['verdict']} (min replay ratio {verdict['min_ratio']:.2f})")
+
+    args.process_epoch = server_process_epoch(args.base_url, args.process_epoch)
+    print(f"process epoch: {args.process_epoch}")
 
     schedules = discover(args.schedule_dir, args.repeats, args.lambdas)
     membership = next(iter(schedules.values()))[1].provenance["canonical_prompt_membership_id"]

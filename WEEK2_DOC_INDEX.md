@@ -109,6 +109,7 @@ say yes.
 | Path | State | Role | Runbook? | Superseded by |
 |---|---|---|---|---|
 | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
+| `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md` | EVIDENCE | The final GPU-free remediation brief (Phases A–G) and its change ledger. Records what was required and what landed; decides no experiment semantics and is **not** a GPU runbook | no | — |
 | `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation of GPU session #1: what it falsified, what survives | no | — |
 | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` | EVIDENCE | R3-closeout and R4→R11 implementation evidence | no | — |
 | `docs/WEEK2_PRE_GPU_AUDIT.md` | EVIDENCE | The 2026-08-17 pre-GPU audit and how each finding was closed | no | — |

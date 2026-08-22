@@ -78,6 +78,8 @@ The canonical multiset holds the corpus's natural shape exactly, including the
 | fd limit | `ulimit -n 65535` (asserted by `remote_loadgen.sh env-check`) |
 | Client timeout | 60 s — censoring, not an error; see §5 |
 | Warmup boundary | **60 s, frozen into every schedule** |
+| `EXTRA_BODY` | Unset unless the session decides otherwise. It is merged into every request body and is **not** recorded in the schedule, so if it is set at all it must be set identically for the floor, scout, headline, steady and adversarial commands — otherwise the floor stops being the headline curve's floor. Every point record logs the value it ran with |
+| `LOADGEN_MODEL` | Unset; defaults to the pinned model above. Same rule: identical across every stage or the stages are not comparable |
 
 ---
 
@@ -93,7 +95,9 @@ Standing Hard Stop 4 checklist plus the redesign items. Full evidence:
 | Working tree clean, HEAD pushed | `run_on_instance.sh bootstrap` refuses otherwise |
 | Canonical workload frozen | `canonical_v1.json`, membership `a49ecdd8…` |
 | Capacity proven | `tokenizer_capacity_report.json` — PASS |
-| Schedules committed | `benchmarks/schedules/week2_redesign/` (15 headline + 4 scout + 5 secondary) |
+| Schedules committed | `benchmarks/schedules/week2_redesign/` — **32**: 15 headline + 6 scout + 5 natural-random + 5 steady + 1 adversarial |
+| Every scenario frozen | Nothing is generated on the meter (lock 6A; `SECONDARY_SCENARIOS_MANIFEST.json`) |
+| Unloaded floor executable | `run_on_instance.sh floor` |
 | Repeat policy signed off | `repeat_policy.json` — **`LOCKED`** |
 | All controls bite | `scripts/show_control_bites.py`, `scripts/show_doc_control_bites.py`, `tests/redesign/` |
 | Regression suites green | see `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
@@ -111,8 +115,8 @@ Standing Hard Stop 4 checklist plus the redesign items. Full evidence:
  4. Tier A: scout sweep                                     ~20 min
       -- HARD STOP GPU-1: HUMAN READ --
  5. Tier B: confirmation sweep, repeat-major            2.8-5.4 h
- 6. Secondary: natural-random, then steady                50-110 min
- 7. Adversarial scenario (LAST)                            ~20 min
+ 6. Secondary: natural-random (~50 min), then steady (~23 min)
+ 7. Adversarial scenario (LAST)                            ~10 min
  8. pull artifacts, verify, teardown                        ~15 min
 ```
 
@@ -121,29 +125,120 @@ Standing Hard Stop 4 checklist plus the redesign items. Full evidence:
 ```bash
 # local, once
 bash scripts/gpu_session/create_instance.sh
+
+# step 1b -- launch vLLM. `setup_and_launch_vllm.sh` runs `vllm serve` in the
+# FOREGROUND, so it must not be run through a plain ssh --command: the server
+# would die with the connection. Copy it up and run it under nohup, then wait
+# for /health.
+gcloud compute scp scripts/gpu_session/setup_and_launch_vllm.sh \
+    llmrouter-vllm-l4-week2:~/ --zone=us-central1-a
+gcloud compute ssh llmrouter-vllm-l4-week2 --zone=us-central1-a \
+    --command="nohup bash ~/setup_and_launch_vllm.sh > ~/vllm.log 2>&1 &"
+# watch it come up (first launch downloads the model; several minutes)
+gcloud compute ssh llmrouter-vllm-l4-week2 --zone=us-central1-a \
+    --command="tail -f ~/vllm.log"
+
 bash scripts/gpu_session/run_on_instance.sh bootstrap     # pins the instance to THIS commit
 bash scripts/gpu_session/run_on_instance.sh check         # deps, fd limit, GPU, vLLM health
 
-# step 2 -- the gate. No headline point may run before this passes.
+# step 2 -- the gate. No point of any kind may run before this passes.
 bash scripts/gpu_session/run_on_instance.sh verify-cache
 
+# step 3 -- the unloaded floor: every canonical prompt once, concurrency 1,
+# sequential. Not an RPS point; the floor is defined by the absence of queueing.
+SESSION_TAG=floor bash scripts/gpu_session/run_on_instance.sh floor
+
 # step 4 -- scout (Tier A), one schedule at a time
-SESSION_TAG=scout bash scripts/gpu_session/run_on_instance.sh run \
+SESSION_TAG=scout bash scripts/gpu_session/run_on_instance.sh scout \
     benchmarks/schedules/week2_redesign/scout/headline_r1_rps1.schedule.json
 
 # step 5 -- Tier B, repeat-major, drain-gated, three lambdas
 SESSION_TAG=headline REPEAT_IDS='1 2 3' \
     bash scripts/gpu_session/run_on_instance.sh headline 1.5 2 2.5
 
-# pull after EVERY repeat, not only at the end
-SESSION_TAG=headline bash scripts/gpu_session/pull_artifacts.sh
+# step 6 -- secondary: natural-random, then steady. One schedule at a time.
+SESSION_TAG=secondary bash scripts/gpu_session/run_on_instance.sh secondary \
+    benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps2.schedule.json
+SESSION_TAG=steady bash scripts/gpu_session/run_on_instance.sh steady \
+    benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps2.schedule.json
+
+# step 7 -- adversarial, LAST
+SESSION_TAG=adversarial bash scripts/gpu_session/run_on_instance.sh adversarial \
+    benchmarks/schedules/week2_redesign/adversarial/adversarial_rps2.schedule.json
+
+# pull after EVERY repeat, not only at the end. `pull_artifacts.sh` pulls ONE
+# tag, so each stage needs its own invocation -- and SESSION_TAG has no useful
+# default here (it falls back to session #1's `stage_a`).
+for tag in floor scout headline secondary steady adversarial; do
+    SESSION_TAG=$tag bash scripts/gpu_session/pull_artifacts.sh
+done
+
+# the prefix-cache verdict lives outside the artifact root; §11 requires it
+gcloud compute scp \
+    llmrouter-vllm-l4-week2:~/LLMRouter/benchmarks/runs/preflight/prefix_cache_verdict.json \
+    benchmarks/runs/preflight/ --zone=us-central1-a
+# and the launch log
+gcloud compute scp llmrouter-vllm-l4-week2:~/vllm.log benchmarks/runs/ \
+    --zone=us-central1-a
 
 # teardown -- the Week 2 wrapper, never bare teardown.sh
 bash scripts/gpu_session/teardown_week2.sh
 ```
 
+> ### The commands above show ONE point per stage; several stages have more
+>
+> | Stage | Points to drive | Where the list is |
+> |---|---|---|
+> | scout | 4 — λ 1, 2, 4, 8 (0.5 / 16 only if lock 5A fires) | §3 |
+> | headline | 3 λ × 3 repeats, one `headline` invocation per repeat | §5 |
+> | secondary | 5 — `secondary_rps{1.5,2,2.5,3,4}.schedule.json` | §8 |
+> | steady | 5 — `secondary_steady_rps{1.5,2,2.5,3,4}.schedule.json` | §8 |
+> | adversarial | 1 | §8 |
+>
+> **Tier B is one blocking invocation per repeat, not one for all three.**
+> `REPEAT_IDS='1 2 3'` runs all three inside a single `ssh --command` that
+> blocks for up to 5.4 h, which makes "pull after every repeat" impossible.
+> Drive them separately:
+>
+> ```bash
+> for r in 1 2 3; do
+>     SESSION_TAG=headline REPEAT_IDS="$r" \
+>         bash scripts/gpu_session/run_on_instance.sh headline 1.5 2 2.5
+>     SESSION_TAG=headline bash scripts/gpu_session/pull_artifacts.sh
+> done
+> ```
+>
+> Each repeat still drains between λ points, and the drain gate still refuses
+> to start a repeat while the server has work in flight.
+
+> ### Every scenario is validated against the artifact, not its directory
+>
+> `scout`, `steady`, `secondary` and `adversarial` each check the schedule's own
+> provenance before driving it (`scripts/gpu_session/scenario_contract.py`) and
+> refuse a schedule generated for a different scenario. This matters most for
+> the pair nothing else separates: `headline/headline_r1_rps2.schedule.json` and
+> `scout/headline_r1_rps2.schedule.json` have the same filename, the same
+> `headline-schedule-v2` scheme and the same `workload_class` — because a scout
+> point genuinely is a controlled Poisson draw. Only the canonical membership
+> differs, and that is what the check reads.
+
 > `run_on_instance.sh stage-a` drives the **superseded** session #1 fixed-duration
 > sweep. It prompts for a typed confirmation. Never use it in this session.
+
+> ### `scout` and `run` are different commands on purpose
+>
+> `scout` drives a frozen session #2 schedule through the **same** measurement
+> path Tier B uses — the warmup boundary, expected N, delivery-fidelity
+> denominator, censoring gate and membership all come off the schedule's own
+> provenance, so a Tier A bracket is expressed in the units Tier B confirms in.
+> The only difference is authority: the record is stamped
+> `evidence_class: scout_diagnostic`, and `metrics/classification.py` refuses
+> to aggregate it.
+>
+> `run` drives the **legacy v1** format — the secondary natural-random points
+> in `secondary_natural/`. It refuses a session #2 schedule rather than reading
+> it with the legacy 10s warmup placeholder, which is what it did until
+> 2026-08-21.
 
 ### Step 2 — the gate that has no equivalent in session #1
 
@@ -311,10 +406,46 @@ always zero by the time a point returns, so gating on it would be green forever.
 |---|---:|---:|
 | 1.5 / 2.0 / 2.5 | 1.79 h | **5.37 h** |
 | 2.0 / 2.5 / 3.0 | 1.28 h | 3.83 h |
-| 3.0 / 4.0 / 5.0 | 0.92 h | 2.76 h |
+| 2.5 / 3.0 / 4.0 | 1.00 h | 3.00 h |
 
 The committed 15-schedule family covers λ ∈ {1.5, 2, 2.5, 3, 4} × 3 repeats;
 only the three chosen λ are driven. The rest are staged, not spent.
+
+**Every row above uses only λ that exist.** A previous row read `3.0 / 4.0 /
+5.0`; there is no `headline_r*_rps5.schedule.json` and there never was. The
+frozen family is the whole menu.
+
+### Choosing the three λ — the rule, not a judgement
+
+```
+the three driven λ MUST come from {1.5, 2, 2.5, 3, 4}
+    λ_low   the highest frozen λ that Tier A found clearly UNDER
+    λ_high  the lowest  frozen λ that Tier A found clearly OVER
+    λ_mid   the frozen λ between them
+```
+
+The scout ladder is λ ∈ {0.5, 1, 2, 4, 8, 16} and the headline family is
+λ ∈ {1.5, 2, 2.5, 3, 4}. **These do not span the same range**, so a scout
+bracket can land where no headline schedule exists — `(0.5, 1]`, `(4, 8]` and
+`(8, 16]` have no headline point at either end, and `(1, 2]` has none at its
+lower end. §3 argues the crossing has moved *down*, which makes the low-end
+miss the likely one.
+
+If the Tier A bracket does not contain at least two frozen headline λ:
+
+```
+STOP.
+Pull the scout artifacts. Regenerate the headline family offline at
+lambdas that bracket the observed crossing, re-run the GPU-free checks,
+take a NEW benchmark SHA, and return to pre-GPU approval.
+```
+
+Do **not** pick the nearest frozen λ and drive it anyway: that measures a
+different point from the one Tier A located, and the resulting bracket would
+be an artifact of what happened to be committed. Generating a schedule
+mid-session is forbidden for the reason §2 gives — `bootstrap` refuses a dirty
+or unpushed tree, so it costs a commit, a push and a new benchmark SHA with
+the meter running.
 
 ---
 
@@ -414,16 +545,41 @@ diagnostics.
 Week 2 is **not closed** until all four are accounted for. They are in scope,
 not dropped:
 
-| # | Scenario | Role |
-|---|---|---|
-| 1 | Controlled Poisson headline | **Defines the breach.** Tier B above |
-| 2 | Natural-random secondary | Does the knee survive unconstrained traffic? (~30–50 min) |
-| 3 | Steady-arrival reference | Lower-variance legible reference (~30–60 min) |
-| 4 | Adversarial long-context | Separate scenario — **runs LAST** |
+| # | Scenario | Frozen input | Role |
+|---|---|---|---|
+| 1 | Controlled Poisson headline | `headline/` — 15 schedules, N=4000 | **Defines the breach.** Tier B above |
+| 2 | Natural-random secondary | `secondary_natural/` — 5 schedules, 600s each | Does the knee survive unconstrained traffic? (~30–50 min) |
+| 3 | Steady-arrival reference | `secondary_steady/` — 5 schedules, N=500, 60s boundary | Lower-variance legible reference (~23 min) |
+| 4 | Adversarial long-context | `adversarial/` — 1 schedule, λ=2, 600s | Separate scenario — **runs LAST** (~10 min) |
+
+**All four drive from committed artifacts.** Nothing is generated on the meter:
+`bootstrap` refuses a dirty or unpushed tree, so live generation would cost a
+commit, a push and a new benchmark SHA mid-session.
+
+**The steady and adversarial operating points were human decisions, taken
+2026-08-21**, because §2.1 constrains the shape of both scenarios and names a λ
+for neither. Steady uses the headline λ set (1.5 / 2 / 2.5 / 3 / 4) under
+session #2 exact-N mechanics, so the only thing differing from the headline
+curve is Poisson vs fixed intervals — an arrival-process comparison rather than
+a second experiment. Adversarial is one point at λ=2 rather than a saturating
+λ=5: the q90 long-context selection already supplies the adversarial pressure,
+and λ=2 sits in the expected headline neighbourhood where the result is
+informative rather than a trivial censoring collapse.
 
 The controlled Poisson workload alone defines the headline breach. The others
 may support interpretation but **may never redefine it**. Secondary points never
-enter the headline classification.
+enter the headline classification, structurally rather than by convention —
+though by two different mechanisms, which is worth knowing when reading the
+records:
+
+- **steady** is a v2 exact-N point, so its record is stamped
+  `evidence_class: secondary_diagnostic` and is refused on that field;
+- **natural-random and adversarial** are v1 artifacts read by the frozen
+  legacy reader, which writes no `evidence_class` at all. They are refused
+  because the gate is *fail-closed on absence*: no `evidence_class`, no
+  `record_version` and no `process_epoch` each independently disqualify them.
+
+Either way `metrics/classification.py` accepts only `headline_evidence`.
 
 Adversarial is last deliberately: it drives the replica toward saturation, and
 the headline and steady curves are already durably written by then.
@@ -443,6 +599,7 @@ is authorized.**
 | λ=1 already OVER | Add λ=0.5 scout |
 | λ=8 still UNDER | Add λ=16 scout |
 | Authorized scout still fails to bracket | **STOP** |
+| Tier A bracket contains fewer than two frozen headline λ | **STOP** — pull artifacts, regenerate the headline family offline at bracketing λ, new benchmark SHA, back to pre-GPU approval (§5). Never substitute the nearest committed λ |
 | Transient not stable by 60 s | **STOP** + regenerate schedules at a larger boundary |
 | Prefix-cache verification fails | **STOP** — relaunch, re-verify. No headline points until it passes |
 | Shed > 0 | Point invalid / investigate. The cap is shaping results — an instrument finding, not a server one |
@@ -484,9 +641,18 @@ until all of this is on the laptop and verified:
       session, since every headline tag is fractional or repeat-tagged)
 - [ ] Prefix-cache verdict artifact present and says **DISABLED**
 - [ ] vLLM launch log captured, with the **resolved** eager / prefix-cache modes
-- [ ] Unloaded-floor run captured
+- [ ] Unloaded-floor run captured — `floor.metrics.json` with
+      `membership_complete: true` and `floor_complete: true`. A floor that did
+      not cover the canonical membership says so in the record
 - [ ] Scout points captured
+- [ ] Secondary points captured: natural-random, steady, adversarial
 - [ ] Session log records the benchmark SHA and the process epoch of every repeat
+
+Every driven point's record now carries its own `process_epoch`, and the family
+report computes `vllm_restarted_between_repeats` from those values rather than
+asserting it. If a spot preemption forces a vLLM restart mid-family, the
+classifier refuses to combine the epochs offline (lock 3A) — so the check
+cannot be lost by nobody noticing at the time.
 
 **Pull incrementally, after each repeat, not only at session end.** The first
 session pulled once at the end and it worked; it worked because nothing went

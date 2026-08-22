@@ -26,18 +26,37 @@ from loadgen.repeat_runner import (
     RepeatRunner,
     wait_until_drained,
 )
-from metrics.classification import RepeatPolicy, classify_point, resolve_breach
+from metrics.classification import (
+    HeadlineEvidenceSpec,
+    RepeatPolicy,
+    classify_point,
+    resolve_breach,
+)
 from metrics.headline_point import CENSORED, OVER, UNCERTAIN, UNDER
 
 pytestmark = pytest.mark.redesign
 
 MEMBERSHIP = "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b"
+N_PER_RUN = 4000
 
 
 def _repeat(repeat_id: int, nominal_lambda: float, state: str, p99: float | None,
             censoring: float = 0.0, review: str | None = None,
             delivery_ok: bool = True, exact_n: bool = True) -> dict:
+    """A record that has PROVEN it is session #2 headline evidence.
+
+    The identity fields are not decoration: `classify_point` fails closed, so
+    a record missing any of them is refused before its state is even read.
+    The controls for that live in test_headline_evidence_gate.py; here they
+    are simply satisfied so the aggregation logic can be tested.
+    """
     return {
+        "record_version": "headline-point-v1",
+        "evidence_class": "headline_evidence",
+        "may_define_headline_breach": True,
+        "schedule_scheme_version": "headline-schedule-v2",
+        "process_epoch": "vllm-start-1000",
+        "percentile_population_n": N_PER_RUN,
         "repeat_id": repeat_id,
         "canonical_prompt_membership_id": MEMBERSHIP,
         "arrival_seed": 1000 + repeat_id,
@@ -116,7 +135,8 @@ def test_a_cleanly_drained_family_runs_every_point():
 
     def run_point(plan, nominal_lambda):
         driven.append((plan.repeat_id, nominal_lambda))
-        return {"repeat_id": plan.repeat_id, "nominal_lambda_rps": nominal_lambda}
+        return {"repeat_id": plan.repeat_id, "nominal_lambda_rps": nominal_lambda,
+                "process_epoch": "vllm-start-1000"}
 
     runner = RepeatRunner(run_point=run_point, inflight_probe=lambda: 0,
                           sleep=lambda _s: None, clock=_counter())
@@ -125,6 +145,34 @@ def test_a_cleanly_drained_family_runs_every_point():
     assert driven == [(1, 1.5), (1, 2.0), (2, 1.5), (2, 2.0)]
     assert len(report.points) == 4
     assert report.to_dict()["vllm_restarted_between_repeats"] is False
+    assert report.to_dict()["process_epochs_observed"] == ["vllm-start-1000"]
+
+
+def test_control_a_restart_between_repeats_is_reported_not_asserted_away():
+    """`vllm_restarted_between_repeats` was a hardcoded `False` -- the same
+    inert-check shape the drain probe exists to avoid, sitting on the one
+    claim lock 3A depends on. It is now computed from what the points
+    recorded."""
+    epochs = iter(["vllm-start-1000", "vllm-start-2000"])
+
+    def run_point(plan, nominal_lambda):
+        return {"repeat_id": plan.repeat_id, "nominal_lambda_rps": nominal_lambda,
+                "process_epoch": next(epochs)}
+
+    runner = RepeatRunner(run_point=run_point, inflight_probe=lambda: 0,
+                          sleep=lambda _s: None, clock=_counter())
+    report = runner.run([RepeatPlan(1, 101, 201, [2.0]), RepeatPlan(2, 102, 202, [2.0])])
+    assert report.to_dict()["vllm_restarted_between_repeats"] is True
+    assert len(report.to_dict()["process_epochs_observed"]) == 2
+
+
+def test_an_unrecorded_epoch_reports_unknown_rather_than_no_restart():
+    """Absence of evidence is not evidence of absence -- especially for the
+    claim a spot preemption is most likely to falsify."""
+    runner = RepeatRunner(run_point=lambda p, l: {"repeat_id": p.repeat_id},
+                          inflight_probe=lambda: 0, sleep=lambda _s: None, clock=_counter())
+    report = runner.run([RepeatPlan(1, 101, 201, [2.0])])
+    assert report.to_dict()["vllm_restarted_between_repeats"] is None
 
 
 def test_control_the_runner_refuses_duplicate_repeat_ids():
@@ -162,7 +210,9 @@ def test_drain_is_enforced_between_lambda_points_too():
 # ===========================================================================
 
 POLICY = RepeatPolicy(min_valid_repeats=3, require_unanimous=True,
-                      n_per_run=4000, n_max=5000, max_repeats_authorized=3)
+                      n_per_run=N_PER_RUN, n_max=5000, max_repeats_authorized=3,
+                      headline=HeadlineEvidenceSpec(membership_id=MEMBERSHIP,
+                                                    percentile_population_n=N_PER_RUN))
 
 
 def test_unanimous_repeats_produce_a_verdict():
@@ -223,9 +273,26 @@ def test_control_reused_seeds_are_refused_as_repeats():
 
 
 def test_control_repeats_with_different_membership_are_refused():
+    """Caught one step earlier than it used to be.
+
+    This previously failed because the two repeats disagreed with each other.
+    Now it fails because the odd one out disagrees with the *policy's* headline
+    membership — which is strictly stronger: a family where every repeat shares
+    the same wrong membership was consistent with itself and would have passed
+    the old check.
+    """
     records = [_repeat(1, 2.0, UNDER, 300.0), _repeat(2, 2.0, UNDER, 305.0)]
     records[1]["canonical_prompt_membership_id"] = "different"
-    with pytest.raises(ValueError, match="canonical memberships"):
+    with pytest.raises(ValueError, match="not the headline workload"):
+        classify_point(records, POLICY)
+
+
+def test_control_a_uniformly_wrong_membership_is_also_refused():
+    """The case the old pairwise check could not see."""
+    records = [_repeat(i, 2.0, UNDER, 300.0) for i in (1, 2, 3)]
+    for record in records:
+        record["canonical_prompt_membership_id"] = "e9470f8f" * 8  # the scout workload
+    with pytest.raises(ValueError, match="not the headline workload"):
         classify_point(records, POLICY)
 
 
@@ -284,8 +351,10 @@ def test_below_the_ceiling_escalation_is_permitted_rather_than_forced():
     records = _sweep({1.5: UNDER, 2.5: OVER})
     records[2.0] = [_repeat(1, 2.0, UNDER, 480.0), _repeat(2, 2.0, OVER, 520.0),
                     _repeat(3, 2.0, UNDER, 495.0)]
-    policy = RepeatPolicy(min_valid_repeats=3, n_per_run=4000, n_max=5000,
-                          max_repeats_authorized=5)
+    policy = RepeatPolicy(min_valid_repeats=3, n_per_run=N_PER_RUN, n_max=5000,
+                          max_repeats_authorized=5,
+                          headline=HeadlineEvidenceSpec(
+                              membership_id=MEMBERSHIP, percentile_population_n=N_PER_RUN))
     result = resolve_breach(records, policy, n_used=4000, repeats_used=3)
 
     assert result["resolution"] == "MORE_EVIDENCE_AUTHORIZED"
