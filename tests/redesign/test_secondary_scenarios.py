@@ -41,7 +41,7 @@ sys.path.insert(0, str(GPU_SESSION))
 
 pytestmark = pytest.mark.redesign
 
-STEADY_LAMBDAS = [1.5, 2.0, 2.5, 3.0, 4.0]
+STEADY_LAMBDAS = [1.5, 2.0, 2.5, 3.0, 4.0, 0.5, 0.75, 1.0, 1.25]
 STEADY_N = 500
 STEADY_WARMUP_S = 60.0
 SCOUT_MEMBERSHIP = "e9470f8f85f228358567c61ae4b0b67040942f4858747cc6076ecea94237de67"
@@ -70,7 +70,10 @@ def test_the_steady_family_is_committed_at_the_decided_lambdas():
         assert prov["canonical_prompt_membership_id"] == SCOUT_MEMBERSHIP
         assert prov["never_defines_headline_breach"] is True
         assert prov["corpus_sha256"]
-    assert sorted(got) == STEADY_LAMBDAS
+    # Order in STEADY_LAMBDAS matches generator index/seed assignment, not
+    # sort order (the new lower anchors are appended, not sorted in, so the
+    # original five keep their seeds) -- compare as sets of values.
+    assert sorted(got) == sorted(STEADY_LAMBDAS)
 
 
 def test_steady_gaps_really_are_constant():
@@ -268,8 +271,12 @@ def test_the_v1_scenarios_validate_before_driving():
 def test_no_scenario_needs_live_generation():
     """The whole point of Phase D: every scenario in the runbook can be driven
     from something already committed."""
-    for directory, expected in [("headline", 15), ("scout", 6), ("secondary_natural", 5),
-                                ("secondary_steady", 5), ("adversarial", 1)]:
+    # headline/secondary_steady expanded 2026-08-22: Tier B repeat 1 showed
+    # lambda=1.5 already CENSORED (36.2%) at N=4000, so lower anchors
+    # {0.5, 0.75, 1.0, 1.25} were added to both families (9 lambdas x 3
+    # headline repeats = 27; steady is one schedule per lambda = 9).
+    for directory, expected in [("headline", 27), ("scout", 6), ("secondary_natural", 9),
+                                ("secondary_steady", 9), ("adversarial", 1)]:
         found = sorted((SCHEDULE_ROOT / directory).glob("*.schedule.json"))
         assert len(found) == expected, f"{directory}/ has {len(found)}, expected {expected}"
 

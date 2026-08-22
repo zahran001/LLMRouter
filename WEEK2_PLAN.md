@@ -1315,3 +1315,19 @@ This closes the "out of scope, flagged rather than dropped" question the session
 #2 plan raised: steady and adversarial are *deferred within Week 2*, not dropped
 from it. If session wall-clock forces a cut, the cut comes from the bottom of
 that list and what was deferred is recorded.
+
+### 11.7 — Steady and adversarial operating points (human decision, 2026-08-21)
+
+§2.1 constrains the *shape* of both scenarios but names a λ for neither — surfaced
+rather than invented, then decided:
+
+- **Steady:** λ ∈ {1.5, 2, 2.5, 3, 4}, the headline λ set, under session #2
+  exact-N mechanics. Same operating points as headline, so the only variable
+  left is Poisson vs. fixed arrival — an arrival-process comparison, not a
+  second experiment.
+- **Adversarial:** one point, λ=2, 600s. Purpose is showing what a long-context
+  load does, not a second breach curve; λ=5 would trivially collapse into
+  censoring, and λ=2's q90 long-context selection already supplies the pressure.
+
+(Migrated from `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md`, removed 2026-08-22;
+full phase-by-phase implementation ledger in git history at `625bc0e`.)

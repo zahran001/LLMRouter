@@ -109,7 +109,7 @@ say yes.
 | Path | State | Role | Runbook? | Superseded by |
 |---|---|---|---|---|
 | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
-| `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md` | EVIDENCE | The final GPU-free remediation brief (Phases A–G) and its change ledger. Records what was required and what landed; decides no experiment semantics and is **not** a GPU runbook | no | — |
+| `WEEK2_GPU_SESSION_2_REPORT.md` | EVIDENCE | The 2026-08-22 GPU session #2 first-attempt report: what ran, the Tier B all-`CENSORED` finding, why the session stopped after repeat 1, and the resulting schedule redesign | no | — |
 | `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation of GPU session #1: what it falsified, what survives | no | — |
 | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` | EVIDENCE | R3-closeout and R4→R11 implementation evidence | no | — |
 | `docs/WEEK2_PRE_GPU_AUDIT.md` | EVIDENCE | The 2026-08-17 pre-GPU audit and how each finding was closed | no | — |
@@ -139,6 +139,7 @@ git log --diff-filter=D --name-only 39ed3f1..   # the full list
 | `Week 2 Pre-GPU Remediation.md` | HISTORICAL | The pre-session-#1 remediation brief | `docs/WEEK2_REMEDIATION_REPORT.md` |
 | `Week 2 Pre-GPU Documentation Cleanup — Implementation README.md` | HISTORICAL | The brief for the documentation cleanup | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
 | `Agent Prompt — Fix T-DOC-4 and Close Documentation Drift.md` | HISTORICAL | The brief for the T-DOC-4 scope fix | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` |
+| `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md` | HISTORICAL | The final GPU-free remediation brief (Phases A–G) and its change ledger | `WEEK2_PLAN.md` §11.7 (steady/adversarial λ decisions); phase ledger in git history at `625bc0e` |
 
 Removal is a stronger guarantee than a banner: a document that is not in the
 working tree cannot be found, read, or followed by mistake. The **rule** stays

@@ -1,6 +1,6 @@
 {
   "what": "Frozen session #2 secondary scenarios: steady reference and adversarial long-context flood (lock 6A).",
-  "generated_at": "2026-08-21T23:10:19+00:00",
+  "generated_at": "2026-08-22T17:57:17+00:00",
   "decision_provenance": "Operating points are human decisions recorded 2026-08-21; WEEK2_PLAN.md 2.1 constrains the shape of both scenarios but names no lambda for either.",
   "steady": {
     "schedule_scheme_version": "headline-schedule-v2",
@@ -11,7 +11,11 @@
       2.0,
       2.5,
       3.0,
-      4.0
+      4.0,
+      0.5,
+      0.75,
+      1.0,
+      1.25
     ],
     "warmup_boundary_s": 60.0,
     "post_warmup_target_count": 500,
@@ -68,6 +72,46 @@
         "materialized_warmup_count": 239,
         "materialized_post_warmup_count": 500,
         "materialized_schedule_duration_s": 184.75
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps0.5.schedule.json",
+        "sha256": "9bb40af6a6fa519cba9a0c563dfb03526e536eb7d01e7ac0abb314dcb91aaa34",
+        "nominal_lambda_rps": 0.5,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 529,
+        "materialized_warmup_count": 29,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 1058.0
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps0.75.schedule.json",
+        "sha256": "5dbd70d22e86e3fe3efd5245d92980e419c9ff5c9b9f5dc298995be8f0ce255f",
+        "nominal_lambda_rps": 0.75,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 544,
+        "materialized_warmup_count": 44,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 725.3333333333364
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps1.schedule.json",
+        "sha256": "54b36fb3315c644834af92f17001d1ec7232550eefe24cb200384eff48beee37",
+        "nominal_lambda_rps": 1.0,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 559,
+        "materialized_warmup_count": 59,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 559.0
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_steady/secondary_steady_rps1.25.schedule.json",
+        "sha256": "d31140850665959da0b06b1c9bfb2345a0a89a11581264297103cdb2a3eaa049",
+        "nominal_lambda_rps": 1.25,
+        "arrival_process": "steady",
+        "materialized_schedule_count": 575,
+        "materialized_warmup_count": 75,
+        "materialized_post_warmup_count": 500,
+        "materialized_schedule_duration_s": 460.0000000000044
       }
     ]
   },

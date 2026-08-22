@@ -76,7 +76,14 @@ MANIFEST_PATH = SCHEDULE_ROOT / "SECONDARY_SCENARIOS_MANIFEST.json"
 # under two arrival processes.
 STEADY_WORKLOAD = REPO_ROOT / "benchmarks" / "workloads" / "week2_scout" / "canonical_v1.json"
 
-STEADY_LAMBDAS = (1.5, 2.0, 2.5, 3.0, 4.0)
+# Appended, not prepended: `_steady_schedule` seeds off `index` (the
+# enumerate position), so the original five must keep indices 0-4 or their
+# committed bytes (and the real GPU evidence already read against them) would
+# silently change. New lower anchors go after 4.0 for exactly this reason --
+# added 2026-08-22 alongside the headline family's lower anchors, because Tier
+# B repeat 1 showed even lambda=1.5 CENSORED (36.2%) at N=4000, so the steady
+# reference needs the same lower range the headline curve now covers.
+STEADY_LAMBDAS = (1.5, 2.0, 2.5, 3.0, 4.0, 0.5, 0.75, 1.0, 1.25)
 STEADY_WARMUP_S = 60.0
 STEADY_WORKLOAD_CLASS = "secondary_steady_reference"
 

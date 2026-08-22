@@ -1,0 +1,1308 @@
+{
+  "provenance": {
+    "master_seed": 20260819905,
+    "rng_scheme_version": "loadgen-rng-v1",
+    "schedule_scheme_version": "loadgen-schedule-v1",
+    "target_rps": 0.5,
+    "arrival_process": "poisson",
+    "duration_s": 600.0,
+    "corpus_path": "C:\\Users\\minha\\OneDrive\\Desktop\\LLMRouter\\corpus\\baseline_prompts.jsonl",
+    "corpus_sha256": "f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630",
+    "corpus_size": 5000,
+    "corpus_build_provenance": {
+      "source_dataset": "anon8231489123/ShareGPT_Vicuna_unfiltered",
+      "source_file": "ShareGPT_V3_unfiltered_cleaned_split.json",
+      "source_url": "https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered/resolve/main/ShareGPT_V3_unfiltered_cleaned_split.json",
+      "source_commit": "192ab2185289094fc556ec8ce5ce1e8e587154ca",
+      "download_date": "2026-08-16",
+      "filter_definition": "keep an entry iff conversations[0]['from'] in {'human','user'} and conversations[0]['value'], after str.strip(), is a non-empty string -- a validity predicate only. No exclusion by length or content (WEEK2_PLAN.md \u00a73.4: 'may NOT remove valid prompts to shape the spread').",
+      "total_raw_entries": 94145,
+      "total_valid_after_filter": 58820,
+      "selection_seed": 20260816,
+      "subset_size": 5000,
+      "prompt_len_definition": "char count of conversations[0]['value'] after strip(); token count is a Week 3 revisit (WEEK2_PLAN.md \u00a73.4)",
+      "char_len_stats": {
+        "min": 1,
+        "max": 44445,
+        "mean": 899.533
+      },
+      "artifact": "corpus/baseline_prompts.jsonl",
+      "note": "with-replacement i.i.d. draws happen at schedule-materialization time via a separate corpus_rng (WEEK2_PLAN.md \u00a73.2/\u00a73.4); this seed only controls which prompts made it into the pinned subset, not which are drawn from it at runtime."
+    },
+    "long_context": false,
+    "n_scheduled": 317,
+    "workload_class": "secondary_natural_random",
+    "never_defines_headline_breach": true,
+    "note": "Natural-random secondary curve (R4 README R11). Realism validation only: its points must never be pooled with, or substituted for, controlled headline points."
+  },
+  "entries": [
+    {
+      "scheduled_offset": 0.4630243181145454,
+      "prompt_id": 4973
+    },
+    {
+      "scheduled_offset": 1.4534601604995276,
+      "prompt_id": 2545
+    },
+    {
+      "scheduled_offset": 3.373817111692855,
+      "prompt_id": 1295
+    },
+    {
+      "scheduled_offset": 4.012342531770837,
+      "prompt_id": 3831
+    },
+    {
+      "scheduled_offset": 7.701999527011229,
+      "prompt_id": 1888
+    },
+    {
+      "scheduled_offset": 10.299043875299596,
+      "prompt_id": 3978
+    },
+    {
+      "scheduled_offset": 11.1161510296731,
+      "prompt_id": 479
+    },
+    {
+      "scheduled_offset": 11.745405757778267,
+      "prompt_id": 2266
+    },
+    {
+      "scheduled_offset": 12.456807854745133,
+      "prompt_id": 1552
+    },
+    {
+      "scheduled_offset": 13.580042295898371,
+      "prompt_id": 2455
+    },
+    {
+      "scheduled_offset": 14.989579839163364,
+      "prompt_id": 1479
+    },
+    {
+      "scheduled_offset": 16.308436645937615,
+      "prompt_id": 4288
+    },
+    {
+      "scheduled_offset": 18.398767855964223,
+      "prompt_id": 2215
+    },
+    {
+      "scheduled_offset": 18.560520297847088,
+      "prompt_id": 4796
+    },
+    {
+      "scheduled_offset": 19.1054814916564,
+      "prompt_id": 213
+    },
+    {
+      "scheduled_offset": 21.589378089574314,
+      "prompt_id": 4193
+    },
+    {
+      "scheduled_offset": 24.353353192204917,
+      "prompt_id": 1017
+    },
+    {
+      "scheduled_offset": 24.499469227326816,
+      "prompt_id": 2201
+    },
+    {
+      "scheduled_offset": 24.811494290274013,
+      "prompt_id": 3263
+    },
+    {
+      "scheduled_offset": 25.893946445002882,
+      "prompt_id": 4633
+    },
+    {
+      "scheduled_offset": 26.297300343143743,
+      "prompt_id": 2745
+    },
+    {
+      "scheduled_offset": 27.028984761663718,
+      "prompt_id": 4690
+    },
+    {
+      "scheduled_offset": 30.03937523084822,
+      "prompt_id": 3599
+    },
+    {
+      "scheduled_offset": 31.033771209676903,
+      "prompt_id": 2954
+    },
+    {
+      "scheduled_offset": 33.02731187279639,
+      "prompt_id": 767
+    },
+    {
+      "scheduled_offset": 33.29808652151789,
+      "prompt_id": 4388
+    },
+    {
+      "scheduled_offset": 33.565219864685965,
+      "prompt_id": 776
+    },
+    {
+      "scheduled_offset": 37.09040163254564,
+      "prompt_id": 510
+    },
+    {
+      "scheduled_offset": 39.338736726666376,
+      "prompt_id": 3327
+    },
+    {
+      "scheduled_offset": 40.760559687292506,
+      "prompt_id": 96
+    },
+    {
+      "scheduled_offset": 48.98896769890115,
+      "prompt_id": 4506
+    },
+    {
+      "scheduled_offset": 56.976447720303995,
+      "prompt_id": 290
+    },
+    {
+      "scheduled_offset": 61.68506018587772,
+      "prompt_id": 3292
+    },
+    {
+      "scheduled_offset": 62.32646767192386,
+      "prompt_id": 1438
+    },
+    {
+      "scheduled_offset": 63.33236856862919,
+      "prompt_id": 930
+    },
+    {
+      "scheduled_offset": 64.63046044648608,
+      "prompt_id": 4674
+    },
+    {
+      "scheduled_offset": 67.14998317099335,
+      "prompt_id": 4765
+    },
+    {
+      "scheduled_offset": 68.04123610466965,
+      "prompt_id": 2959
+    },
+    {
+      "scheduled_offset": 68.59963956141546,
+      "prompt_id": 1050
+    },
+    {
+      "scheduled_offset": 69.89821553466062,
+      "prompt_id": 2495
+    },
+    {
+      "scheduled_offset": 73.20740486364116,
+      "prompt_id": 1789
+    },
+    {
+      "scheduled_offset": 73.45270060249554,
+      "prompt_id": 1986
+    },
+    {
+      "scheduled_offset": 75.21785023018258,
+      "prompt_id": 2273
+    },
+    {
+      "scheduled_offset": 77.61238144279851,
+      "prompt_id": 2845
+    },
+    {
+      "scheduled_offset": 79.35073610591562,
+      "prompt_id": 1473
+    },
+    {
+      "scheduled_offset": 81.58729837852712,
+      "prompt_id": 1371
+    },
+    {
+      "scheduled_offset": 84.06825654887328,
+      "prompt_id": 4538
+    },
+    {
+      "scheduled_offset": 85.2948487016628,
+      "prompt_id": 4426
+    },
+    {
+      "scheduled_offset": 85.30594650601695,
+      "prompt_id": 702
+    },
+    {
+      "scheduled_offset": 89.88604832552076,
+      "prompt_id": 949
+    },
+    {
+      "scheduled_offset": 91.15510718649654,
+      "prompt_id": 4074
+    },
+    {
+      "scheduled_offset": 94.94545053365049,
+      "prompt_id": 1018
+    },
+    {
+      "scheduled_offset": 95.22226387304143,
+      "prompt_id": 4752
+    },
+    {
+      "scheduled_offset": 96.15359654984881,
+      "prompt_id": 2487
+    },
+    {
+      "scheduled_offset": 99.32933196962061,
+      "prompt_id": 2000
+    },
+    {
+      "scheduled_offset": 100.03687583371988,
+      "prompt_id": 3488
+    },
+    {
+      "scheduled_offset": 100.76155455251704,
+      "prompt_id": 4169
+    },
+    {
+      "scheduled_offset": 104.23986256867659,
+      "prompt_id": 3650
+    },
+    {
+      "scheduled_offset": 104.27446738250401,
+      "prompt_id": 3776
+    },
+    {
+      "scheduled_offset": 106.8150013160517,
+      "prompt_id": 1206
+    },
+    {
+      "scheduled_offset": 110.46460632301151,
+      "prompt_id": 3608
+    },
+    {
+      "scheduled_offset": 110.6559119154375,
+      "prompt_id": 2700
+    },
+    {
+      "scheduled_offset": 116.62690604846858,
+      "prompt_id": 3832
+    },
+    {
+      "scheduled_offset": 119.54071954097537,
+      "prompt_id": 3124
+    },
+    {
+      "scheduled_offset": 120.54726066992487,
+      "prompt_id": 3654
+    },
+    {
+      "scheduled_offset": 121.73196053100747,
+      "prompt_id": 719
+    },
+    {
+      "scheduled_offset": 122.22075629834653,
+      "prompt_id": 3627
+    },
+    {
+      "scheduled_offset": 124.78377563937701,
+      "prompt_id": 643
+    },
+    {
+      "scheduled_offset": 126.55440046260131,
+      "prompt_id": 646
+    },
+    {
+      "scheduled_offset": 127.25924301248432,
+      "prompt_id": 2468
+    },
+    {
+      "scheduled_offset": 133.45423240522922,
+      "prompt_id": 1389
+    },
+    {
+      "scheduled_offset": 133.7886971199979,
+      "prompt_id": 1073
+    },
+    {
+      "scheduled_offset": 134.64828391241062,
+      "prompt_id": 2906
+    },
+    {
+      "scheduled_offset": 135.69821638470017,
+      "prompt_id": 2335
+    },
+    {
+      "scheduled_offset": 138.6543467577432,
+      "prompt_id": 3332
+    },
+    {
+      "scheduled_offset": 140.46091450660148,
+      "prompt_id": 713
+    },
+    {
+      "scheduled_offset": 141.9192992166797,
+      "prompt_id": 4973
+    },
+    {
+      "scheduled_offset": 143.4014637061355,
+      "prompt_id": 3029
+    },
+    {
+      "scheduled_offset": 143.55729913675103,
+      "prompt_id": 1464
+    },
+    {
+      "scheduled_offset": 144.42349909342144,
+      "prompt_id": 2142
+    },
+    {
+      "scheduled_offset": 151.84158646329385,
+      "prompt_id": 2629
+    },
+    {
+      "scheduled_offset": 154.2219523145537,
+      "prompt_id": 4063
+    },
+    {
+      "scheduled_offset": 154.23970037888316,
+      "prompt_id": 3832
+    },
+    {
+      "scheduled_offset": 155.56219105422213,
+      "prompt_id": 2444
+    },
+    {
+      "scheduled_offset": 156.4240051172895,
+      "prompt_id": 549
+    },
+    {
+      "scheduled_offset": 157.29535084974088,
+      "prompt_id": 2286
+    },
+    {
+      "scheduled_offset": 157.46356444009288,
+      "prompt_id": 536
+    },
+    {
+      "scheduled_offset": 159.09876820511965,
+      "prompt_id": 620
+    },
+    {
+      "scheduled_offset": 160.14847727240058,
+      "prompt_id": 1615
+    },
+    {
+      "scheduled_offset": 162.11164800160208,
+      "prompt_id": 2115
+    },
+    {
+      "scheduled_offset": 165.2179075473337,
+      "prompt_id": 3702
+    },
+    {
+      "scheduled_offset": 166.31245741131093,
+      "prompt_id": 3362
+    },
+    {
+      "scheduled_offset": 167.01863037303914,
+      "prompt_id": 500
+    },
+    {
+      "scheduled_offset": 167.4906286346896,
+      "prompt_id": 3608
+    },
+    {
+      "scheduled_offset": 167.70821730302308,
+      "prompt_id": 4670
+    },
+    {
+      "scheduled_offset": 168.11981657421614,
+      "prompt_id": 2283
+    },
+    {
+      "scheduled_offset": 178.22047898924197,
+      "prompt_id": 808
+    },
+    {
+      "scheduled_offset": 178.2608884023285,
+      "prompt_id": 4605
+    },
+    {
+      "scheduled_offset": 179.44474563790317,
+      "prompt_id": 2261
+    },
+    {
+      "scheduled_offset": 181.48876254496957,
+      "prompt_id": 1320
+    },
+    {
+      "scheduled_offset": 182.53404900088123,
+      "prompt_id": 4460
+    },
+    {
+      "scheduled_offset": 188.3870354705052,
+      "prompt_id": 997
+    },
+    {
+      "scheduled_offset": 188.6077905005698,
+      "prompt_id": 4916
+    },
+    {
+      "scheduled_offset": 188.83040793010903,
+      "prompt_id": 3253
+    },
+    {
+      "scheduled_offset": 190.6925242063296,
+      "prompt_id": 619
+    },
+    {
+      "scheduled_offset": 193.29955204862273,
+      "prompt_id": 337
+    },
+    {
+      "scheduled_offset": 194.60470379155214,
+      "prompt_id": 1911
+    },
+    {
+      "scheduled_offset": 195.44931954440216,
+      "prompt_id": 3075
+    },
+    {
+      "scheduled_offset": 197.9798863525911,
+      "prompt_id": 4114
+    },
+    {
+      "scheduled_offset": 203.75196139468238,
+      "prompt_id": 1697
+    },
+    {
+      "scheduled_offset": 203.98004603128663,
+      "prompt_id": 2862
+    },
+    {
+      "scheduled_offset": 204.3292166131924,
+      "prompt_id": 561
+    },
+    {
+      "scheduled_offset": 204.675098871434,
+      "prompt_id": 2383
+    },
+    {
+      "scheduled_offset": 207.20456177541996,
+      "prompt_id": 2275
+    },
+    {
+      "scheduled_offset": 208.64265681249256,
+      "prompt_id": 3963
+    },
+    {
+      "scheduled_offset": 209.91362888389293,
+      "prompt_id": 3439
+    },
+    {
+      "scheduled_offset": 210.58654844484312,
+      "prompt_id": 2137
+    },
+    {
+      "scheduled_offset": 214.68253679276373,
+      "prompt_id": 4076
+    },
+    {
+      "scheduled_offset": 217.91666525183686,
+      "prompt_id": 2733
+    },
+    {
+      "scheduled_offset": 219.99681964010782,
+      "prompt_id": 3275
+    },
+    {
+      "scheduled_offset": 225.5416087930387,
+      "prompt_id": 315
+    },
+    {
+      "scheduled_offset": 225.94086332178875,
+      "prompt_id": 2791
+    },
+    {
+      "scheduled_offset": 226.86290816275925,
+      "prompt_id": 184
+    },
+    {
+      "scheduled_offset": 231.11483844231998,
+      "prompt_id": 2526
+    },
+    {
+      "scheduled_offset": 233.2481109640356,
+      "prompt_id": 4935
+    },
+    {
+      "scheduled_offset": 233.32453266806175,
+      "prompt_id": 2075
+    },
+    {
+      "scheduled_offset": 233.57167765744796,
+      "prompt_id": 1061
+    },
+    {
+      "scheduled_offset": 235.87460460286098,
+      "prompt_id": 3881
+    },
+    {
+      "scheduled_offset": 238.46595767480008,
+      "prompt_id": 1957
+    },
+    {
+      "scheduled_offset": 242.0655861085703,
+      "prompt_id": 738
+    },
+    {
+      "scheduled_offset": 245.0685923605296,
+      "prompt_id": 2406
+    },
+    {
+      "scheduled_offset": 245.6638169939288,
+      "prompt_id": 3697
+    },
+    {
+      "scheduled_offset": 246.94492235060602,
+      "prompt_id": 2347
+    },
+    {
+      "scheduled_offset": 250.64328292478908,
+      "prompt_id": 1711
+    },
+    {
+      "scheduled_offset": 250.94991124179006,
+      "prompt_id": 3722
+    },
+    {
+      "scheduled_offset": 252.37102625965127,
+      "prompt_id": 4837
+    },
+    {
+      "scheduled_offset": 252.9348486083484,
+      "prompt_id": 720
+    },
+    {
+      "scheduled_offset": 253.57724077803863,
+      "prompt_id": 3108
+    },
+    {
+      "scheduled_offset": 253.63301386269572,
+      "prompt_id": 1221
+    },
+    {
+      "scheduled_offset": 253.7940712079818,
+      "prompt_id": 2615
+    },
+    {
+      "scheduled_offset": 257.11949157031387,
+      "prompt_id": 3110
+    },
+    {
+      "scheduled_offset": 258.54885343335025,
+      "prompt_id": 120
+    },
+    {
+      "scheduled_offset": 259.65323190274523,
+      "prompt_id": 2670
+    },
+    {
+      "scheduled_offset": 265.7054159753745,
+      "prompt_id": 3725
+    },
+    {
+      "scheduled_offset": 266.9641150749499,
+      "prompt_id": 935
+    },
+    {
+      "scheduled_offset": 267.26355767854403,
+      "prompt_id": 1216
+    },
+    {
+      "scheduled_offset": 268.44846919972986,
+      "prompt_id": 3981
+    },
+    {
+      "scheduled_offset": 269.31946900562986,
+      "prompt_id": 1493
+    },
+    {
+      "scheduled_offset": 271.53369325283654,
+      "prompt_id": 4988
+    },
+    {
+      "scheduled_offset": 272.4177777746291,
+      "prompt_id": 1567
+    },
+    {
+      "scheduled_offset": 274.01784031165147,
+      "prompt_id": 4592
+    },
+    {
+      "scheduled_offset": 274.1487690596236,
+      "prompt_id": 1588
+    },
+    {
+      "scheduled_offset": 274.2141473937779,
+      "prompt_id": 1329
+    },
+    {
+      "scheduled_offset": 277.21540999645435,
+      "prompt_id": 472
+    },
+    {
+      "scheduled_offset": 277.394045280127,
+      "prompt_id": 2679
+    },
+    {
+      "scheduled_offset": 277.53586622332654,
+      "prompt_id": 4008
+    },
+    {
+      "scheduled_offset": 278.84322623295117,
+      "prompt_id": 4993
+    },
+    {
+      "scheduled_offset": 283.92731877903424,
+      "prompt_id": 851
+    },
+    {
+      "scheduled_offset": 284.6866926810269,
+      "prompt_id": 4131
+    },
+    {
+      "scheduled_offset": 289.08008385512426,
+      "prompt_id": 2684
+    },
+    {
+      "scheduled_offset": 293.58072171891774,
+      "prompt_id": 1459
+    },
+    {
+      "scheduled_offset": 296.26653315684774,
+      "prompt_id": 2874
+    },
+    {
+      "scheduled_offset": 296.8813288868647,
+      "prompt_id": 4228
+    },
+    {
+      "scheduled_offset": 297.3209314015019,
+      "prompt_id": 3423
+    },
+    {
+      "scheduled_offset": 303.50617842795754,
+      "prompt_id": 4697
+    },
+    {
+      "scheduled_offset": 310.06743532708066,
+      "prompt_id": 136
+    },
+    {
+      "scheduled_offset": 310.2141372999299,
+      "prompt_id": 2328
+    },
+    {
+      "scheduled_offset": 312.72660928585685,
+      "prompt_id": 3822
+    },
+    {
+      "scheduled_offset": 314.5323644982667,
+      "prompt_id": 4569
+    },
+    {
+      "scheduled_offset": 320.7311876143282,
+      "prompt_id": 4003
+    },
+    {
+      "scheduled_offset": 320.9061674576717,
+      "prompt_id": 497
+    },
+    {
+      "scheduled_offset": 321.45244821436995,
+      "prompt_id": 2078
+    },
+    {
+      "scheduled_offset": 325.8682192956731,
+      "prompt_id": 1032
+    },
+    {
+      "scheduled_offset": 325.92930457614256,
+      "prompt_id": 2066
+    },
+    {
+      "scheduled_offset": 328.4425858090432,
+      "prompt_id": 1310
+    },
+    {
+      "scheduled_offset": 329.56625672670174,
+      "prompt_id": 3192
+    },
+    {
+      "scheduled_offset": 330.6827315094982,
+      "prompt_id": 4389
+    },
+    {
+      "scheduled_offset": 331.0706889582963,
+      "prompt_id": 4735
+    },
+    {
+      "scheduled_offset": 333.77134713873,
+      "prompt_id": 2107
+    },
+    {
+      "scheduled_offset": 337.3940504822215,
+      "prompt_id": 1411
+    },
+    {
+      "scheduled_offset": 340.02202371418275,
+      "prompt_id": 315
+    },
+    {
+      "scheduled_offset": 347.2409060502012,
+      "prompt_id": 1773
+    },
+    {
+      "scheduled_offset": 351.81165759606205,
+      "prompt_id": 4145
+    },
+    {
+      "scheduled_offset": 353.19309295580814,
+      "prompt_id": 1753
+    },
+    {
+      "scheduled_offset": 353.88257592797385,
+      "prompt_id": 4904
+    },
+    {
+      "scheduled_offset": 355.3955034151536,
+      "prompt_id": 1227
+    },
+    {
+      "scheduled_offset": 358.5725416558876,
+      "prompt_id": 2070
+    },
+    {
+      "scheduled_offset": 359.6561157481544,
+      "prompt_id": 3580
+    },
+    {
+      "scheduled_offset": 359.9861563837571,
+      "prompt_id": 2403
+    },
+    {
+      "scheduled_offset": 360.2296597871789,
+      "prompt_id": 916
+    },
+    {
+      "scheduled_offset": 360.4080998224651,
+      "prompt_id": 3168
+    },
+    {
+      "scheduled_offset": 363.00389253785426,
+      "prompt_id": 610
+    },
+    {
+      "scheduled_offset": 363.45762311450306,
+      "prompt_id": 3333
+    },
+    {
+      "scheduled_offset": 364.6470726257467,
+      "prompt_id": 2765
+    },
+    {
+      "scheduled_offset": 366.06861643573075,
+      "prompt_id": 4478
+    },
+    {
+      "scheduled_offset": 366.60543242096367,
+      "prompt_id": 1393
+    },
+    {
+      "scheduled_offset": 366.91520053266896,
+      "prompt_id": 2604
+    },
+    {
+      "scheduled_offset": 367.42234288538356,
+      "prompt_id": 385
+    },
+    {
+      "scheduled_offset": 368.2703446698236,
+      "prompt_id": 1031
+    },
+    {
+      "scheduled_offset": 368.81536229341646,
+      "prompt_id": 917
+    },
+    {
+      "scheduled_offset": 368.8191975392797,
+      "prompt_id": 1082
+    },
+    {
+      "scheduled_offset": 369.44755629728456,
+      "prompt_id": 1712
+    },
+    {
+      "scheduled_offset": 369.55864098460245,
+      "prompt_id": 152
+    },
+    {
+      "scheduled_offset": 370.76333076545814,
+      "prompt_id": 2928
+    },
+    {
+      "scheduled_offset": 378.7105109689429,
+      "prompt_id": 4917
+    },
+    {
+      "scheduled_offset": 378.97856694082043,
+      "prompt_id": 3955
+    },
+    {
+      "scheduled_offset": 381.29166611418356,
+      "prompt_id": 2504
+    },
+    {
+      "scheduled_offset": 383.04582970290795,
+      "prompt_id": 2270
+    },
+    {
+      "scheduled_offset": 389.4361905384456,
+      "prompt_id": 2659
+    },
+    {
+      "scheduled_offset": 391.71039150882626,
+      "prompt_id": 4490
+    },
+    {
+      "scheduled_offset": 393.2305555670617,
+      "prompt_id": 456
+    },
+    {
+      "scheduled_offset": 394.98405331763564,
+      "prompt_id": 3154
+    },
+    {
+      "scheduled_offset": 398.6401473281877,
+      "prompt_id": 1726
+    },
+    {
+      "scheduled_offset": 399.1726044950223,
+      "prompt_id": 949
+    },
+    {
+      "scheduled_offset": 401.6915985882966,
+      "prompt_id": 483
+    },
+    {
+      "scheduled_offset": 402.1064234445473,
+      "prompt_id": 1953
+    },
+    {
+      "scheduled_offset": 403.52842598781837,
+      "prompt_id": 682
+    },
+    {
+      "scheduled_offset": 403.76287947069693,
+      "prompt_id": 189
+    },
+    {
+      "scheduled_offset": 405.98440878513696,
+      "prompt_id": 831
+    },
+    {
+      "scheduled_offset": 406.94685205143537,
+      "prompt_id": 3992
+    },
+    {
+      "scheduled_offset": 408.4665781703547,
+      "prompt_id": 1137
+    },
+    {
+      "scheduled_offset": 411.9211210084812,
+      "prompt_id": 2804
+    },
+    {
+      "scheduled_offset": 413.01171155840706,
+      "prompt_id": 2387
+    },
+    {
+      "scheduled_offset": 413.234268016565,
+      "prompt_id": 1377
+    },
+    {
+      "scheduled_offset": 414.541717106424,
+      "prompt_id": 3539
+    },
+    {
+      "scheduled_offset": 416.74385061897385,
+      "prompt_id": 1570
+    },
+    {
+      "scheduled_offset": 419.227713924326,
+      "prompt_id": 2984
+    },
+    {
+      "scheduled_offset": 419.3397444084056,
+      "prompt_id": 1835
+    },
+    {
+      "scheduled_offset": 425.1964712124347,
+      "prompt_id": 4319
+    },
+    {
+      "scheduled_offset": 425.35873260803334,
+      "prompt_id": 225
+    },
+    {
+      "scheduled_offset": 426.4792840866486,
+      "prompt_id": 2469
+    },
+    {
+      "scheduled_offset": 429.05225372175187,
+      "prompt_id": 2208
+    },
+    {
+      "scheduled_offset": 430.45486082061035,
+      "prompt_id": 4591
+    },
+    {
+      "scheduled_offset": 432.1382098121882,
+      "prompt_id": 1190
+    },
+    {
+      "scheduled_offset": 438.9958487778488,
+      "prompt_id": 4062
+    },
+    {
+      "scheduled_offset": 440.5267738521497,
+      "prompt_id": 4932
+    },
+    {
+      "scheduled_offset": 441.4940464722969,
+      "prompt_id": 4536
+    },
+    {
+      "scheduled_offset": 443.1451174066498,
+      "prompt_id": 3312
+    },
+    {
+      "scheduled_offset": 445.25263296717594,
+      "prompt_id": 3248
+    },
+    {
+      "scheduled_offset": 449.29181983773157,
+      "prompt_id": 43
+    },
+    {
+      "scheduled_offset": 450.40055550685963,
+      "prompt_id": 1030
+    },
+    {
+      "scheduled_offset": 450.6774905182886,
+      "prompt_id": 1104
+    },
+    {
+      "scheduled_offset": 452.8087529506555,
+      "prompt_id": 4816
+    },
+    {
+      "scheduled_offset": 453.40638526215633,
+      "prompt_id": 1466
+    },
+    {
+      "scheduled_offset": 455.53582750876694,
+      "prompt_id": 1248
+    },
+    {
+      "scheduled_offset": 455.5953661394697,
+      "prompt_id": 3357
+    },
+    {
+      "scheduled_offset": 460.1769724392444,
+      "prompt_id": 1178
+    },
+    {
+      "scheduled_offset": 460.51044571232393,
+      "prompt_id": 4332
+    },
+    {
+      "scheduled_offset": 461.18069376229204,
+      "prompt_id": 3790
+    },
+    {
+      "scheduled_offset": 461.95706826848186,
+      "prompt_id": 1341
+    },
+    {
+      "scheduled_offset": 462.1426289781119,
+      "prompt_id": 3373
+    },
+    {
+      "scheduled_offset": 463.18648315988725,
+      "prompt_id": 4034
+    },
+    {
+      "scheduled_offset": 464.17116463260896,
+      "prompt_id": 574
+    },
+    {
+      "scheduled_offset": 464.6687443909433,
+      "prompt_id": 3082
+    },
+    {
+      "scheduled_offset": 465.4058737659487,
+      "prompt_id": 84
+    },
+    {
+      "scheduled_offset": 467.48937684031034,
+      "prompt_id": 4734
+    },
+    {
+      "scheduled_offset": 468.01609592565444,
+      "prompt_id": 2745
+    },
+    {
+      "scheduled_offset": 470.16515542613115,
+      "prompt_id": 1369
+    },
+    {
+      "scheduled_offset": 470.5350354310941,
+      "prompt_id": 2745
+    },
+    {
+      "scheduled_offset": 473.4161070334158,
+      "prompt_id": 1749
+    },
+    {
+      "scheduled_offset": 474.6899792552556,
+      "prompt_id": 3869
+    },
+    {
+      "scheduled_offset": 476.04444749631085,
+      "prompt_id": 800
+    },
+    {
+      "scheduled_offset": 476.4626981260857,
+      "prompt_id": 3612
+    },
+    {
+      "scheduled_offset": 477.18636170564326,
+      "prompt_id": 2891
+    },
+    {
+      "scheduled_offset": 477.2903916688425,
+      "prompt_id": 2552
+    },
+    {
+      "scheduled_offset": 478.06558681878585,
+      "prompt_id": 4060
+    },
+    {
+      "scheduled_offset": 479.0612212178627,
+      "prompt_id": 4308
+    },
+    {
+      "scheduled_offset": 479.332125018703,
+      "prompt_id": 3827
+    },
+    {
+      "scheduled_offset": 479.39464545211723,
+      "prompt_id": 2799
+    },
+    {
+      "scheduled_offset": 479.83466672564924,
+      "prompt_id": 4786
+    },
+    {
+      "scheduled_offset": 486.1312631418718,
+      "prompt_id": 3089
+    },
+    {
+      "scheduled_offset": 490.0053631910787,
+      "prompt_id": 253
+    },
+    {
+      "scheduled_offset": 490.33116171279045,
+      "prompt_id": 16
+    },
+    {
+      "scheduled_offset": 491.94044119478707,
+      "prompt_id": 3221
+    },
+    {
+      "scheduled_offset": 492.29877414265684,
+      "prompt_id": 3386
+    },
+    {
+      "scheduled_offset": 507.1070615169798,
+      "prompt_id": 2801
+    },
+    {
+      "scheduled_offset": 507.5962546738076,
+      "prompt_id": 4807
+    },
+    {
+      "scheduled_offset": 508.42208511309406,
+      "prompt_id": 109
+    },
+    {
+      "scheduled_offset": 510.4234350055903,
+      "prompt_id": 3348
+    },
+    {
+      "scheduled_offset": 510.740792439332,
+      "prompt_id": 4854
+    },
+    {
+      "scheduled_offset": 510.80429652587384,
+      "prompt_id": 2732
+    },
+    {
+      "scheduled_offset": 513.3878533593734,
+      "prompt_id": 1252
+    },
+    {
+      "scheduled_offset": 517.3844359337253,
+      "prompt_id": 2534
+    },
+    {
+      "scheduled_offset": 517.5545253265511,
+      "prompt_id": 1004
+    },
+    {
+      "scheduled_offset": 518.4903797237968,
+      "prompt_id": 1260
+    },
+    {
+      "scheduled_offset": 525.6350458867884,
+      "prompt_id": 3047
+    },
+    {
+      "scheduled_offset": 533.2988430548161,
+      "prompt_id": 1081
+    },
+    {
+      "scheduled_offset": 539.3429760233684,
+      "prompt_id": 4354
+    },
+    {
+      "scheduled_offset": 541.0459542677606,
+      "prompt_id": 4485
+    },
+    {
+      "scheduled_offset": 547.8458520208465,
+      "prompt_id": 3977
+    },
+    {
+      "scheduled_offset": 550.5319209240051,
+      "prompt_id": 269
+    },
+    {
+      "scheduled_offset": 555.3360661545519,
+      "prompt_id": 2063
+    },
+    {
+      "scheduled_offset": 555.489860040171,
+      "prompt_id": 2787
+    },
+    {
+      "scheduled_offset": 557.0067415005393,
+      "prompt_id": 1772
+    },
+    {
+      "scheduled_offset": 557.4221867575193,
+      "prompt_id": 2963
+    },
+    {
+      "scheduled_offset": 558.1540584959946,
+      "prompt_id": 4529
+    },
+    {
+      "scheduled_offset": 559.4507138349913,
+      "prompt_id": 2595
+    },
+    {
+      "scheduled_offset": 560.0697498031577,
+      "prompt_id": 4013
+    },
+    {
+      "scheduled_offset": 560.5650077063091,
+      "prompt_id": 2821
+    },
+    {
+      "scheduled_offset": 562.4632264021055,
+      "prompt_id": 2013
+    },
+    {
+      "scheduled_offset": 563.6146608525022,
+      "prompt_id": 1319
+    },
+    {
+      "scheduled_offset": 565.1785099905214,
+      "prompt_id": 455
+    },
+    {
+      "scheduled_offset": 566.8849966583701,
+      "prompt_id": 3067
+    },
+    {
+      "scheduled_offset": 567.6420790127833,
+      "prompt_id": 138
+    },
+    {
+      "scheduled_offset": 569.0093294441004,
+      "prompt_id": 3149
+    },
+    {
+      "scheduled_offset": 570.5395591773696,
+      "prompt_id": 2455
+    },
+    {
+      "scheduled_offset": 574.0043891659071,
+      "prompt_id": 3006
+    },
+    {
+      "scheduled_offset": 574.3968392103961,
+      "prompt_id": 1213
+    },
+    {
+      "scheduled_offset": 576.0371754265994,
+      "prompt_id": 1927
+    },
+    {
+      "scheduled_offset": 579.5209927490511,
+      "prompt_id": 3349
+    },
+    {
+      "scheduled_offset": 580.3475560065901,
+      "prompt_id": 4607
+    },
+    {
+      "scheduled_offset": 580.6081008514429,
+      "prompt_id": 3065
+    },
+    {
+      "scheduled_offset": 580.7778446976561,
+      "prompt_id": 3041
+    },
+    {
+      "scheduled_offset": 583.6457982465321,
+      "prompt_id": 3059
+    },
+    {
+      "scheduled_offset": 592.8442636013348,
+      "prompt_id": 1565
+    },
+    {
+      "scheduled_offset": 595.5112985221068,
+      "prompt_id": 2373
+    },
+    {
+      "scheduled_offset": 597.5166778196432,
+      "prompt_id": 998
+    }
+  ]
+}

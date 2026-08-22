@@ -83,6 +83,28 @@ Environment this was run from: Windows, `gcloud` using **PuTTY** (`plink`/
   `--command="..."` string — it sidesteps quoting corruption entirely
   (this project also hit a curly-quote clipboard-paste corruption issue
   typing a long `--command` by hand).
+- **A tracked shell script checked out on this Windows clone has CRLF line
+  endings** (git's default `core.autocrlf` conversion), and `pscp` copies
+  those bytes verbatim to the Linux instance. The remote `bash` then fails
+  with `$'\r': command not found` and `set: pipefail: invalid option name` —
+  distinct from the `Out-File` BOM issue above (this is CRLF throughout the
+  file, not a single leading BOM byte), and it is silent about *why*: the
+  script simply dies on its first `set -euo pipefail` line. Hit for real
+  2026-08-22 launching `setup_and_launch_vllm.sh` for GPU session #2 — the
+  first `nohup` launch silently failed before doing any work (no partial
+  download, no wasted GPU time, just an empty log until checked). Fix: before
+  `scp`-ing any tracked `.sh` file to the instance, write an LF-only copy to a
+  scratch location (`data.replace(b'\r\n', b'\n')` in Python, or any
+  CRLF-stripping step) and transfer that instead — do **not** edit the
+  tracked file itself to fix its line endings, since a metered session's
+  `bootstrap` refuses a dirty tree.
+- **`gcloud compute ssh ... --command="..."` only prints the remote
+  command's stdout after the whole command exits** — there is no live
+  streaming to the local terminal. For a long-running remote process (model
+  download, a multi-hour loadgen sweep), check progress with a *separate*
+  short `ssh --command` that inspects state directly (`ls -la` the artifact
+  directory, `pgrep -af` the process, `tail` the log) rather than waiting on
+  the original call's output.
 
 ## Image and package choice
 

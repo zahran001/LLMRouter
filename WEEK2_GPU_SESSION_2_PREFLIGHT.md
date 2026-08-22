@@ -443,7 +443,7 @@ the end it covers. Worst case if one fires is 18 minutes at λ=0.5.
 ## Superseded numbers — the final pre-GPU remediation moved them
 
 **Everything below this heading predates the 2026-08-21 remediation pass**
-(Phases A–G, `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md`). The evidence it
+(Phases A–G; removed 2026-08-22, in git history at `625bc0e`). The evidence it
 records is still the evidence R-DOC was rendered on, but three classes of
 figure in it are now stale, and are corrected here rather than edited in place
 so the R-DOC verdict keeps its original basis:

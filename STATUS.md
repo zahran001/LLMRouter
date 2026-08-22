@@ -70,7 +70,7 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | R-DOC documentation authority cleanup | **Done** — `WEEK2_DOC_INDEX.md` |
 | Hard Stop R-DOC — human verdict on documentation governance | **PASSED 2026-08-19** (human verdict) |
 | Tier A execution-path remediation | **Done 2026-08-21** — scout and headline share one session #2 measurement path |
-| Final pre-GPU remediation, Phases A–G | **Done 2026-08-21** — `WEEK2_FINAL_PRE_GPU_REMEDIATION_README.md` |
+| Final pre-GPU remediation, Phases A–G | **Done 2026-08-21** — removed 2026-08-22; in git history at `625bc0e`; decisions in `WEEK2_PLAN.md` §11.7 |
 | Hard Stop R-PREGPU | **Next** — R-DOC needs re-running too: this pass changed an executable document |
 | GPU session #2 (human-owned) | **Not run.** No instance exists |
 

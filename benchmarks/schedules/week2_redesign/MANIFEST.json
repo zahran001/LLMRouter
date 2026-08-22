@@ -1,11 +1,16 @@
 {
   "what": "Redesigned Week 2 schedule families (R4 README R5/R6/R11).",
-  "generated_at": "2026-08-19T06:23:28+00:00",
+  "generated_at": "2026-08-22T18:02:51+00:00",
   "headline": {
     "schedule_scheme_version": "headline-schedule-v2",
+    "tier": "B_headline_confirmation",
     "canonical_workload": "benchmarks/workloads/week2_headline/canonical_v1.json",
     "canonical_membership_id": "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b",
     "lambdas": [
+      0.5,
+      0.75,
+      1.0,
+      1.25,
       1.5,
       2.0,
       2.5,
@@ -17,8 +22,56 @@
     "arrival_seed_base": 20260819000,
     "assignment_seed_base": 20260819500,
     "seed_rule": "arrival_seed = base + repeat_id; assignment_seed = base + repeat_id",
-    "total_schedule_duration_s": 26481.760854221728,
+    "total_schedule_duration_s": 88211.59929248155,
     "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps0.5.schedule.json",
+        "sha256": "8910b46458f53378772d5cbfa3a95a665d1adb5de1653742e02641777ee367b5",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 0.5,
+        "materialized_schedule_count": 4030,
+        "materialized_warmup_count": 30,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 7908.949919414436,
+        "materialized_schedule_rps": 0.5096223114006588,
+        "nominal_realization_delta_pct": 1.9244622801317668
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps0.75.schedule.json",
+        "sha256": "c3c9e2b18a600f5cd2aaed9b5958da5bde2245278577414fbc5f5c70c022f22e",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 0.75,
+        "materialized_schedule_count": 4048,
+        "materialized_warmup_count": 48,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 5302.942364873401,
+        "materialized_schedule_rps": 0.7629303779494411,
+        "nominal_realization_delta_pct": 1.7240503932588098
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps1.schedule.json",
+        "sha256": "732fde3fc4d50c49742c7ec561b58975ea37db66d51da9bec1583bcf7ce56a16",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 1.0,
+        "materialized_schedule_count": 4066,
+        "materialized_warmup_count": 66,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 4001.572832317303,
+        "materialized_schedule_rps": 1.0148233129687843,
+        "nominal_realization_delta_pct": 1.4823312968784252
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps1.25.schedule.json",
+        "sha256": "f7cb9a826141759d8a3d2236c6b7b424203ab12a1c6185435e684415a6833b67",
+        "repeat_id": 1,
+        "nominal_lambda_rps": 1.25,
+        "materialized_schedule_count": 4077,
+        "materialized_warmup_count": 77,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 3209.4565316428543,
+        "materialized_schedule_rps": 1.2700603929000651,
+        "nominal_realization_delta_pct": 1.6048314320052093
+      },
       {
         "path": "benchmarks/schedules/week2_redesign/headline/headline_r1_rps1.5.schedule.json",
         "sha256": "5246068ddb450f2720f06c22d3c6e320915e0658e89eed3c0e976eec936deda2",
@@ -80,6 +133,54 @@
         "nominal_realization_delta_pct": 1.7737113218069034
       },
       {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps0.5.schedule.json",
+        "sha256": "12cbe9dcec894fd2d6cada8d90ce3bbb24aec9b198c8fa85baed0fa3e0c114dc",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 0.5,
+        "materialized_schedule_count": 4036,
+        "materialized_warmup_count": 36,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 8016.06133162277,
+        "materialized_schedule_rps": 0.5027613329350912,
+        "nominal_realization_delta_pct": 0.5522665870182353
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps0.75.schedule.json",
+        "sha256": "1bf5adfd197392b6ef4b5baa4d3527da2f09e8bb132ad3b8afa541f04cfa5840",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 0.75,
+        "materialized_schedule_count": 4061,
+        "materialized_warmup_count": 61,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 5381.983088869476,
+        "materialized_schedule_rps": 0.7515995322055226,
+        "nominal_realization_delta_pct": 0.21327096073634108
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps1.schedule.json",
+        "sha256": "c80d74cb55c4001a53ce6c5d3d735b8487f0b0b787dcc758ee08402fe3929b7d",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 1.0,
+        "materialized_schedule_count": 4078,
+        "materialized_warmup_count": 78,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 4051.119950649355,
+        "materialized_schedule_rps": 1.0022249517580148,
+        "nominal_realization_delta_pct": 0.2224951758014848
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps1.25.schedule.json",
+        "sha256": "eb3a28f026a36c043bd03540ae13503ba9d2d4964953d418c2332956fad7f415",
+        "repeat_id": 2,
+        "nominal_lambda_rps": 1.25,
+        "materialized_schedule_count": 4099,
+        "materialized_warmup_count": 99,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 3260.4407449324553,
+        "materialized_schedule_rps": 1.2498278577203963,
+        "nominal_realization_delta_pct": -0.013771382368297225
+      },
+      {
         "path": "benchmarks/schedules/week2_redesign/headline/headline_r2_rps1.5.schedule.json",
         "sha256": "12514c042f86ee08b99239f44f63a06fc6c335611834ab20d9f1a8ccb5efed71",
         "repeat_id": 2,
@@ -138,6 +239,54 @@
         "materialized_schedule_duration_s": 1060.3174656457845,
         "materialized_schedule_rps": 3.9987305404266653,
         "nominal_realization_delta_pct": -0.031736489333367146
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps0.5.schedule.json",
+        "sha256": "b47a449ad49be43d47f47188ac72d1fdab744d5b56067f660330f2e681d0d67a",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 0.5,
+        "materialized_schedule_count": 4040,
+        "materialized_warmup_count": 40,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 7979.811761174197,
+        "materialized_schedule_rps": 0.5050625091380906,
+        "nominal_realization_delta_pct": 1.0125018276181175
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps0.75.schedule.json",
+        "sha256": "56f62db0fa30a3adf4650138137673e41f01f5c2b02d571ffd568bf4ed3c68bf",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 0.75,
+        "materialized_schedule_count": 4059,
+        "materialized_warmup_count": 59,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 5350.2054305136,
+        "materialized_schedule_rps": 0.7561143045463283,
+        "nominal_realization_delta_pct": 0.8152406061771108
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps1.schedule.json",
+        "sha256": "c0ad3ae89b94f7b56033269b0a4f7b4c743086de0583ecc49dfc058659962fdf",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 1.0,
+        "materialized_schedule_count": 4075,
+        "materialized_warmup_count": 75,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 4028.8099637706623,
+        "materialized_schedule_rps": 1.0078587880281638,
+        "nominal_realization_delta_pct": 0.7858788028163755
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps1.25.schedule.json",
+        "sha256": "89fd3ad02e40d2a3af4cad9e823fdf4c8603fbb7a8b3e1a93821fcdfc6d5b653",
+        "repeat_id": 3,
+        "nominal_lambda_rps": 1.25,
+        "materialized_schedule_count": 4094,
+        "materialized_warmup_count": 94,
+        "materialized_post_warmup_count": 4000,
+        "materialized_schedule_duration_s": 3238.4845184793076,
+        "materialized_schedule_rps": 1.2584613757734244,
+        "nominal_realization_delta_pct": 0.6769100618739543
       },
       {
         "path": "benchmarks/schedules/week2_redesign/headline/headline_r3_rps1.5.schedule.json",
@@ -207,6 +356,38 @@
     "seed_base": 20260819900,
     "never_defines_headline_breach": true,
     "schedules": [
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps0.5.schedule.json",
+        "sha256": "71b934cbc1edf5e822477936d7b9ed057992e2cb3f14391f2ecd6c3c66dfd1cf",
+        "nominal_lambda_rps": 0.5,
+        "n_scheduled": 317,
+        "duration_s": 600.0,
+        "seed": 20260819905
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps0.75.schedule.json",
+        "sha256": "dba681fc3f063b21b1173597ad9767709ac2cd32fe32253073a42f18f2a84291",
+        "nominal_lambda_rps": 0.75,
+        "n_scheduled": 483,
+        "duration_s": 600.0,
+        "seed": 20260819907
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps1.schedule.json",
+        "sha256": "6d7f6576a3c144a38693b7c683ab431f3db58e3b475b8fc57ca93a23986425c1",
+        "nominal_lambda_rps": 1.0,
+        "n_scheduled": 617,
+        "duration_s": 600.0,
+        "seed": 20260819910
+      },
+      {
+        "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps1.25.schedule.json",
+        "sha256": "1a82695df321feccd74ba60d2399cc549d6f1ede9088b0bb5ff07940c831cc4b",
+        "nominal_lambda_rps": 1.25,
+        "n_scheduled": 786,
+        "duration_s": 600.0,
+        "seed": 20260819912
+      },
       {
         "path": "benchmarks/schedules/week2_redesign/secondary_natural/secondary_rps1.5.schedule.json",
         "sha256": "bd01b1c2a8d5cd8b8edf3be71c6b8cfb46c4a7876c416e80c2eed45d5c4c2adc",
