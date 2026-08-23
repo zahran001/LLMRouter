@@ -1,14 +1,15 @@
-# Week 2 — GPU Session #2, Attempt 2 Plan (Draft)
+# Week 2 — GPU Session #2, Attempt 2 Plan
 
-> **STATUS: EVIDENCE — DRAFT, NOT YET LOCKED OR EXECUTABLE**
+> **STATUS: EVIDENCE — DESIGN LOCKED, NOT YET EXECUTABLE**
 >
 > Role: proposed redesign for a second GPU session #2 attempt, written after
 > Attempt 1's all-`CENSORED` Tier B result (`WEEK2_GPU_SESSION_2_REPORT.md`).
-> §14's decisions are unchecked and need explicit human lock-in. It does not
-> currently drive anything — the live runbook remains
-> `WEEK2_GPU_SESSION_2_PLAN.md` until (and unless) this is promoted to
-> replace it, which is a separate, deliberate step (`WEEK2_DOC_INDEX.md`'s
-> "exactly one current GPU runbook" rule).
+> §14's decisions were locked 2026-08-22 and the supporting code is being
+> implemented from them. It still does not drive anything — the live runbook
+> remains `WEEK2_GPU_SESSION_2_PLAN.md` until (and unless) this design is
+> merged into it, which is a separate, deliberate step (`WEEK2_DOC_INDEX.md`'s
+> "exactly one current GPU runbook" rule) requiring its own R-DOC/R-PREGPU
+> cycle after implementation lands.
 > Index: `WEEK2_DOC_INDEX.md`.
 
 > **Purpose:** finish Week 2 by locating the **sustained** RPS boundary where a naive single vLLM replica breaches the **500 ms p99 TTFT SLO**.
@@ -397,7 +398,7 @@ small delays gives a practical headline-session budget of roughly:
 
 ### Full Week 2 including secondary scenarios
 
-The exact secondary cost is **not yet fully determined by this draft**, because
+The exact secondary cost is **not yet fully determined by this plan**, because
 their final λ subset and sustained-duration policy are chosen only after the
 headline boundary is known.
 
@@ -414,16 +415,22 @@ stop and recalculate rather than trimming measurement duration to fit a budget.
 
 # 14. Decisions to lock before generating schedules
 
-- [ ] Keep 60 s warmup.
-- [ ] Sustained scout λ = `{0.5, 0.75, 1.0, 1.25}`.
-- [ ] Minimum sustained duration = **45 min**.
-- [ ] Minimum per-run N = **2,000**.
-- [ ] Generate each Poisson schedule until **both** `post_warmup_elapsed >= 2700s` and `post_warmup_arrivals >= 2000`, then freeze the realized schedule exactly.
-- [ ] `>=1%` censoring ⇒ `OVER_CENSORED`, numeric p99 suppressed.
-- [ ] Final repeats = **3**, unanimous classification.
-- [ ] Counterbalanced repeat-major ordering.
-- [ ] Secondary scenarios run only after headline closes.
-- [ ] Same eager/no-prefix-cache server configuration as Attempt 1.
+**Locked 2026-08-22 by human decision, adopted as written.** The `>=1%`
+censoring rule is implemented as the exact nearest-rank inequality it argues
+for (`n_censored >= n_offered_window - ceil(0.99 * n_offered_window) + 1`),
+not a loose percentage cutoff — this is a precisification of the rule below,
+not a change to it.
+
+- [x] Keep 60 s warmup.
+- [x] Sustained scout λ = `{0.5, 0.75, 1.0, 1.25}`.
+- [x] Minimum sustained duration = **45 min**.
+- [x] Minimum per-run N = **2,000**.
+- [x] Generate each Poisson schedule until **both** `post_warmup_elapsed >= 2700s` and `post_warmup_arrivals >= 2000`, then freeze the realized schedule exactly.
+- [x] `>=1%` censoring ⇒ `OVER_CENSORED`, numeric p99 suppressed.
+- [x] Final repeats = **3**, unanimous classification.
+- [x] Counterbalanced repeat-major ordering.
+- [x] Secondary scenarios run only after headline closes.
+- [x] Same eager/no-prefix-cache server configuration as Attempt 1.
 
 ---
 

@@ -343,7 +343,7 @@ def control_percentile_lock() -> None:
 
 def control_censoring_suppression() -> None:
     """R8: survivor-only p99 is refused above the 5% gate."""
-    from metrics.headline_point import CENSORED, headline_point_metrics
+    from metrics.headline_point import OVER_CENSORED, headline_point_metrics
     from metrics.point import MIN_TAIL_SAMPLES
 
     n, censored = 200, 66  # 33%, the first session's 10-RPS rate
@@ -368,7 +368,7 @@ def control_censoring_suppression() -> None:
     report(
         "censoring suppresses a survivor-only p99",
         red_ok=(survivors >= MIN_TAIL_SAMPLES),
-        green_ok=(record["point_state"] == CENSORED and record["ttft_p99_ms"] is None),
+        green_ok=(record["point_state"] == OVER_CENSORED and record["ttft_p99_ms"] is None),
         red_detail=f"{survivors} surviving samples clear the old n>={MIN_TAIL_SAMPLES} gate, so "
                    "the old rule would publish a p99 of 120ms for a point that lost 33% of "
                    "its requests",

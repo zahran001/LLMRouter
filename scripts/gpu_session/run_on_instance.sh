@@ -51,6 +51,11 @@ usage: run_on_instance.sh <command> [args]
                      same validity gates as the headline family, stamped
                      DIAGNOSTIC so it can never enter the classification
                      (e.g. benchmarks/schedules/week2_redesign/scout/headline_r1_rps2.schedule.json)
+  sustained-scout <schedule>
+                     drive ONE frozen attempt-2 sustained-scout schedule (locked
+                     2026-08-22) -- freezes on min(45min elapsed, 2000 arrivals)
+                     rather than N=500, replacing the N=500 scout as the tool for
+                     locating the crossing under sustained load. DIAGNOSTIC
   steady <schedule>  drive ONE frozen steady-reference point (v2 exact-N).
                      Same gates as scout/headline; DIAGNOSTIC
   secondary <schedule>
@@ -291,6 +296,7 @@ case "${1:-}" in
   verify-cache) shift; cmd_verify_cache "$@" ;;
   floor)        shift; cmd_floor "$@" ;;
   scout)        shift; cmd_scenario scout "$@" ;;
+  sustained-scout) shift; cmd_scenario sustained-scout "$@" ;;
   steady)       shift; cmd_scenario steady "$@" ;;
   secondary)    shift; cmd_scenario secondary "$@" ;;
   adversarial)  shift; cmd_scenario adversarial "$@" ;;

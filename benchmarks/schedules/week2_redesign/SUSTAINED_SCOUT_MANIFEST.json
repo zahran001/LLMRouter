@@ -1,0 +1,63 @@
+{
+  "what": "Sustained-scout schedule family: freezes on min(duration, count), not a fixed N (attempt-2 design, WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md, locked 2026-08-22).",
+  "generated_at": "2026-08-22T21:03:13+00:00",
+  "schedule_scheme_version": "headline-schedule-v2",
+  "workload_class": "sustained_scout_controlled",
+  "canonical_workload": "benchmarks/workloads/week2_headline/canonical_v1.json",
+  "canonical_membership_id": "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b",
+  "lambdas": [
+    0.5,
+    0.75,
+    1.0,
+    1.25
+  ],
+  "repeats": 1,
+  "warmup_s": 60.0,
+  "min_duration_s": 2700.0,
+  "min_count": 2000,
+  "arrival_seed_base": 20260822100,
+  "assignment_seed_base": 20260822600,
+  "never_defines_headline_breach": true,
+  "schedules": [
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps0.5.schedule.json",
+      "sha256": "8e4ce692af1d7fed483aa45ce95e478374d15b47b7687e4028317f170bc13777",
+      "nominal_lambda_rps": 0.5,
+      "materialized_schedule_count": 2039,
+      "materialized_warmup_count": 39,
+      "materialized_post_warmup_count": 2000,
+      "materialized_schedule_duration_s": 4178.840049471004,
+      "materialized_post_warmup_duration_s": 4118.840049471004
+    },
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps0.75.schedule.json",
+      "sha256": "dfc953dd292f369e9d3528c7db2dcebf79e85f0180f39b88ec5cef0177349eff",
+      "nominal_lambda_rps": 0.75,
+      "materialized_schedule_count": 2032,
+      "materialized_warmup_count": 32,
+      "materialized_post_warmup_count": 2000,
+      "materialized_schedule_duration_s": 2780.4083274940067,
+      "materialized_post_warmup_duration_s": 2720.4083274940067
+    },
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps1.schedule.json",
+      "sha256": "bfabc21c9161de43c088e80c5e72a12cbd03380a6a80a75f4d567cf589004eee",
+      "nominal_lambda_rps": 1.0,
+      "materialized_schedule_count": 2711,
+      "materialized_warmup_count": 71,
+      "materialized_post_warmup_count": 2640,
+      "materialized_schedule_duration_s": 2760.894166333881,
+      "materialized_post_warmup_duration_s": 2700.894166333881
+    },
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps1.25.schedule.json",
+      "sha256": "66171bdfba5d355544e2a4eeb85e8a4e4b9b696a2b6a1819697142e8b59d0fd6",
+      "nominal_lambda_rps": 1.25,
+      "materialized_schedule_count": 3473,
+      "materialized_warmup_count": 84,
+      "materialized_post_warmup_count": 3389,
+      "materialized_schedule_duration_s": 2760.4740048866406,
+      "materialized_post_warmup_duration_s": 2700.4740048866406
+    }
+  ]
+}

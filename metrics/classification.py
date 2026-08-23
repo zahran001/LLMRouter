@@ -48,6 +48,7 @@ from metrics.headline_point import (
     HEADLINE_EVIDENCE,
     HEADLINE_POINT_RECORD_VERSION,
     OVER,
+    OVER_CENSORED,
     UNCERTAIN,
     UNDER,
 )
@@ -60,8 +61,19 @@ HEADLINE_POLICY_PATH = (REPO_ROOT / "benchmarks" / "workloads" / "week2_headline
 
 # A repeat that could not measure anything is never pooled with ones that
 # could -- averaging a censored repeat into valid ones manufactures a clean
-# aggregate out of a broken measurement.
-MEASURABLE_STATES = (UNDER, OVER)
+# aggregate out of a broken measurement. OVER_CENSORED belongs here (unlike
+# legacy CENSORED): it is a proven breach, not an ambiguous one -- see
+# `metrics/headline_point.py`'s R8 note (attempt-2, locked 2026-08-22).
+MEASURABLE_STATES = (UNDER, OVER, OVER_CENSORED)
+
+# States that agree with each other for repeat-family unanimity purposes even
+# though their string values differ -- both mean "breach confirmed", one via
+# a computed percentile and one via the censoring proof.
+_BREACH_EQUIVALENT_STATES = (OVER, OVER_CENSORED)
+
+
+def _normalize_for_agreement(state: str) -> str:
+    return OVER if state in _BREACH_EQUIVALENT_STATES else state
 
 
 @dataclass(frozen=True)
@@ -391,9 +403,13 @@ def classify_point(records: list[dict], policy: RepeatPolicy,
     # point may finalize. `ttft_censoring_rate` is proven present and numeric
     # by `_headline_evidence_only`, so the warning can be recomputed instead
     # of trusted.
+    # OVER_CENSORED records are excluded here even though their raw censoring
+    # rate can sit under the legacy 5% band: they are a proven breach, not an
+    # ambiguous one, so there is no tail sensitivity for a human to review.
     pending = [
         r.get("repeat_id") for r in valid
-        if 0.0 < float(r["ttft_censoring_rate"]) <= CENSORING_HARD_GATE
+        if r.get("point_state") != OVER_CENSORED
+        and 0.0 < float(r["ttft_censoring_rate"]) <= CENSORING_HARD_GATE
         and r.get("tail_censoring_review_status") != "COMPLETE"
     ]
 
@@ -422,12 +438,19 @@ def classify_point(records: list[dict], policy: RepeatPolicy,
                                 "verdict exists at this point")
         return aggregate
 
-    states = {r["point_state"] for r in valid}
+    # Normalized for agreement: OVER and OVER_CENSORED both mean "breach
+    # confirmed" (one via a computed percentile, one via the censoring proof),
+    # so a family of e.g. OVER + OVER_CENSORED + OVER_CENSORED agrees on OVER
+    # rather than reading as a 2-1 split.
+    states = {_normalize_for_agreement(r["point_state"]) for r in valid}
     if policy.require_unanimous and len(states) > 1:
         aggregate.reason = (
             "repeats disagree: "
-            + ", ".join(f"r{r['repeat_id']}={r['point_state']} "
-                        f"(p99 {r['ttft_p99_ms']:.1f}ms)" for r in valid))
+            + ", ".join(
+                f"r{r['repeat_id']}={r['point_state']} "
+                + (f"(p99 {r['ttft_p99_ms']:.1f}ms)" if r.get("ttft_p99_ms") is not None
+                   else "(no p99, censoring-proven)")
+                for r in valid))
         return aggregate
 
     if policy.max_ttft_p99_spread_ms is not None and spread is not None \

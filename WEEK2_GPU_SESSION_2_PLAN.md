@@ -48,7 +48,7 @@ Record these in the session log. Any mismatch is a STOP.
 | Corpus SHA-256 | `f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630` (5,000 prompts) |
 | Schedule scheme version | `headline-schedule-v2` |
 | RNG scheme version | `headline-rng-v1` |
-| Repeat policy | `repeat_policy.json`, `"status": "LOCKED"`, `policy_version` 2 |
+| Repeat policy | `repeat_policy.json`, `"status": "LOCKED"`, `policy_version` 3 (bumped 2026-08-22: `OVER_CENSORED` state + `sustained_scout` block, D-ATTEMPT2-1) |
 | Percentile method | **nearest-rank**, one shared implementation (`metrics/percentile.py`) |
 | Scout workload | `benchmarks/workloads/week2_scout/canonical_v1.json`, membership id `e9470f8f…` — **separately namespaced so it can never be mistaken for headline evidence** |
 

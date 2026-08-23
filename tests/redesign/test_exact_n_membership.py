@@ -325,6 +325,18 @@ def test_the_committed_schedules_yield_their_frozen_population(family, expected_
         prov = data["provenance"]
         offsets = [e["scheduled_offset"] for e in data["entries"]]
         members = measurement_membership(offsets, prov["warmup_boundary_s"])
-        assert len(members) == expected_n, f"{path.name}: {len(members)} members, want {expected_n}"
+        # Threshold-gated schedules (attempt-2 low-lambda points,
+        # schedule_generation_rule="min_duration_and_count") realize whatever
+        # count the duration+count rule produced, not a fixed N shared by the
+        # whole family -- only exact-N schedules are checked against the
+        # parametrized `expected_n`. Every schedule, regardless of rule, must
+        # still match its OWN declared target.
+        if prov.get("schedule_generation_rule") == "min_duration_and_count":
+            assert len(members) == prov["post_warmup_target_min_count"] \
+                or prov["materialized_post_warmup_duration_s"] >= prov["post_warmup_target_min_duration_s"], \
+                f"{path.name}: {len(members)} members satisfies neither threshold"
+        else:
+            assert len(members) == expected_n, \
+                f"{path.name}: {len(members)} members, want {expected_n}"
         assert len(members) == prov["post_warmup_target_count"]
         assert len(members) == prov["materialized_post_warmup_count"]

@@ -192,6 +192,52 @@ def materialize_exact_n_steady(nominal_lambda_rps: float, warmup_s: float, n: in
     return offsets, len(offsets) - n
 
 
+def materialize_min_duration_and_count(nominal_lambda_rps: float, warmup_s: float,
+                                       min_duration_s: float, min_count: int,
+                                       arrival_rng: np.random.Generator) -> tuple[list[float], int]:
+    """Poisson offsets, frozen the instant BOTH post-warmup thresholds hold.
+
+    Attempt 1's Tier A scout (`materialize_exact_n`, N=500) read lambda=1 as a
+    clean UNDER over ~5.5 minutes; Tier B (N=4000) then found the *same*
+    neighbourhood 36% censored over ~45 minutes. A fixed N alone makes low-RPS
+    points long and high-RPS points short; a fixed duration alone can leave too
+    few tail observations at low RPS. This stops generation at the first
+    arrival for which BOTH `elapsed since warmup boundary >= min_duration_s`
+    AND `post-warmup count >= min_count` are true, so a slowly diverging queue
+    gets enough wall-clock time to reveal itself while the point still carries
+    a real p99 sample floor (`WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` §4,
+    locked 2026-08-22).
+
+    Neither the resulting duration nor the resulting count is chosen ahead of
+    time -- whichever threshold binds last decides both, same as
+    `materialize_exact_n` leaves duration as an outcome rather than an input.
+
+    Returns `(offsets, n_warmup)`.
+    """
+    if nominal_lambda_rps <= 0:
+        raise HeadlineScheduleError(f"nominal lambda must be positive, got {nominal_lambda_rps}")
+    if min_count <= 0:
+        raise HeadlineScheduleError(f"min_count must be positive, got {min_count}")
+    if warmup_s < 0:
+        raise HeadlineScheduleError(f"warmup must be non-negative, got {warmup_s}")
+    if min_duration_s < 0:
+        raise HeadlineScheduleError(f"min_duration_s must be non-negative, got {min_duration_s}")
+
+    mean_gap = 1.0 / nominal_lambda_rps
+    offsets: list[float] = []
+    post_warmup = 0
+    t = 0.0
+    while True:
+        t += float(arrival_rng.exponential(mean_gap))
+        offsets.append(t)
+        if t >= warmup_s:
+            post_warmup += 1
+            if post_warmup >= min_count and (t - warmup_s) >= min_duration_s:
+                break
+
+    return offsets, len(offsets) - post_warmup
+
+
 ARRIVAL_PROCESSES = ("poisson", "steady")
 
 
@@ -316,6 +362,144 @@ def build_headline_schedule(
         # `duration_s` and `target_rps` keep their legacy names so the existing
         # scheduler and point-metrics code read a v2 schedule without special
         # cases. Their MEANING is recorded above; nothing infers it from these.
+        "duration_s": duration_s,
+        "target_rps": nominal_lambda_rps,
+        "n_scheduled": len(entries),
+    }
+
+    return Schedule(provenance=provenance, entries=entries)
+
+
+def build_thresholded_headline_schedule(
+    *,
+    canonical: dict,
+    corpus: Corpus,
+    identity: RepeatIdentity,
+    nominal_lambda_rps: float,
+    warmup_s: float,
+    min_duration_s: float,
+    min_count: int,
+    arrival_process: str = "poisson",
+    workload_class: str,
+) -> Schedule:
+    """One frozen duration+count-gated schedule (sustained scout / attempt-2
+    headline confirmation, `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` §14).
+
+    Mirrors `build_headline_schedule`'s validation, permutation, warmup draw
+    and provenance shape exactly -- the only real difference is the
+    materializer (`materialize_min_duration_and_count` instead of
+    `materialize_exact_n`) and that the realized post-warmup count is an
+    OUTCOME here too, not a value read off the canonical workload's locked
+    `N`. Canonical prompts are still assigned in the same deterministic
+    permutation order (`canonical_permutation`) as the exact-N family, just
+    truncated to however many the threshold rule actually produced -- the
+    canonical multiset and its ordering rule are unchanged; only how much of
+    it gets used per point varies with lambda.
+
+    `arrival_process="steady"` is intentionally not supported here: nothing
+    in the attempt-2 design calls for a steady-arrival counterpart of this
+    family, so there is no `materialize_min_duration_and_count_steady` to
+    keep untested.
+    """
+    if arrival_process != "poisson":
+        raise HeadlineScheduleError(
+            f"build_thresholded_headline_schedule only supports 'poisson', got {arrival_process!r}")
+    if canonical["scheme_version"] != CANONICAL_SCHEME_VERSION:
+        raise HeadlineScheduleError(
+            f"canonical workload is {canonical['scheme_version']!r}, this generator implements "
+            f"{CANONICAL_SCHEME_VERSION!r}")
+    if canonical["membership_id"] != identity.canonical_membership_id:
+        raise HeadlineScheduleError(
+            f"identity references membership {identity.canonical_membership_id[:16]}... but the "
+            f"supplied workload is {canonical['membership_id'][:16]}...")
+
+    membership = canonical["membership"]
+
+    arrival_rng, warmup_rng = derive_headline_streams(identity.arrival_seed, identity.repeat_id)
+    offsets, n_warmup = materialize_min_duration_and_count(
+        nominal_lambda_rps, warmup_s, min_duration_s, min_count, arrival_rng)
+
+    post_warmup_count = len(offsets) - n_warmup
+    if post_warmup_count > len(membership):
+        raise HeadlineScheduleError(
+            f"threshold realization needs {post_warmup_count} canonical prompts but the "
+            f"workload only carries {len(membership)} -- min_duration_s/min_count is too large "
+            "for this canonical pool")
+
+    order = canonical_permutation(membership, identity.assignment_seed)[:post_warmup_count]
+
+    warmup_prompt_ids = [
+        corpus.prompts[int(warmup_rng.integers(0, len(corpus.prompts)))].prompt_id
+        for _ in range(n_warmup)
+    ]
+
+    entries = [
+        ScheduleEntry(scheduled_offset=offset, prompt_id=prompt_id)
+        for offset, prompt_id in zip(offsets[:n_warmup], warmup_prompt_ids)
+    ] + [
+        ScheduleEntry(scheduled_offset=offset, prompt_id=prompt_id)
+        for offset, prompt_id in zip(offsets[n_warmup:], order)
+    ]
+
+    realized_post_warmup = sum(1 for e in entries if e.scheduled_offset >= warmup_s)
+    if realized_post_warmup != post_warmup_count:
+        raise HeadlineScheduleError(
+            f"materialization produced {realized_post_warmup} post-warmup arrivals, expected "
+            f"{post_warmup_count} -- the threshold contract is broken")
+
+    duration_s = entries[-1].scheduled_offset
+    post_warmup_duration_s = duration_s - warmup_s
+    corpus_digest = hashlib.sha256(corpus.source_path.read_bytes()).hexdigest()
+    if corpus_digest != canonical["corpus"]["sha256"]:
+        raise HeadlineScheduleError(
+            f"corpus drift: workload was built against {canonical['corpus']['sha256']}, this "
+            f"corpus hashes to {corpus_digest}")
+
+    provenance = {
+        # --- format identity ------------------------------------------------
+        "schedule_scheme_version": HEADLINE_SCHEDULE_SCHEME_VERSION,
+        "rng_scheme_version": HEADLINE_RNG_SCHEME_VERSION,
+        "canonical_scheme_version": canonical["scheme_version"],
+        "workload_class": workload_class,
+        # --- repeat identity (R5) -------------------------------------------
+        **identity.to_dict(),
+        # --- workload parameters --------------------------------------------
+        "arrival_process": arrival_process,
+        "nominal_lambda_rps": nominal_lambda_rps,
+        "warmup_boundary_s": warmup_s,
+        # `post_warmup_target_count` is set to the REALIZED count, not a
+        # pre-chosen value -- `loadgen/redesign_point.py`'s `require_exact_n`
+        # only checks self-consistency (materialized == target), so a
+        # schedule that freezes on a threshold rather than a fixed N still
+        # satisfies the exact-N replay contract unchanged. The generation-time
+        # constraint that actually decided this count is recorded separately.
+        "post_warmup_target_count": post_warmup_count,
+        "post_warmup_target_min_count": min_count,
+        "post_warmup_target_min_duration_s": min_duration_s,
+        "schedule_generation_rule": "min_duration_and_count",
+        # --- realization outcomes (R6) ---------------------------------------
+        "materialized_schedule_count": len(entries),
+        "materialized_warmup_count": n_warmup,
+        "materialized_post_warmup_count": post_warmup_count,
+        "materialized_schedule_duration_s": duration_s,
+        "materialized_post_warmup_duration_s": post_warmup_duration_s,
+        "materialized_schedule_rps": post_warmup_count / post_warmup_duration_s
+        if post_warmup_duration_s > 0 else 0.0,
+        # --- corpus contract --------------------------------------------------
+        "corpus_path": str(corpus.source_path),
+        "corpus_sha256": corpus_digest,
+        "corpus_size": len(corpus),
+        "warmup_prompt_source": "i.i.d. with replacement over the full pinned corpus, "
+                                "warmup_corpus_rng (child 1 of the headline seed sequence)",
+        # --- the invariant, stated in the artifact itself ---------------------
+        "n_is_a_schedule_generation_constraint": True,
+        "runtime_stop_condition": "schedule issuance exhausted",
+        "note": (f"duration_s and the post-warmup count are BOTH outcomes: generation stopped at "
+                 f"the first arrival for which post-warmup count >= {min_count} AND post-warmup "
+                 f"elapsed >= {min_duration_s:g}s both held. Runtime must drive every entry and "
+                 "must not stop on completions, samples, errors or censoring, exactly as for the "
+                 "exact-N family (WEEK2_PLAN.md 10.2)."),
+        # --- back-compat for readers that predate v2 --------------------------
         "duration_s": duration_s,
         "target_rps": nominal_lambda_rps,
         "n_scheduled": len(entries),

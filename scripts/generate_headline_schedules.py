@@ -42,6 +42,7 @@ from loadgen.headline_schedule import (  # noqa: E402
     HEADLINE_SCHEDULE_SCHEME_VERSION,
     RepeatIdentity,
     build_headline_schedule,
+    build_thresholded_headline_schedule,
     save_headline_schedule,
 )
 from loadgen.schedule import build_poisson_schedule  # noqa: E402
@@ -112,6 +113,47 @@ def generate_headline(lambdas: tuple[float, ...], repeats: int, warmup_s: float,
     return written
 
 
+def generate_headline_threshold(lambdas: tuple[float, ...], repeats: int, warmup_s: float,
+                                min_duration_s: float, min_count: int,
+                                out_dir: Path, workload_path: Path = WORKLOAD) -> list[dict]:
+    """The duration+count-gated sibling of `generate_headline`, for the
+    attempt-2 low-lambda confirmation points (`WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md`
+    §7, locked 2026-08-22). Same repeat/seed scheme as the exact-N family --
+    only the materializer differs -- so both can share one manifest and one
+    `headline/` directory without the two rules colliding."""
+    workload = load_frozen(workload_path)
+    corpus = load_corpus()
+    written = []
+
+    for repeat_id in range(1, repeats + 1):
+        identity = RepeatIdentity(
+            canonical_membership_id=workload["membership_id"],
+            repeat_id=repeat_id,
+            arrival_seed=ARRIVAL_SEED_BASE + repeat_id,
+            assignment_seed=ASSIGNMENT_SEED_BASE + repeat_id,
+        )
+        for nominal_lambda in lambdas:
+            schedule = build_thresholded_headline_schedule(
+                canonical=workload, corpus=corpus, identity=identity,
+                nominal_lambda_rps=nominal_lambda, warmup_s=warmup_s,
+                min_duration_s=min_duration_s, min_count=min_count,
+                workload_class="headline_controlled")
+            path, digest = save_headline_schedule(schedule, out_dir)
+            prov = schedule.provenance
+            written.append({
+                "path": str(path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                "sha256": digest,
+                "repeat_id": repeat_id,
+                "nominal_lambda_rps": nominal_lambda,
+                "schedule_generation_rule": "min_duration_and_count",
+                "materialized_schedule_count": prov["materialized_schedule_count"],
+                "materialized_warmup_count": prov["materialized_warmup_count"],
+                "materialized_post_warmup_count": prov["materialized_post_warmup_count"],
+                "materialized_schedule_duration_s": prov["materialized_schedule_duration_s"],
+            })
+    return written
+
+
 def generate_secondary(lambdas: tuple[float, ...], out_dir: Path,
                        duration_s: float = SECONDARY_DURATION_S) -> list[dict]:
     """Natural-random draws, the original §3.4 sampling rules, kept verbatim.
@@ -161,6 +203,13 @@ def main() -> None:
                         help="Tier A scouting family: the week2_scout workload, one repeat, "
                              "written to a separate namespace so a diagnostic schedule can "
                              "never be driven as a headline point")
+    parser.add_argument("--threshold-lambdas", type=float, nargs="+", default=[],
+                        help="ADDITIONAL headline lambdas built with the duration+count-gated "
+                             "rule instead of exact-N (attempt-2 low-lambda confirmation points, "
+                             "WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md 7). Written into the "
+                             "same headline/ directory and manifest as --lambdas.")
+    parser.add_argument("--threshold-min-duration-s", type=float, default=2700.0)
+    parser.add_argument("--threshold-min-count", type=int, default=2000)
     args = parser.parse_args()
 
     if args.scout:
@@ -174,6 +223,8 @@ def main() -> None:
     lambdas = tuple(args.lambdas)
     headline = generate_headline(lambdas, args.repeats, args.warmup_s, args.headline_dir,
                                  workload_path=args.workload)
+    for row in headline:
+        row["schedule_generation_rule"] = "exact_n"
 
     print(f"headline family: {len(headline)} schedule(s), "
           f"{args.repeats} repeat(s) x {len(lambdas)} lambda point(s), "
@@ -190,10 +241,33 @@ def main() -> None:
               f"{row['materialized_schedule_rps']:>9.3f} "
               f"{row['nominal_realization_delta_pct']:>+10.2f}%")
 
+    threshold_lambdas = tuple(args.threshold_lambdas)
+    threshold_headline = []
+    if threshold_lambdas:
+        threshold_headline = generate_headline_threshold(
+            threshold_lambdas, args.repeats, args.warmup_s,
+            args.threshold_min_duration_s, args.threshold_min_count,
+            args.headline_dir, workload_path=args.workload)
+        print(f"\nthreshold-gated headline points (min_duration={args.threshold_min_duration_s:g}s "
+              f"min_count={args.threshold_min_count}): {len(threshold_headline)} schedule(s), "
+              f"{args.repeats} repeat(s) x {len(threshold_lambdas)} lambda point(s)")
+        print(f"\n{'repeat':>7} {'lambda':>7} {'total':>7} {'warmup':>7} {'post':>6} "
+              f"{'duration_s':>11}")
+        threshold_total_s = 0.0
+        for row in threshold_headline:
+            threshold_total_s += row["materialized_schedule_duration_s"]
+            print(f"{row['repeat_id']:>7} {row['nominal_lambda_rps']:>7g} "
+                  f"{row['materialized_schedule_count']:>7} {row['materialized_warmup_count']:>7} "
+                  f"{row['materialized_post_warmup_count']:>6} "
+                  f"{row['materialized_schedule_duration_s']:>11.1f}")
+        total_s += threshold_total_s
+
     print(f"\ntotal headline drive time: {total_s / 3600:.2f} h "
           f"(schedule duration only -- excludes standup, drain and the response tail "
           "after the last arrival)")
 
+    all_headline = headline + threshold_headline
+    all_lambdas = tuple(sorted(set(lambdas) | set(threshold_lambdas)))
     manifest = {
         "what": "Redesigned Week 2 schedule families (R4 README R5/R6/R11).",
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -202,19 +276,22 @@ def main() -> None:
             "tier": "A_scout_diagnostic_only" if args.scout else "B_headline_confirmation",
             "canonical_workload": str(args.workload.relative_to(REPO_ROOT)).replace("\\", "/"),
             "canonical_membership_id": load_frozen(args.workload)["membership_id"],
-            "lambdas": list(lambdas),
+            "lambdas": list(all_lambdas),
+            "threshold_lambdas": list(threshold_lambdas),
+            "threshold_min_duration_s": args.threshold_min_duration_s if threshold_lambdas else None,
+            "threshold_min_count": args.threshold_min_count if threshold_lambdas else None,
             "repeats": args.repeats,
             "warmup_s": args.warmup_s,
             "arrival_seed_base": ARRIVAL_SEED_BASE,
             "assignment_seed_base": ASSIGNMENT_SEED_BASE,
             "seed_rule": "arrival_seed = base + repeat_id; assignment_seed = base + repeat_id",
             "total_schedule_duration_s": total_s,
-            "schedules": headline,
+            "schedules": all_headline,
         },
     }
 
     if args.secondary:
-        secondary = generate_secondary(lambdas, args.secondary_dir)
+        secondary = generate_secondary(all_lambdas, args.secondary_dir)
         manifest["secondary"] = {
             "workload_class": "secondary_natural_random",
             "duration_s": SECONDARY_DURATION_S,

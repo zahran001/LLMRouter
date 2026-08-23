@@ -25,7 +25,7 @@ schedule** — the list the driver was actually handed. The difference between
 that schedule and nominal λ is recorded too, as descriptive metadata, and it
 must never fail the driver.
 
-## Censoring decides whether a p99 exists at all (R8)
+## Censoring decides whether a p99 exists at all (R8, superseded 2026-08-22)
 
 At 10/20/30 RPS the 60s client timeout removed 33%/70%/81% of requests from
 the TTFT sample, and the survivors' p99 sat near 60s. The old gate blessed
@@ -34,18 +34,31 @@ That gate is superseded and `n >= 100` is no longer sufficient for anything:
 `tail_valid` meant "enough survivors", which is the wrong question, because
 the requests that vanished were precisely the slow ones the tail is made of.
 
-    censoring rate > 5%   ->  CENSORED, no ordinary p99 verdict
+R8 originally read:
+
+    censoring rate > 5%   ->  CENSORED, no ordinary p99 verdict, AMBIGUOUS
     0 < rate <= 5%        ->  p99 eligible, WITH a tail warning
 
-Eligible is not valid. A point carrying any censoring that could decide the
-UNDER/OVER crossing needs a recorded tail-sensitivity review before it may
-finalize anything; without it the aggregate stays UNCERTAIN (see
-`metrics/classification.py`). The 5% line is a hard automatic gate, not a
-claim that 4.9% is harmless.
+Attempt 1's Tier B still ran into exactly the case this left unhandled: a
+point can be censored enough to *prove* breach without needing a percentile
+at all, and "ambiguous CENSORED" was throwing that proof away. The
+`WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` redesign (locked 2026-08-22)
+replaces the plain 5% gate with an exact order-statistics argument: if enough
+requests are censored that the nearest-rank p99 POSITION is provably among
+them, the state is `OVER_CENSORED` -- breach proven, no ordinary p99,
+never ambiguous. This condition is strictly weaker than the old 5% gate (it
+fires first for any realistic N), so `CENSORING_HARD_GATE` now survives only
+as informational metadata (`censoring_hard_gate_exceeded`) on new records;
+plain `CENSORED` is no longer produced here, only read from pre-2026-08-22
+artifacts. A point carrying censoring below the `OVER_CENSORED` threshold
+still needs a recorded tail-sensitivity review before it may finalize
+anything; without it the aggregate stays UNCERTAIN (see
+`metrics/classification.py`).
 """
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 
 from metrics.percentile import (
@@ -65,11 +78,19 @@ CENSORING_HARD_GATE = 0.05
 # before; only the denominator changed.
 DEFAULT_DELIVERY_BAND_PCT = 5.0
 
-# The four point states.
+# The point states. CENSORED is legacy (attempt 1 and earlier) -- still read
+# by `metrics/classification.py` for historical records, but no longer
+# produced here: OVER_CENSORED (below) subsumes it going forward.
 UNDER = "UNDER"
 OVER = "OVER"
 UNCERTAIN = "UNCERTAIN"
 CENSORED = "CENSORED"
+# Attempt-2 design, locked 2026-08-22 (`WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md`
+# §5, §14). If enough requests are censored that the nearest-rank p99 POSITION
+# is provably among them, the breach is proven -- no percentile is computed,
+# and no "ambiguous, might still be UNDER" reading is possible the way plain
+# CENSORED implied. See `_over_censored_proven` for the exact condition.
+OVER_CENSORED = "OVER_CENSORED"
 
 # --- evidence class: who is allowed to define the breach ---------------------
 #
@@ -343,20 +364,38 @@ def headline_point_metrics(
 
     ttft = [float(r["ttft_ms"]) for r in observed]
 
+    # OVER_CENSORED: exact order-statistics form of the ">=1%" rule. With
+    # n = n_offered_window and rank = ceil(0.99 * n) the nearest-rank p99
+    # position, the top (n - rank + 1) order statistics are the only ones a
+    # censored request (TTFT > the 60s client timeout, which always exceeds
+    # BREACH_TTFT_MS) could ever occupy. If at least that many requests are
+    # censored, position `rank` is guaranteed to be one of them, so p99 >
+    # BREACH_TTFT_MS is proven without ever computing a percentile over
+    # survivors. This is a LOWER bar than the legacy 5% hard gate below (for
+    # any n_offered_window this repo's generators produce, it fires first),
+    # so it decides the state; `CENSORING_HARD_GATE` is retained only as
+    # informational metadata for continuity with pre-2026-08-22 records.
+    if n_offered_window:
+        p99_rank = math.ceil(0.99 * n_offered_window)
+        over_censored_proven = n_censored >= (n_offered_window - p99_rank + 1)
+    else:
+        over_censored_proven = False
+
     hard_gated = censoring_rate > CENSORING_HARD_GATE
-    tail_warning = (not hard_gated) and censoring_rate > 0.0
+    tail_warning = (not over_censored_proven) and censoring_rate > 0.0
 
     ttft_p50 = ttft_p95 = ttft_p99 = ttft_mean = None
-    if ttft and not hard_gated:
+    if ttft and not over_censored_proven:
         ttft_p50 = percentile_nearest_rank(ttft, 50)
         ttft_p95 = percentile_nearest_rank(ttft, 95)
         ttft_p99 = percentile_nearest_rank(ttft, 99)
         ttft_mean = sum(ttft) / len(ttft)
 
-    if hard_gated:
-        state = CENSORED
-        reason = (f"TTFT censoring {censoring_rate:.1%} exceeds the {CENSORING_HARD_GATE:.0%} "
-                  "hard gate; a survivor-only percentile is not a latency measurement")
+    if over_censored_proven:
+        state = OVER_CENSORED
+        reason = (f"{n_censored}/{n_offered_window} requests censored -- enough to guarantee "
+                  f"the nearest-rank p99 position falls among them, proving p99 > "
+                  f"{BREACH_TTFT_MS:.0f}ms without computing a percentile over survivors")
     elif ttft_p99 is None:
         state = UNCERTAIN
         reason = "no TTFT observations after the warmup boundary"
@@ -440,11 +479,13 @@ def headline_point_metrics(
         "n_censored": n_censored,
         "ttft_censoring_rate": censoring_rate,
         "censoring_hard_gate": CENSORING_HARD_GATE,
+        "censoring_hard_gate_exceeded": hard_gated,
+        "over_censored_proven": over_censored_proven,
         "error_categories": _error_categories(samples_window),
         "tail_censoring_warning": tail_warning,
         "tail_censoring_review_status": review_status,
         "tail_censoring_review": tail_censoring_review,
-        "publish_ordinary_p99": not hard_gated and ttft_p99 is not None,
+        "publish_ordinary_p99": not over_censored_proven and ttft_p99 is not None,
         # --- the metric -------------------------------------------------------
         "ttft_p50_ms": ttft_p50,
         "ttft_p95_ms": ttft_p95,

@@ -398,6 +398,7 @@ case "${1:-}" in
   verify-cache)   shift; cmd_verify_cache "$@" ;;
   floor)          shift; cmd_floor "$@" ;;
   scout)          shift; cmd_v2_scenario scout "$@" ;;
+  sustained-scout) shift; cmd_v2_scenario sustained-scout "$@" ;;
   steady)         shift; cmd_v2_scenario steady "$@" ;;
   secondary)      shift; cmd_v1_scenario secondary "$@" ;;
   adversarial)    shift; cmd_v1_scenario adversarial "$@" ;;

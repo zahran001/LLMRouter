@@ -1,10 +1,10 @@
 {
   "what": "Repeat/evidence policy for GPU session #2 (R4 README R10/§11, plus the six human locks taken at the pre-GPU documentation cleanup).",
   "status": "LOCKED",
-  "status_note": "Signed off by the human as locks D-CLEAN-1..6 ahead of Hard Stop R-DOC. Superseded the earlier PROPOSED state of 2026-08-19. metrics.classification.RepeatPolicy mirrors the `policy` block below rather than hard-coding values elsewhere, so the numbers stay a recorded human decision.",
+  "status_note": "Signed off by the human as locks D-CLEAN-1..6 ahead of Hard Stop R-DOC. Superseded the earlier PROPOSED state of 2026-08-19. metrics.classification.RepeatPolicy mirrors the `policy` block below rather than hard-coding values elsewhere, so the numbers stay a recorded human decision. Amended 2026-08-22 (D-ATTEMPT2-1) after GPU session #2's first attempt: Tier B repeat 1 at lambda={1.5,2,2.5} came back CENSORED at every point (27-37%), so a lower-lambda sustained-scout tier and the OVER_CENSORED state were added -- see WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md.",
   "proposed_at": "2026-08-19",
   "locked_at": "2026-08-19",
-  "policy_version": 2,
+  "policy_version": 3,
   "human_locks": {
     "D-CLEAN-1": "1A -- three independent repeats per headline lambda; final classification requires agreement; a 2-1 split is UNCERTAIN, never a majority verdict.",
     "D-CLEAN-2": "2B -- N=4000 is the authorized headline evidence size. N=5000 is NOT authorized. An unresolved crossing is reported as a breach interval.",
@@ -12,6 +12,9 @@
     "D-CLEAN-4": "4A -- the 60s warmup boundary is frozen into the exact-N schedules and validated during Tier A. Post-hoc warmup re-filtering of headline sidecars is not a valid resolution.",
     "D-CLEAN-5": "5A -- scout lambda 1/2/4/8, with 0.5 and 16 pre-authorized as fallback. No other lambda may be invented on the meter.",
     "D-CLEAN-6": "6A -- Week 2 is not closed until the controlled Poisson headline, the natural-random secondary, the steady-arrival reference and the adversarial scenario are accounted for. Only the controlled Poisson workload defines the headline breach."
+  },
+  "human_locks_attempt2": {
+    "D-ATTEMPT2-1": "Locked 2026-08-22 -- sustained-scout tier at lambda={0.5,0.75,1.0,1.25}, each schedule frozen on min(45min elapsed, 2000 post-warmup arrivals) rather than a fixed N; OVER_CENSORED added as a point state (>=1% censoring, as the exact nearest-rank inequality, proves breach without a computed p99); OVER and OVER_CENSORED agree with each other for repeat-family unanimity. A later, separate amendment to the original six D-CLEAN locks above, not a replacement of any of them."
   },
   "policy": {
     "min_valid_repeats": 3,
@@ -25,7 +28,10 @@
     "cross_process_epoch_combination": false,
     "warmup_boundary_s": 60,
     "post_hoc_warmup_refilter": false,
-    "unresolved_boundary": "interval"
+    "unresolved_boundary": "interval",
+    "legacy_censoring_hard_gate": 0.05,
+    "over_censored_state_authorized": true,
+    "over_censored_breach_equivalent_to_over": true
   },
   "rationale": {
     "min_valid_repeats": "Three is the smallest number that can show disagreement AS disagreement: with two, a split is a tie and there is no way to tell which run was unusual.",
@@ -38,7 +44,10 @@
     "cross_process_epoch_combination": "A vLLM restart (spot preemption is the realistic cause) resets the engine state the repeats were meant to hold constant. Mixing epochs would let process-initialization variance enter one repeat and not the others, silently, at exactly the boundary where the verdict is decided.",
     "warmup_boundary_s": "Frozen into the materialized exact-N schedules: N arrivals are materialized at or after this boundary. It is validated against the Tier A transient BEFORE Tier B is driven.",
     "post_hoc_warmup_refilter": "Valid under the superseded fixed-duration design, invalid for the redesigned exact-N headline: filtering past the frozen boundary discards canonical arrivals and leaves fewer than N measured samples. metrics/headline_point.py refuses it. If 60s proves insufficient, the schedules are REGENERATED at a larger boundary, offline.",
-    "unresolved_boundary": "An interval is a legitimate final answer. A <=1% per-run flip rate would need N ~ 7,500, above n_max, so escalating on the meter cannot reach it."
+    "unresolved_boundary": "An interval is a legitimate final answer. A <=1% per-run flip rate would need N ~ 7,500, above n_max, so escalating on the meter cannot reach it.",
+    "legacy_censoring_hard_gate": "Attempt 1's 5% CENSORED gate: retained on new records only as informational metadata (censoring_hard_gate_exceeded), no longer state-determining. The exact rank-based OVER_CENSORED condition is a lower bar for any realistic N, so it fires first.",
+    "over_censored_state_authorized": "If enough requests are censored that the nearest-rank p99 POSITION is provably among them (n_censored >= n_offered_window - ceil(0.99*n_offered_window) + 1), breach is proven without computing a percentile over survivors. Attempt 1's plain CENSORED state called this 'ambiguous'; it was not -- the requests that vanished were exactly the tail.",
+    "over_censored_breach_equivalent_to_over": "A repeat family where some repeats are OVER (computed p99 >= 500ms) and others are OVER_CENSORED (proven via censoring) still agrees unanimously -- both mean breach confirmed. Distinguished only in the per-repeat record, not in the family verdict."
   },
   "escalation": {
     "n5000": {
@@ -60,6 +69,16 @@
       "if_fallback_still_fails_to_bracket": "STOP and return to human review"
     }
   },
+  "sustained_scout": {
+    "lambdas": [0.5, 0.75, 1.0, 1.25],
+    "min_duration_s": 2700,
+    "min_count": 2000,
+    "repeats": 1,
+    "workload": "4000-prompt headline canonical workload (the 500-prompt scout pool is too small for the count floor)",
+    "workload_class": "sustained_scout_controlled",
+    "evidence_class": "DIAGNOSTIC -- locates the crossing region under sustained load, never enters classification",
+    "why": "Attempt 1's N=500 scout (5-6 minute points) read lambda=1 as clean UNDER and lambda=2 as barely OVER at 0% censoring; the real N=4000 (~45 minute) Tier B confirmation at the adjacent lambda=1.5 came back 36% censored. A short window cannot see a queue that is only slowly diverging."
+  },
   "secondary_scope": {
     "required_before_week2_closeout": [
       "controlled Poisson headline",
@@ -80,7 +99,8 @@
       "take a majority verdict from split repeats",
       "combine repeats from different vLLM process epochs",
       "resolve an insufficient warmup by re-filtering headline sidecars after the run",
-      "invent scout lambda values beyond the pre-authorized fallback"
+      "invent scout lambda values beyond the pre-authorized fallback",
+      "invent sustained-scout lambda values beyond {0.5, 0.75, 1.0, 1.25}"
     ]
   }
 }

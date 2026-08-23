@@ -32,7 +32,7 @@ from metrics.classification import (
     classify_point,
     resolve_breach,
 )
-from metrics.headline_point import CENSORED, OVER, UNCERTAIN, UNDER
+from metrics.headline_point import CENSORED, OVER, OVER_CENSORED, UNCERTAIN, UNDER
 
 pytestmark = pytest.mark.redesign
 
@@ -232,6 +232,38 @@ def test_control_disagreeing_repeats_are_uncertain_not_averaged():
     assert aggregate.state == UNCERTAIN
     assert "disagree" in aggregate.reason
     assert len(aggregate.valid_repeats) == 3, "all three are still preserved as evidence"
+
+
+def test_over_censored_agrees_with_over_not_a_split():
+    """Attempt-2 (locked 2026-08-22): OVER (computed p99) and OVER_CENSORED
+    (proven via censoring) both mean breach confirmed. A family mixing them
+    must agree on OVER, not read as a 2-1 disagreement."""
+    records = [_repeat(1, 2.0, OVER, 540.0),
+               _repeat(2, 2.0, OVER_CENSORED, None, censoring=0.36),
+               _repeat(3, 2.0, OVER_CENSORED, None, censoring=0.37)]
+    aggregate = classify_point(records, POLICY)
+    assert aggregate.state == OVER
+    assert len(aggregate.valid_repeats) == 3, (
+        "OVER_CENSORED is a proven breach, not an excluded/ambiguous repeat")
+    assert "agree" in aggregate.reason
+
+
+def test_unanimous_over_censored_agrees_on_over():
+    records = [_repeat(i, 1.5, OVER_CENSORED, None, censoring=0.3 + 0.01 * i) for i in (1, 2, 3)]
+    aggregate = classify_point(records, POLICY)
+    assert aggregate.state == OVER
+    assert len(aggregate.valid_repeats) == 3
+
+
+def test_control_under_and_over_censored_is_still_a_real_split():
+    """The equivalence is ONLY between OVER and OVER_CENSORED -- UNDER
+    disagreeing with a proven breach must still read as UNCERTAIN."""
+    records = [_repeat(1, 2.0, UNDER, 470.0),
+               _repeat(2, 2.0, OVER_CENSORED, None, censoring=0.36),
+               _repeat(3, 2.0, OVER_CENSORED, None, censoring=0.37)]
+    aggregate = classify_point(records, POLICY)
+    assert aggregate.state == UNCERTAIN
+    assert "disagree" in aggregate.reason
 
 
 def test_control_a_censored_repeat_is_never_pooled_with_valid_ones():

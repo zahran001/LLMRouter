@@ -73,6 +73,13 @@ CONTRACTS = {
         name="scout", scheme=V2, workload_class="headline_controlled",
         evidence_class="scout_diagnostic", membership_source=SCOUT_WORKLOAD,
         role="Tier A. Locates the crossing region; never a verdict."),
+    "sustained-scout": ScenarioContract(
+        name="sustained-scout", scheme=V2, workload_class="sustained_scout_controlled",
+        evidence_class="scout_diagnostic", membership_source=HEADLINE_WORKLOAD,
+        role="Attempt-2 Tier A replacement (locked 2026-08-22). Freezes on "
+             "min(45min elapsed, 2000 arrivals) instead of N=500 -- draws from the "
+             "4000-prompt HEADLINE workload, not the 500-prompt scout one, since the "
+             "count floor exceeds scout's pool. Diagnostic; never a verdict."),
     "steady": ScenarioContract(
         name="steady", scheme=V2, workload_class="secondary_steady_reference",
         evidence_class="secondary_diagnostic", membership_source=SCOUT_WORKLOAD,
