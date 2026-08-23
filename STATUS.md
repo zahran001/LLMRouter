@@ -71,8 +71,22 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | Hard Stop R-DOC — human verdict on documentation governance | **PASSED 2026-08-19** (human verdict) |
 | Tier A execution-path remediation | **Done 2026-08-21** — scout and headline share one session #2 measurement path |
 | Final pre-GPU remediation, Phases A–G | **Done 2026-08-21** — removed 2026-08-22; in git history at `625bc0e`; decisions in `WEEK2_PLAN.md` §11.7 |
-| Hard Stop R-PREGPU | **Next** — R-DOC needs re-running too: this pass changed an executable document |
-| GPU session #2 (human-owned) | **Not run.** No instance exists |
+| GPU session #2, attempt 1 (human-owned) | **Ran 2026-08-22.** Floor + Tier A scout clean; Tier B repeat 1 (λ∈{1.5,2,2.5}) `CENSORED` at every point (27–37%) — see below. Instance torn down cleanly |
+| Attempt-2 redesign: sustained-scout tier, `OVER_CENSORED` state, threshold-gated schedules | **Implemented 2026-08-22** — `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` §14 locked; runbook (`WEEK2_GPU_SESSION_2_PLAN.md`) rewritten in place for attempt 2 |
+| Hard Stop R-DOC (attempt 2) | **Next** — must be re-run: this pass rewrote the executable runbook and changed classification code |
+| Hard Stop R-PREGPU (attempt 2) | **Next** — not yet rendered |
+| GPU session #2, attempt 2 (human-owned) | **Not run.** No instance exists |
+
+**Why attempt 1 is not the closing result.** Tier A's N=500 scout (5–6 minute
+points) read λ=1 as clean `UNDER` and λ=2 as barely `OVER` at 0% censoring;
+Tier B's real N=4000 (~34–45 minute) confirmation at the adjacent λ found
+27–37% censoring instead. A short scouting window cannot see a queue that is
+only slowly diverging — the same class of failure the whole Week 2 redesign
+exists to catch, recurring one level up. Full account:
+`WEEK2_GPU_SESSION_2_REPORT.md`. Attempt 2 replaces the N=500 scout with a
+sustained-scout tier (freezes on ≥45min AND ≥2,000 requests, whichever binds
+last) and adds `OVER_CENSORED` — the exact order-statistics proof that
+censoring alone can establish a breach — as detailed above.
 
 ### What the final pre-GPU pass changed
 

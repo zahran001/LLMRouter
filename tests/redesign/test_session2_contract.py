@@ -416,12 +416,14 @@ def test_control_run_refuses_an_artifact_that_has_a_named_scenario(tmp_path):
 
 
 def test_the_runbook_states_the_lambda_selection_rule():
-    """Tier A's ladder and the frozen headline family do not span the same
-    range, so a scout bracket can land where no headline schedule exists. That
-    is a value the operator would otherwise have to invent on the meter."""
+    """Attempt 2 (locked 2026-08-22): the confirmable lambda set moved to the
+    low range {0.5, 0.75, 1.0, 1.25} after Tier B repeat 1 proved 1.5-4 are
+    all over-SLO under sustained load. A bracket outside the frozen family
+    (or spanning more than one committed intermediate) is still a value the
+    operator would otherwise have to invent on the meter."""
     runbook = RUNBOOK.read_text(encoding="utf-8")
     flat = " ".join(runbook.split())
-    assert "MUST come from {1.5, 2, 2.5, 3, 4}" in flat
-    assert "fewer than two frozen headline" in flat, (
+    assert "MUST come from {0.5, 0.75, 1.0, 1.25}" in flat
+    assert "missing a committed headline" in flat, (
         "the no-improvisation matrix needs a row for a bracket outside the frozen family")
     assert "rps5" not in flat or "there is no" in flat

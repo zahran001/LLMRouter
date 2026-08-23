@@ -50,10 +50,14 @@ WEEK2_DOC_INDEX.md                     (this file) which documents govern
 
 Nothing outside that chain may direct GPU session #2.
 
-**Where the project is right now:** R4–R11 are implemented; the redesigned
-benchmark is frozen; **Hard Stop R-DOC PASSED 2026-08-19**, and **Hard Stop
-R-PREGPU** is next. No GPU instance exists, and none may be created before
-R-PREGPU passes too.
+**Where the project is right now:** GPU session #2 attempt 1 ran 2026-08-22
+and produced a real finding (Tier B `CENSORED` at every point) rather than a
+breach number — see `WEEK2_GPU_SESSION_2_REPORT.md`. Attempt 2's design is
+locked and implemented (`WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md`, the
+sustained-scout tier, `OVER_CENSORED`); the runbook is rewritten for it.
+**Hard Stop R-DOC** and **Hard Stop R-PREGPU** both need a fresh render for
+attempt 2 — see `WEEK2_GPU_SESSION_2_PREFLIGHT.md`'s attempt-2 section. No
+GPU instance exists, and none may be created before both pass.
 
 ---
 

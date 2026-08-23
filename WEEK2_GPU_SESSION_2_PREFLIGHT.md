@@ -461,34 +461,95 @@ committed input at all and the unloaded floor had no command.
 
 ---
 
+## Superseded again — GPU session #2 attempt 1 ran, and attempt 2 was built
+
+**Everything above predates 2026-08-22.** It records the evidence that
+actually cleared attempt 1's R-DOC/R-PREGPU (both PASSED, recorded below),
+and that clearance was real — attempt 1 ran, the floor and Tier A scout were
+clean, and the meter, tooling and gates all worked exactly as designed. What
+invalidated the *runbook* was attempt 1's own finding, not a flaw in the
+process that got it running: Tier B repeat 1 (λ∈{1.5,2,2.5}, N=4000) came
+back `CENSORED` at every point (27–37%) despite Tier A's N=500 scout reading
+the same neighbourhood as clean minutes earlier. Full account:
+`WEEK2_GPU_SESSION_2_REPORT.md`.
+
+That finding drove a second implementation pass (2026-08-22,
+`WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` §14, locked the same day):
+
+- a **sustained-scout** tier (freezes on ≥45min elapsed AND ≥2,000 requests,
+  whichever binds last) replacing the N=500 scout as Tier A's tool;
+- the same threshold rule for headline confirmation at the new low-λ range
+  (λ∈{0.5,0.75,1.0,1.25}), replacing a flat N=4000 that was measured
+  impractical below λ=1.5;
+- `OVER_CENSORED`, the exact nearest-rank form of "censoring alone proves the
+  breach," which subsumes attempt 1's flat 5% `CENSORED` gate for any
+  realistic N;
+- `WEEK2_GPU_SESSION_2_PLAN.md` rewritten in place for attempt 2 (same
+  filename, so `RUNBOOK_PATH` and the "exactly one runbook" invariant are
+  untouched) — new Tier A/B sections, no-improvisation matrix rows, cost
+  estimates, and a note that natural-random/steady's operating points are now
+  deferred until the headline boundary closes.
+
+### Regression on the attempt-2 tree
+
+| Suite | Result |
+|---|---|
+| Redesign tier | `pytest tests/redesign` — **374 passed** |
+| Non-router (all tiers) | `pytest tests --deselect tests/router` — **499 passed**, 25 deselected, 0 failed |
+| Redesign controls | `scripts/show_control_bites.py` — **13/13** red→green |
+| Documentation controls | `scripts/show_doc_control_bites.py` — **6/6** red→green |
+| Schedules committed | **56**: 27 headline (15 exact-N + 12 threshold) + 6 scout (unused this attempt) + 4 sustained-scout + 9 natural-random + 9 steady + 1 adversarial |
+| Pre-existing schedule byte-identity | All 15 exact-N headline (λ∈{1.5,2,2.5,3,4}), all 9 secondary_natural, all 9 secondary_steady schedules verified byte-identical before/after every regeneration this pass |
+
+One real defect was caught and fixed during this pass, worth recording rather
+than silently correcting: a filename-reference update script wrote several
+files (`repeat_policy.json`, `loadgen/headline_schedule.py`,
+`metrics/headline_point.py`, two generator scripts) using Python's default
+text-mode write on Windows, which silently converted their line endings from
+LF to CRLF. This broke `C-DOC-2` (a documentation control whose mutation
+matched on a literal `\n`) until caught by re-running the control-bite suite
+and diagnosed to the exact byte-level cause; all six affected files were
+normalized back to LF and the control suite re-verified green. Recorded
+because it is exactly the kind of silent corruption automated regression
+alone would not have caught by number-of-tests-passed — the control bites
+exist to catch a checker going quiet, and this is a case of the *input*, not
+the checker, going stale from an unrelated tool operation.
+
+---
+
 ## Verdict
 
 ```
-HARD STOP R-DOC:    PASS -- human verdict, 2026-08-19
-                    RE-RUN REQUIRED -- the 2026-08-21 remediation changed
-                    WEEK2_GPU_SESSION_2_PLAN.md, an EXECUTABLE document
-HARD STOP R-PREGPU: NEXT -- not yet rendered
+HARD STOP R-DOC (attempt 1):    PASS -- human verdict, 2026-08-19
+HARD STOP R-PREGPU (attempt 1): PASS -- human verdict, 2026-08-22 (session ran)
+GPU session #2, attempt 1:      RAN 2026-08-22 -- CENSORED at every Tier B point,
+                                 stopped after repeat 1 by human decision, torn
+                                 down cleanly. Full account: WEEK2_GPU_SESSION_2_REPORT.md
+HARD STOP R-DOC (attempt 2):    NEXT -- not yet rendered. This pass rewrote the
+                                 executable runbook and changed classification code
+HARD STOP R-PREGPU (attempt 2): NEXT -- not yet rendered
 ```
 
-R-DOC cleared on the second pass. The first cleanup reported this gate green
-while `WEEK2_PLAN.md` -- the document at the top of the authority chain -- still
-carried the superseded warmup re-filter in three places and session #1's whole
-Stage A/B runbook under a heading reading "GPU session runbook (LOCKED)",
-including an instruction to extend the lambda range live on the meter. The
-checker that missed them has been rebuilt (exemptions are now heading- and
-unit-scoped, denials are per-concept), the documents are corrected, and the
-controls are built from the real sentence rather than a synthetic one.
+R-DOC and R-PREGPU cleared attempt 1 for real — the GPU session that followed
+is the evidence. Attempt 2 is a substantial enough change (new tier, new
+classification state, rewritten runbook) that both gates need a fresh render
+rather than inheriting attempt 1's clearance; the repository's own rule is
+that any change to an executable document reopens R-DOC, and this pass
+changed the one document that matters most.
 
-**Closeout state**
+**Closeout state (attempt 2)**
 
 | Step | State |
 |---|---|
-| Human-run fresh-context review | Rendered with the R-DOC verdict |
-| Lock 5A fallback-schedule gap | **Closed** — λ=0.5 and λ=16 committed |
-| Human **R-DOC PASS** | **Rendered 2026-08-19** |
-| Commit + push; record the benchmark SHA | Done at closeout; the SHA is reported with the closeout, not written into a tracked file — recording it here would advance `HEAD` past the commit it names |
-| Human **R-PREGPU PASS** | **Outstanding** |
+| Attempt-2 design locked | **Done 2026-08-22** — `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` §14 |
+| Supporting code implemented (schedule builder, `OVER_CENSORED`, scenario wiring) | **Done 2026-08-22** |
+| Runbook rewritten for attempt 2 | **Done 2026-08-22** — `WEEK2_GPU_SESSION_2_PLAN.md` |
+| Regression + control bites green | **Done 2026-08-22** — see table above |
+| Commit + push; record the benchmark SHA | *(pending — recorded at closeout, not written into a tracked file, per the same reasoning as attempt 1)* |
+| Human-run fresh-context review | **Outstanding** |
+| Human **R-DOC PASS** (attempt 2) | **Outstanding** |
+| Human **R-PREGPU PASS** (attempt 2) | **Outstanding** |
 
 **The GPU is still not self-authorized.** R-DOC clears the documentation, not
-the money. No instance may be created until a human renders **R-PREGPU PASS**,
-and the human owns the meter at every step after that.
+the money. No instance may be created until a human renders **R-PREGPU PASS**
+for attempt 2, and the human owns the meter at every step after that.

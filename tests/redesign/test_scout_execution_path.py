@@ -220,14 +220,22 @@ def test_the_legacy_secondary_replay_still_drives_without_a_seed(tmp_path, mock_
 
 
 def test_the_runbook_tier_a_command_exists_in_both_scripts():
+    """Attempt 2 (locked 2026-08-22): sustained-scout replaces the N=500
+    scout as the runbook's Tier A tool (WEEK2_GPU_SESSION_2_REPORT.md's
+    finding that a short scout window cannot see sustained queue
+    instability). The `scout` command and its schedules still exist and are
+    still checked below -- just not named as this session's Tier A step."""
     runbook = (REPO_ROOT / "WEEK2_GPU_SESSION_2_PLAN.md").read_text(encoding="utf-8")
     local = (GPU_SESSION / "run_on_instance.sh").read_text(encoding="utf-8")
     remote = (GPU_SESSION / "remote_loadgen.sh").read_text(encoding="utf-8")
 
-    assert "run_on_instance.sh scout \\" in runbook, (
-        "the runbook's Tier A step must name the command that actually drives a scout point")
+    assert "run_on_instance.sh sustained-scout \\" in runbook, (
+        "the runbook's Tier A step must name the command that actually drives a "
+        "sustained-scout point")
     assert "scout)" in local and "cmd_scenario" in local
+    assert "sustained-scout)" in local and "cmd_scenario sustained-scout" in local
     assert "scout)" in remote and "cmd_v2_scenario" in remote
+    assert "sustained-scout)" in remote and "cmd_v2_scenario sustained-scout" in remote
     assert "drive_scenario_point.py" in remote, (
         "the remote scout command must reach the session #2 driver")
 
