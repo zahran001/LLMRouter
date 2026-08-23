@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-"""Drive one frozen session #2 exact-N schedule on the instance — scout or
-steady (`WEEK2_GPU_SESSION_2_PLAN.md` §3 and §8, locks 5A and 6A).
+"""Drive one frozen session #2 exact-N schedule on the instance — scout,
+sustained-scout, or steady (`WEEK2_GPU_SESSION_2_PLAN.md` §3 and §8, locks
+5A and 6A).
 
 Runs **on the L4**, from the repo clone, against vLLM on loopback — the same
 place and the same way Tier B runs.
@@ -21,14 +22,17 @@ is ~34% — ample for locating a knee, useless as a verdict. So the record is
 stamped `evidence_class: scout_diagnostic`, and `metrics/classification.py`
 refuses to aggregate it into a headline family.
 
-## One driver, two scenarios, neither with authority
+## One driver, three scenarios, none with authority
 
-Tier A scout and the steady reference are both `headline-schedule-v2`
-exact-N schedules, so they are read by the same contract as the headline
-family and differ from it only in what the record may be used for. The
-scenario is checked against the artifact by `scenario_contract.py` before
-anything is sent: a headline schedule handed to `--scenario scout` is refused
-on membership, which is the only field that separates the two.
+Tier A scout, its sustained-scout replacement, and the steady reference are
+all `headline-schedule-v2` exact-N schedules, so they are read by the same
+contract as the headline family and differ from it only in what the record
+may be used for. The scenario is checked against the artifact by
+`scenario_contract.py` before anything is sent: a headline schedule handed to
+`--scenario scout` is refused on membership, which is the only field that
+separates the two; a headline schedule handed to `--scenario sustained-scout`
+is refused on `workload_class`, the only field separating that pair (they
+share both scheme and membership).
 
 ## Why this drives one point rather than a family
 
@@ -81,7 +85,8 @@ from scenario_contract import CONTRACTS, ScenarioMismatch, validate  # noqa: E40
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--scenario", choices=["scout", "steady"], default="scout",
+    parser.add_argument("--scenario", choices=["scout", "sustained-scout", "steady"],
+                        default="scout",
                         help="which session #2 exact-N scenario this schedule belongs to; "
                              "checked against the artifact, never inferred from its path")
     parser.add_argument("--schedule", type=Path, required=True,

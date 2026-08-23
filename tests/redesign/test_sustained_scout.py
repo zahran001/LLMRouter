@@ -18,6 +18,7 @@ exactly what the misrouting tests below exist to prove still holds.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -147,6 +148,65 @@ def test_the_sustained_scout_command_exists_in_both_scripts():
     remote = (GPU_SESSION / "remote_loadgen.sh").read_text(encoding="utf-8")
     assert "sustained-scout)" in local and "cmd_scenario sustained-scout" in local
     assert "sustained-scout)" in remote and "cmd_v2_scenario sustained-scout" in remote
+
+
+def _load_script(name: str):
+    spec = importlib.util.spec_from_file_location(f"_{name}", GPU_SESSION / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_drive_scenario_point_actually_accepts_sustained_scout_on_its_cli(monkeypatch, tmp_path):
+    """The literal defect found live on GPU session #2 attempt 2: both dispatch
+    scripts (checked above) and `scenario_contract.py` (CONTRACTS table) knew
+    about 'sustained-scout', but `drive_scenario_point.py`'s own argparse
+    `choices` list was never updated off its original `["scout", "steady"]`
+    and rejected the value with a SystemExit before a single request could be
+    sent -- on the meter, after the instance was already up and billing.
+
+    `check_scenario.py` derives its choices from `sorted(CONTRACTS)`, which is
+    why the misrouting tests above (via `_check`) passed despite this: they
+    never went through THIS script's CLI. This test drives the real committed
+    schedule through the real entrypoint, with only the network call stubbed
+    out, so a regression here fails loudly rather than only showing up live.
+    """
+    driver = _load_script("drive_scenario_point")
+
+    captured: list[dict] = []
+
+    def _capture(_sched, _corpus, **kwargs):
+        captured.append(kwargs)
+        return {
+            "ttft_p99_ms": 1.0, "point_state": "UNDER", "ttft_censoring_rate": 0.0,
+            "exact_n_honoured": True, "schedule_delivery_ok": True, "n_shed_total": 0,
+            "evidence_class": kwargs["evidence_class"], "may_define_headline_breach": False,
+            "canonical_prompt_membership_id": "irrelevant-for-this-test",
+            "nominal_lambda_rps": 0.5, "warmup_boundary_s": 60.0,
+            "post_warmup_target_count": 2000,
+            "provenance": {"n_sent": 1, "n_errored": 0, "n_scheduled_driven": 1, "n_shed": 0},
+        }
+
+    monkeypatch.setattr(driver, "drive_redesign_point", _capture)
+
+    verdict = tmp_path / "prefix_cache_verdict.json"
+    verdict.write_text(json.dumps({"verdict": "PREFIX_CACHING_DISABLED", "min_ratio": 0.99}),
+                       encoding="utf-8")
+    real_schedule = SUSTAINED_SCOUT_DIR / "headline_r1_rps0.5.schedule.json"
+    old_argv = sys.argv
+    sys.argv = ["drive_scenario_point.py", "--scenario", "sustained-scout",
+                "--schedule", str(real_schedule), "--out-dir", str(tmp_path / "out"),
+                "--base-url", "http://127.0.0.1:1", "--model", "mock",
+                "--process-epoch", "test-epoch",
+                "--prefix-cache-verdict", str(verdict)]
+    try:
+        driver.main()
+    finally:
+        sys.argv = old_argv
+
+    assert len(captured) == 1, "sustained-scout must reach drive_redesign_point, not exit early"
+    assert captured[0]["evidence_class"] == "scout_diagnostic"
 
 
 # ---------------------------------------------------------------------------
