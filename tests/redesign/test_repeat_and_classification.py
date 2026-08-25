@@ -42,7 +42,8 @@ N_PER_RUN = 4000
 
 def _repeat(repeat_id: int, nominal_lambda: float, state: str, p99: float | None,
             censoring: float = 0.0, review: str | None = None,
-            delivery_ok: bool = True, exact_n: bool = True) -> dict:
+            delivery_ok: bool = True, exact_n: bool = True,
+            population: int = N_PER_RUN) -> dict:
     """A record that has PROVEN it is session #2 headline evidence.
 
     The identity fields are not decoration: `classify_point` fails closed, so
@@ -56,7 +57,7 @@ def _repeat(repeat_id: int, nominal_lambda: float, state: str, p99: float | None
         "may_define_headline_breach": True,
         "schedule_scheme_version": "headline-schedule-v2",
         "process_epoch": "vllm-start-1000",
-        "percentile_population_n": N_PER_RUN,
+        "percentile_population_n": population,
         "repeat_id": repeat_id,
         "canonical_prompt_membership_id": MEMBERSHIP,
         "arrival_seed": 1000 + repeat_id,
@@ -427,3 +428,97 @@ def test_the_evidence_ceiling_is_the_policys_to_state():
     assert policy.evidence_ceiling_reached(n_used=5000, repeats_used=1) is True
     assert policy.evidence_ceiling_reached(n_used=4000, repeats_used=3) is True
     assert policy.evidence_ceiling_reached(n_used=4000, repeats_used=2) is False
+
+
+# ===========================================================================
+# D-ATTEMPT2-2 -- threshold lambdas classify on a population FLOOR
+#
+# Found live, offline, from GPU session #2 attempt 2's real Tier B data:
+# repeat_policy.json was updated for the diagnostic sustained-scout tier's
+# threshold parameters (D-ATTEMPT2-1) but never for the fact that the real
+# HEADLINE family at lambda<=1.25 also switched from a fixed N=4000 to the
+# same min(45min, 2000) threshold rule. Each repeat is an independently-
+# seeded draw, so its realized count legitimately varies -- the real
+# lambda=0.75 family this session drove realized 2069/2078/2065 across its
+# three repeats, all frozen into the committed schedule files themselves.
+# Before this fix, `classify_point` refused repeat 2 outright:
+#   percentile_population_n=2078, expected 2069
+# which would have made every threshold-lambda headline family
+# unclassifiable, including the one this session actually produced.
+# ===========================================================================
+
+THRESHOLD_POLICY = RepeatPolicy(
+    min_valid_repeats=3, require_unanimous=True, n_per_run=N_PER_RUN, n_max=5000,
+    max_repeats_authorized=3,
+    headline=HeadlineEvidenceSpec(membership_id=MEMBERSHIP, percentile_population_n=N_PER_RUN,
+                                  threshold_lambdas=(0.5, 0.75, 1.0, 1.25),
+                                  threshold_min_count=2000))
+
+
+def test_a_threshold_lambda_accepts_naturally_varying_population_across_repeats():
+    records = [_repeat(1, 0.75, OVER, 589.2, population=2069),
+              _repeat(2, 0.75, OVER, 559.0, population=2078),
+              _repeat(3, 0.75, OVER_CENSORED, None, censoring=0.025, population=2065)]
+    aggregate = classify_point(records, THRESHOLD_POLICY)
+    assert aggregate.state == OVER
+    assert len(aggregate.valid_repeats) == 3
+
+
+def test_a_threshold_lambda_still_refuses_a_population_below_the_floor():
+    """The floor is not a no-op: something that looks like a scout point
+    (N=500) smuggled in under a threshold lambda must still be caught."""
+    from metrics.classification import NotHeadlineEvidence
+
+    records = [_repeat(1, 0.75, UNDER, 400.0, population=2069),
+              _repeat(2, 0.75, UNDER, 410.0, population=500)]
+    with pytest.raises(NotHeadlineEvidence, match="expected >= 2000"):
+        classify_point(records, THRESHOLD_POLICY)
+
+
+def test_an_exact_n_lambda_still_requires_an_exact_population_match():
+    """The control: fixing the threshold case must not loosen the legacy
+    exact-N=4000 family's protection. lambda=2.0 is not in threshold_lambdas,
+    so a record with more than N_PER_RUN samples is still refused outright,
+    not merely accepted because it clears a floor."""
+    from metrics.classification import NotHeadlineEvidence
+
+    records = [_repeat(1, 2.0, UNDER, 400.0, population=N_PER_RUN),
+              _repeat(2, 2.0, UNDER, 410.0, population=N_PER_RUN + 1)]
+    with pytest.raises(NotHeadlineEvidence, match=r"percentile_population_n=4001, expected 4000"):
+        classify_point(records, THRESHOLD_POLICY)
+
+
+def test_from_frozen_reads_the_headline_threshold_block():
+    """Pins the parse: `HeadlineEvidenceSpec.from_frozen()` must read the new
+    `headline_threshold` block from the real committed repeat_policy.json,
+    not just from a hand-built spec in this file."""
+    policy = RepeatPolicy.from_frozen()
+    spec = policy.headline
+    assert spec.threshold_lambdas == (0.5, 0.75, 1.0, 1.25)
+    assert spec.threshold_min_count == 2000
+    assert spec.percentile_population_n == 4000
+
+
+@pytest.mark.integration
+def test_the_real_session_2_attempt_2_lambda_0_75_family_classifies():
+    """The actual regression: GPU session #2 attempt 2's real pulled Tier B
+    records for lambda=0.75, driven straight through `RepeatPolicy.from_frozen()`
+    with no synthetic data. This is what failed live before the fix."""
+    import json
+    from pathlib import Path
+
+    run_dir = Path(__file__).resolve().parents[2] / "benchmarks" / "runs" / "headline"
+    paths = [run_dir / f"headline_r{r}_rps0.75.metrics.json" for r in (1, 2, 3)]
+    if not all(p.exists() for p in paths):
+        pytest.skip("session #2 attempt 2 artifacts not present in this checkout")
+
+    records = [json.loads(p.read_text(encoding="utf-8")) for p in paths]
+    populations = {r["percentile_population_n"] for r in records}
+    assert len(populations) > 1, (
+        "this fixture is only meaningful while the real repeats still have varying "
+        "population -- if they ever come back identical, this no longer proves the floor "
+        "logic (rather than exact-match) is what's doing the work")
+
+    policy = RepeatPolicy.from_frozen()
+    aggregate = classify_point(records, policy)
+    assert aggregate.state == OVER

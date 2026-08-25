@@ -1,10 +1,10 @@
 {
   "what": "Repeat/evidence policy for GPU session #2 (R4 README R10/§11, plus the six human locks taken at the pre-GPU documentation cleanup).",
   "status": "LOCKED",
-  "status_note": "Signed off by the human as locks D-CLEAN-1..6 ahead of Hard Stop R-DOC. Superseded the earlier PROPOSED state of 2026-08-19. metrics.classification.RepeatPolicy mirrors the `policy` block below rather than hard-coding values elsewhere, so the numbers stay a recorded human decision. Amended 2026-08-22 (D-ATTEMPT2-1) after GPU session #2's first attempt: Tier B repeat 1 at lambda={1.5,2,2.5} came back CENSORED at every point (27-37%), so a lower-lambda sustained-scout tier and the OVER_CENSORED state were added -- see WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md.",
+  "status_note": "Signed off by the human as locks D-CLEAN-1..6 ahead of Hard Stop R-DOC. Superseded the earlier PROPOSED state of 2026-08-19. metrics.classification.RepeatPolicy mirrors the `policy` block below rather than hard-coding values elsewhere, so the numbers stay a recorded human decision. Amended 2026-08-22 (D-ATTEMPT2-1) after GPU session #2's first attempt: Tier B repeat 1 at lambda={1.5,2,2.5} came back CENSORED at every point (27-37%), so a lower-lambda sustained-scout tier and the OVER_CENSORED state were added -- see WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md. Amended again 2026-08-23 (D-ATTEMPT2-2), discovered offline after GPU session #2 attempt 2's real Tier B data: this file was updated for the diagnostic sustained-scout tier's threshold parameters but never for the fact that the real HEADLINE family at lambda<=1.25 ALSO switched from a fixed N=4000 to the same min-duration-and-count threshold rule (WEEK2_GPU_SESSION_2_PLAN.md §5), so metrics.classification could not classify any such family -- every independently-seeded repeat legitimately realizes a different exact count. See the new `headline_threshold` block below.",
   "proposed_at": "2026-08-19",
   "locked_at": "2026-08-19",
-  "policy_version": 3,
+  "policy_version": 4,
   "human_locks": {
     "D-CLEAN-1": "1A -- three independent repeats per headline lambda; final classification requires agreement; a 2-1 split is UNCERTAIN, never a majority verdict.",
     "D-CLEAN-2": "2B -- N=4000 is the authorized headline evidence size. N=5000 is NOT authorized. An unresolved crossing is reported as a breach interval.",
@@ -14,7 +14,8 @@
     "D-CLEAN-6": "6A -- Week 2 is not closed until the controlled Poisson headline, the natural-random secondary, the steady-arrival reference and the adversarial scenario are accounted for. Only the controlled Poisson workload defines the headline breach."
   },
   "human_locks_attempt2": {
-    "D-ATTEMPT2-1": "Locked 2026-08-22 -- sustained-scout tier at lambda={0.5,0.75,1.0,1.25}, each schedule frozen on min(45min elapsed, 2000 post-warmup arrivals) rather than a fixed N; OVER_CENSORED added as a point state (>=1% censoring, as the exact nearest-rank inequality, proves breach without a computed p99); OVER and OVER_CENSORED agree with each other for repeat-family unanimity. A later, separate amendment to the original six D-CLEAN locks above, not a replacement of any of them."
+    "D-ATTEMPT2-1": "Locked 2026-08-22 -- sustained-scout tier at lambda={0.5,0.75,1.0,1.25}, each schedule frozen on min(45min elapsed, 2000 post-warmup arrivals) rather than a fixed N; OVER_CENSORED added as a point state (>=1% censoring, as the exact nearest-rank inequality, proves breach without a computed p99); OVER and OVER_CENSORED agree with each other for repeat-family unanimity. A later, separate amendment to the original six D-CLEAN locks above, not a replacement of any of them.",
+    "D-ATTEMPT2-2": "Recorded 2026-08-23 -- the real headline evidence family at lambda={0.5,0.75,1.0,1.25} uses the SAME min(45min, 2000) threshold rule as the diagnostic sustained-scout tier, not the fixed N=4000 of D-CLEAN-2. Each repeat is an independently-seeded draw, so its realized post-warmup count varies by realization (observed 2065-2078 across three repeats at lambda=0.75 in GPU session #2 attempt 2) -- classification accepts a floor of `headline_threshold.min_count` for these lambdas rather than requiring exact equality to `n_per_run`. D-CLEAN-2's N=4000 ceiling and interval-on-non-resolution rule are unchanged for lambda>=1.5."
   },
   "policy": {
     "min_valid_repeats": 3,
@@ -78,6 +79,14 @@
     "workload_class": "sustained_scout_controlled",
     "evidence_class": "DIAGNOSTIC -- locates the crossing region under sustained load, never enters classification",
     "why": "Attempt 1's N=500 scout (5-6 minute points) read lambda=1 as clean UNDER and lambda=2 as barely OVER at 0% censoring; the real N=4000 (~45 minute) Tier B confirmation at the adjacent lambda=1.5 came back 36% censored. A short window cannot see a queue that is only slowly diverging."
+  },
+  "headline_threshold": {
+    "lambdas": [0.5, 0.75, 1.0, 1.25],
+    "min_duration_s": 2700,
+    "min_count": 2000,
+    "schedule_generation_rule": "min_duration_and_count",
+    "evidence_class": "headline_evidence -- this IS the breach-defining family for these lambdas, unlike sustained_scout above",
+    "why": "D-ATTEMPT2-2. WEEK2_GPU_SESSION_2_PLAN.md §5: N=4000 was measured impractical below lambda=1.5 (over two hours per repeat at lambda=0.5), so the real headline confirmation at these four lambdas uses the same min(45min, 2000) freezing rule as sustained_scout above -- same numbers, but a SEPARATE block, because sustained_scout is diagnostic-only and this one defines the breach; conflating them would recreate the exact workload-identity ambiguity scenario_contract.py exists to prevent. `n_per_run` above (4000) still governs lambda>=1.5, whose schedules remain fixed-N."
   },
   "secondary_scope": {
     "required_before_week2_closeout": [

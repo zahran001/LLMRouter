@@ -130,6 +130,8 @@ class RepeatPolicy:
                     "percentile_population_n": self.headline.percentile_population_n,
                     "schedule_scheme_version": self.headline.schedule_scheme_version,
                     "record_version": self.headline.record_version,
+                    "threshold_lambdas": list(self.headline.threshold_lambdas),
+                    "threshold_min_count": self.headline.threshold_min_count,
                 }),
         }
 
@@ -217,6 +219,16 @@ class HeadlineEvidenceSpec:
     percentile_population_n: int
     schedule_scheme_version: str = HEADLINE_SCHEDULE_SCHEME_VERSION
     record_version: str = HEADLINE_POINT_RECORD_VERSION
+    # D-ATTEMPT2-2: attempt-2 switched the real headline family at these
+    # lambdas from a fixed N=4000 to the same min(duration, count) threshold
+    # rule the diagnostic sustained-scout tier uses. Each repeat is an
+    # independently-seeded draw, so its realized count legitimately differs
+    # by realization (observed 2065-2078 across three repeats at lambda=0.75,
+    # GPU session #2 attempt 2) -- these lambdas are checked against a FLOOR
+    # (`threshold_min_count`), every other lambda still against an EXACT
+    # match to `percentile_population_n`.
+    threshold_lambdas: tuple[float, ...] = ()
+    threshold_min_count: int | None = None
 
     @classmethod
     def from_frozen(cls, workload_path: Path | str = HEADLINE_WORKLOAD_PATH,
@@ -231,8 +243,30 @@ class HeadlineEvidenceSpec:
         """
         workload = json.loads(Path(workload_path).read_text(encoding="utf-8"))
         policy = json.loads(Path(policy_path).read_text(encoding="utf-8"))
+        threshold = policy.get("headline_threshold", {})
         return cls(membership_id=workload["membership_id"],
-                   percentile_population_n=int(policy["policy"]["n_per_run"]))
+                   percentile_population_n=int(policy["policy"]["n_per_run"]),
+                   threshold_lambdas=tuple(threshold.get("lambdas", ())),
+                   threshold_min_count=threshold.get("min_count"))
+
+    def population_floor(self, nominal_lambda_rps: float | None) -> int:
+        """The minimum `percentile_population_n` a record at this lambda must meet.
+
+        Exact-N lambdas (the default) must meet this exactly -- see
+        `population_is_exact`. Threshold lambdas only need to clear it, since
+        an independently-seeded repeat legitimately overshoots.
+        """
+        if nominal_lambda_rps in self.threshold_lambdas:
+            if self.threshold_min_count is None:
+                raise NotHeadlineEvidence(
+                    f"lambda={nominal_lambda_rps} is declared a threshold lambda but this spec "
+                    "carries no threshold_min_count -- build it with HeadlineEvidenceSpec.from_frozen() "
+                    "against a repeat_policy.json that has a 'headline_threshold' block.")
+            return self.threshold_min_count
+        return self.percentile_population_n
+
+    def population_is_exact(self, nominal_lambda_rps: float | None) -> bool:
+        return nominal_lambda_rps not in self.threshold_lambdas
 
 
 def _headline_evidence_only(records: list[dict], spec: HeadlineEvidenceSpec) -> None:
@@ -284,10 +318,16 @@ def _headline_evidence_only(records: list[dict], spec: HeadlineEvidenceSpec) -> 
                 f"{_short(spec.membership_id)} -- this is not the headline workload")
 
         population = record.get("percentile_population_n")
-        if population != spec.percentile_population_n:
+        nominal_lambda = record.get("nominal_lambda_rps")
+        floor = spec.population_floor(nominal_lambda)
+        if spec.population_is_exact(nominal_lambda):
+            if population != floor:
+                problems.append(
+                    f"percentile_population_n={population!r}, expected {floor}")
+        elif population is None or population < floor:
             problems.append(
-                f"percentile_population_n={population!r}, expected "
-                f"{spec.percentile_population_n}")
+                f"percentile_population_n={population!r}, expected >= {floor} "
+                f"(lambda={nominal_lambda} is a threshold lambda, D-ATTEMPT2-2)")
 
         # Lock 3A is only enforceable if the record says which server process
         # produced it. A spot preemption forces a vLLM restart mid-family, so

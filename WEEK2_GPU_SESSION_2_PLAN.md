@@ -77,7 +77,7 @@ Record these in the session log. Any mismatch is a STOP.
 | Corpus SHA-256 | `f7ec37d33bc2f53c4468a39c52b792406dbb383de8a38cfbc207c8cf59af6630` (5,000 prompts) |
 | Schedule scheme version | `headline-schedule-v2` |
 | RNG scheme version | `headline-rng-v1` |
-| Repeat policy | `repeat_policy.json`, `"status": "LOCKED"`, `policy_version` 3 (bumped 2026-08-22: `OVER_CENSORED` state + `sustained_scout` block, D-ATTEMPT2-1) |
+| Repeat policy | `repeat_policy.json`, `"status": "LOCKED"`, `policy_version` 4 (bumped 2026-08-22: `OVER_CENSORED` state + `sustained_scout` block, D-ATTEMPT2-1; bumped again 2026-08-23: `headline_threshold` block + floor-based population check for the real headline family at λ≤1.25, D-ATTEMPT2-2) |
 | Percentile method | **nearest-rank**, one shared implementation (`metrics/percentile.py`) |
 | Scout workload | `benchmarks/workloads/week2_scout/canonical_v1.json`, membership id `e9470f8f…` — **separately namespaced so it can never be mistaken for headline evidence.** Superseded as the Tier A tool by sustained-scout (§3); its schedules and code path are unchanged and still exist, just not driven this session |
 | Sustained-scout workload | Same as the headline canonical workload above (`a49ecdd8…`) — the 500-prompt scout pool is too small for the ≥2000-request count floor. `workload_class: sustained_scout_controlled` is what keeps it from being confused with a real headline schedule (`scripts/gpu_session/scenario_contract.py`) |
@@ -497,7 +497,7 @@ the meter running.
 ## 6. Point and repeat validity
 
 Applied **offline, after teardown**, from `repeat_policy.json`
-(`policy_version` 3).
+(`policy_version` 4).
 
 ```
 min_valid_repeats      3
@@ -507,7 +507,19 @@ n_max                  5000
 max_repeats_authorized 3
 sustained_scout.min_duration_s   2700
 sustained_scout.min_count        2000
+headline_threshold.min_duration_s   2700
+headline_threshold.min_count        2000
 ```
+
+`headline_threshold` (D-ATTEMPT2-2, added 2026-08-23) governs the REAL headline
+evidence family at λ∈{0.5, 0.75, 1.0, 1.25} — same numbers as
+`sustained_scout` above, but a separate policy block, since `sustained_scout`
+stays diagnostic-only. `metrics/classification.py` checks a threshold
+lambda's `percentile_population_n` against this floor rather than requiring
+exact equality to `n_per_run` (4000), because each repeat is an
+independently-seeded draw and legitimately realizes a different exact count
+(observed 2065–2078 across three repeats at λ=0.75 in GPU session #2 attempt
+2). `n_per_run` = 4000 still governs λ≥1.5, whose schedules remain fixed-N.
 
 `n_per_run: 4000` no longer applies to whichever λ Tier B drives this
 attempt — the threshold rule makes N a realization outcome (§5), not a fixed
