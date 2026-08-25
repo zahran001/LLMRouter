@@ -467,6 +467,17 @@ improvising on the meter.
 > Two mechanical changes also apply when Block F does run: the percentile is
 > **nearest-rank** (§10.5), and the warmup-N read is against session #2's
 > transient, not session #1's.
+>
+> **Update (2026-08-24): GPU session #2, attempt 2 ran on 2026-08-23** and
+> produced real headline data — λ=0.75 classifies `OVER` (unanimous), λ=0.5
+> classifies `UNCERTAIN` (2–1 split), offline resolution `NO_UNDER_ANCHOR`.
+> This is enough to run Block F's build steps below, but not enough to close
+> `BASELINE.md` with a resolved interval: no λ in range confirmed `UNDER`.
+> Do not force a resolution by re-voting the 0.5 split or adding an unplanned
+> repeat (`repeat_policy.json` forbids both). `BASELINE.md` either states the
+> interval as open below 0.75, or Block F waits for a further session that
+> establishes a confirmed `UNDER` anchor at a lower λ (`WEEK2_CLOSEOUT_PLAN.md`).
+> Full account: `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md`.
 
 **Ref:** §2.6, §6.4, §8. All post-teardown, free.
 

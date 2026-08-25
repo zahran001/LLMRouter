@@ -73,9 +73,11 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | Final pre-GPU remediation, Phases A–G | **Done 2026-08-21** — removed 2026-08-22; in git history at `625bc0e`; decisions in `WEEK2_PLAN.md` §11.7 |
 | GPU session #2, attempt 1 (human-owned) | **Ran 2026-08-22.** Floor + Tier A scout clean; Tier B repeat 1 (λ∈{1.5,2,2.5}) `CENSORED` at every point (27–37%) — see below. Instance torn down cleanly |
 | Attempt-2 redesign: sustained-scout tier, `OVER_CENSORED` state, threshold-gated schedules | **Implemented 2026-08-22** — `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` §14 locked; runbook (`WEEK2_GPU_SESSION_2_PLAN.md`) rewritten in place for attempt 2 |
-| Hard Stop R-DOC (attempt 2) | **Next** — must be re-run: this pass rewrote the executable runbook and changed classification code |
-| Hard Stop R-PREGPU (attempt 2) | **Next** — not yet rendered |
-| GPU session #2, attempt 2 (human-owned) | **Not run.** No instance exists |
+| Hard Stop R-DOC (attempt 2) | Session ran without a verdict recorded here — `WEEK2_GPU_SESSION_2_PREFLIGHT.md`'s attempt-2 verdict block still shows `NEXT / Outstanding`. Not resolved by this update; flagged for human backfill |
+| Hard Stop R-PREGPU (attempt 2) | Same gap as above |
+| GPU session #2, attempt 2 (human-owned) | **Ran 2026-08-23** (two instances — first aborted on an argparse bug, second ran the full runbook). Sustained-scout tier (4 diagnostic points) + Hard Stop GPU-1 (human-cleared) + Tier B headline (λ∈{0.5, 0.75}, 3 repeats each) + secondary/steady/adversarial, clean teardown. **λ=0.75 → `OVER` (unanimous); λ=0.5 → `UNCERTAIN` (2 OVER, 1 UNDER).** Offline resolution: **`NO_UNDER_ANCHOR`** — no λ in the swept range confirmed `UNDER`; escalation not authorized. Full account: `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md` |
+| Threshold-family classification fix (`D-ATTEMPT2-2`) | **Committed 2026-08-24** — real headline family at λ≤1.25 uses the same threshold-freeze rule as sustained-scout; `metrics/classification.py` now checks a population floor instead of exact match for those λ. `repeat_policy.json` `policy_version` 4 |
+| Session #2 evidence promoted | **Done 2026-08-24** — 59 artifacts + SHA-256 manifest at `benchmarks/evidence/week2/session_2/` |
 
 **Why attempt 1 is not the closing result.** Tier A's N=500 scout (5–6 minute
 points) read λ=1 as clean `UNDER` and λ=2 as barely `OVER` at 0% censoring;
@@ -87,6 +89,17 @@ exists to catch, recurring one level up. Full account:
 sustained-scout tier (freezes on ≥45min AND ≥2,000 requests, whichever binds
 last) and adds `OVER_CENSORED` — the exact order-statistics proof that
 censoring alone can establish a breach — as detailed above.
+
+**Attempt 2 is not the closing result either, but for a different reason.**
+Unlike attempt 1, it ran cleanly end to end and produced a genuine boundary
+read: λ=0.75 breaches (unanimous `OVER`), λ=0.5 is a real 2–1 split
+(`UNCERTAIN` — not resolved by majority vote or a fourth repeat;
+`repeat_policy.json` locks forbid both). No λ in the swept range confirmed
+`UNDER`, so the offline resolution is `NO_UNDER_ANCHOR` and the breach
+interval stays open below 0.75. Closing it needs a confirmed `UNDER` anchor
+from a further session at a lower λ, generated and frozen offline first — see
+`WEEK2_CLOSEOUT_PLAN.md` — not more analysis of this session's data. Full
+account: `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md`.
 
 ### What the final pre-GPU pass changed
 
@@ -156,7 +169,10 @@ R-DOC — and the failure mode each one prevents.
 
 `BASELINE.md`, stating: *at X RPS, naive single-replica serving breaches the
 500ms p99 TTFT SLO*, fully sourced and reproducible from the committed
-schedule and corpus artifacts.
+schedule and corpus artifacts. **Not yet written.** Session #2 attempt 2
+established `OVER` at 0.75 but no confirmed `UNDER` anchor
+(`NO_UNDER_ANCHOR`), so the interval is not yet closeable — see
+`WEEK2_CLOSEOUT_PLAN.md` for the planned path to a defensible `(A, B]`.
 
 ### `[CALIBRATE]` values
 
