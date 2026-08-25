@@ -116,6 +116,7 @@ say yes.
 | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
 | `WEEK2_GPU_SESSION_2_REPORT.md` | EVIDENCE | The 2026-08-22 GPU session #2 first-attempt report: what ran, the Tier B all-`CENSORED` finding, why the session stopped after repeat 1, and the resulting schedule redesign | no | — |
 | `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md` | EVIDENCE | The 2026-08-23 GPU session #2 attempt-2 report: full runbook completed, λ=0.75 `OVER` unanimous, λ=0.5 `UNCERTAIN` (2-1 split), resolution `NO_UNDER_ANCHOR`, both defects found and fixed | no | — |
+| `WEEK2_GPU_SESSION_3_REPORT.md` | EVIDENCE | The 2026-08-25 GPU session #3 report: sustained-scout + Tier B at λ∈{0.4,0.6}, both endpoints unanimous across 3 repeats, resolution `RESOLVED`, breach interval `(0.4, 0.6]` closed | no | — |
 | `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` | EVIDENCE | Attempt-2 redesign (sustained scout tier, duration+count schedule rule, `OVER_CENSORED` state). §14 locked 2026-08-22 and the supporting code is implemented; not executable until merged into the current runbook | no | — |
 | `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation of GPU session #1: what it falsified, what survives | no | — |
 | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` | EVIDENCE | R3-closeout and R4→R11 implementation evidence | no | — |
