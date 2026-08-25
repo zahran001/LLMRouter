@@ -93,7 +93,7 @@ censoring alone can establish a breach — as detailed above.
 **Attempt 2 is not the closing result either, but for a different reason.**
 Unlike attempt 1, it ran cleanly end to end and produced a genuine boundary
 read: λ=0.75 breaches (unanimous `OVER`), λ=0.5 is a real 2–1 split
-(`UNCERTAIN` — not resolved by majority vote or a fourth repeat;
+(`UNCERTAIN` — not resolved by taking a majority or adding a fourth repeat;
 `repeat_policy.json` locks forbid both). No λ in the swept range confirmed
 `UNDER`, so the offline resolution is `NO_UNDER_ANCHOR` and the breach
 interval stays open below 0.75. Closing it needs a confirmed `UNDER` anchor

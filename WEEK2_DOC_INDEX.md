@@ -107,6 +107,7 @@ say yes.
 |---|---|---|---|---|
 | `WEEK2_GPU_SESSION_2_PLAN.md` | EXECUTABLE | **The** GPU session #2 runbook. Self-contained: benchmark identity, server and client configuration, Tier A/B, validity states, the no-improvisation matrix, artifact gate, teardown | **yes** | — |
 | `GPU_SESSION_NOTES.md` | EXECUTABLE | GCP + vLLM environment knowledge (working `gcloud` invocation, PuTTY/pscp, flashinfer). Setup reference, **not** the session runbook — it decides no experimental policy | no | — |
+| `WEEK2_CLOSEOUT_PLAN.md` | EXECUTABLE | The session-3 lambda/decision-tree addendum: sustained-scout {0.4, 0.6} (fallback 0.3), the stop/continue decision tree, scope-control constraints. Layers on top of `WEEK2_GPU_SESSION_2_PLAN.md`, whose server/corpus/repeat mechanics it reuses unchanged — not a second runbook | no | — |
 
 ### Evidence — why we believe things
 
@@ -114,6 +115,7 @@ say yes.
 |---|---|---|---|---|
 | `WEEK2_GPU_SESSION_2_PREFLIGHT.md` | EVIDENCE | The R-DOC / R-PREGPU evidence checklist for session #2 | no | — |
 | `WEEK2_GPU_SESSION_2_REPORT.md` | EVIDENCE | The 2026-08-22 GPU session #2 first-attempt report: what ran, the Tier B all-`CENSORED` finding, why the session stopped after repeat 1, and the resulting schedule redesign | no | — |
+| `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md` | EVIDENCE | The 2026-08-23 GPU session #2 attempt-2 report: full runbook completed, λ=0.75 `OVER` unanimous, λ=0.5 `UNCERTAIN` (2-1 split), resolution `NO_UNDER_ANCHOR`, both defects found and fixed | no | — |
 | `WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md` | EVIDENCE | Attempt-2 redesign (sustained scout tier, duration+count schedule rule, `OVER_CENSORED` state). §14 locked 2026-08-22 and the supporting code is implemented; not executable until merged into the current runbook | no | — |
 | `docs/WEEK2_GPU_SESSION_FINDINGS.md` | EVIDENCE | The permanent interpretation of GPU session #1: what it falsified, what survives | no | — |
 | `docs/WEEK2_R4_EVIDENCE_PACKAGE.md` | EVIDENCE | R3-closeout and R4→R11 implementation evidence | no | — |

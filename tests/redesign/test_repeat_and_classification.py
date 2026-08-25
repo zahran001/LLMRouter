@@ -494,7 +494,9 @@ def test_from_frozen_reads_the_headline_threshold_block():
     not just from a hand-built spec in this file."""
     policy = RepeatPolicy.from_frozen()
     spec = policy.headline
-    assert spec.threshold_lambdas == (0.5, 0.75, 1.0, 1.25)
+    # 0.4/0.6/0.3 appended 2026-08-24 (D-SESSION3-1) for a further session's
+    # lower-lambda confirmation; the original four keep their order.
+    assert spec.threshold_lambdas == (0.5, 0.75, 1.0, 1.25, 0.4, 0.6, 0.3)
     assert spec.threshold_min_count == 2000
     assert spec.percentile_population_n == 4000
 

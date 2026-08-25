@@ -1,6 +1,6 @@
 {
   "what": "Sustained-scout schedule family: freezes on min(duration, count), not a fixed N (attempt-2 design, WEEK2_GPU_SESSION_2_ATTEMPT_2_PLAN.md, locked 2026-08-22).",
-  "generated_at": "2026-08-22T21:03:13+00:00",
+  "generated_at": "2026-08-25T05:46:28+00:00",
   "schedule_scheme_version": "headline-schedule-v2",
   "workload_class": "sustained_scout_controlled",
   "canonical_workload": "benchmarks/workloads/week2_headline/canonical_v1.json",
@@ -9,7 +9,10 @@
     0.5,
     0.75,
     1.0,
-    1.25
+    1.25,
+    0.4,
+    0.6,
+    0.3
   ],
   "repeats": 1,
   "warmup_s": 60.0,
@@ -58,6 +61,36 @@
       "materialized_post_warmup_count": 3389,
       "materialized_schedule_duration_s": 2760.4740048866406,
       "materialized_post_warmup_duration_s": 2700.4740048866406
+    },
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps0.4.schedule.json",
+      "sha256": "5596eb6542ff5ac72ccdecd1a9ae21deafc225951716e692ce77f82b0acef35d",
+      "nominal_lambda_rps": 0.4,
+      "materialized_schedule_count": 2031,
+      "materialized_warmup_count": 31,
+      "materialized_post_warmup_count": 2000,
+      "materialized_schedule_duration_s": 4919.147185172431,
+      "materialized_post_warmup_duration_s": 4859.147185172431
+    },
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps0.6.schedule.json",
+      "sha256": "2918444bc682a2523eab4944f36f469398b7beb9eaf8eca89041ca4769a46b55",
+      "nominal_lambda_rps": 0.6,
+      "materialized_schedule_count": 2040,
+      "materialized_warmup_count": 40,
+      "materialized_post_warmup_count": 2000,
+      "materialized_schedule_duration_s": 3354.286751784235,
+      "materialized_post_warmup_duration_s": 3294.286751784235
+    },
+    {
+      "path": "benchmarks/schedules/week2_redesign/sustained_scout/headline_r1_rps0.3.schedule.json",
+      "sha256": "443f77429abb8f326aa213c29e01a012de3b19a344fc4f7e1de8e97aa31365af",
+      "nominal_lambda_rps": 0.3,
+      "materialized_schedule_count": 2023,
+      "materialized_warmup_count": 23,
+      "materialized_post_warmup_count": 2000,
+      "materialized_schedule_duration_s": 6576.041730735685,
+      "materialized_post_warmup_duration_s": 6516.041730735685
     }
   ]
 }

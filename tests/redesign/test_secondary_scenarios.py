@@ -275,7 +275,13 @@ def test_no_scenario_needs_live_generation():
     # lambda=1.5 already CENSORED (36.2%) at N=4000, so lower anchors
     # {0.5, 0.75, 1.0, 1.25} were added to both families (9 lambdas x 3
     # headline repeats = 27; steady is one schedule per lambda = 9).
-    for directory, expected in [("headline", 27), ("scout", 6), ("secondary_natural", 9),
+    # headline expanded again 2026-08-24 (D-SESSION3-1): session #2 attempt 2
+    # left the interval open below 0.75 (NO_UNDER_ANCHOR), so {0.4, 0.6, 0.3}
+    # were added to the threshold family (12 lambdas x 3 headline repeats =
+    # 36). secondary_steady/secondary_natural/adversarial/scout are NOT
+    # re-driven for this extension (WEEK2_CLOSEOUT_PLAN.md Scope Control --
+    # they already served their diagnostic purpose), so their counts hold.
+    for directory, expected in [("headline", 36), ("scout", 6), ("secondary_natural", 9),
                                 ("secondary_steady", 9), ("adversarial", 1)]:
         found = sorted((SCHEDULE_ROOT / directory).glob("*.schedule.json"))
         assert len(found) == expected, f"{directory}/ has {len(found)}, expected {expected}"

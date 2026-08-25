@@ -23,6 +23,12 @@ One repeat only (diagnostic, not evidence) -- `evidence_class` is stamped
 `scout_diagnostic` at drive time by the scenario contract, same as the
 existing N=500 scout, so it can never enter headline classification.
 
+Extended 2026-08-24 for a further session (WEEK2_CLOSEOUT_PLAN.md): appended
+0.4, 0.6, 0.3 to LAMBDAS -- APPENDED, not inserted in sorted order, so the
+original four (0.5/0.75/1.0/1.25) keep their original tuple index and
+therefore their original seed (`ARRIVAL_SEED_BASE + index`); their committed
+schedule bytes must not change on regeneration.
+
 Usage:
     .venv/Scripts/python.exe scripts/generate_sustained_scout_schedules.py
     .venv/Scripts/python.exe scripts/generate_sustained_scout_schedules.py --verify
@@ -59,7 +65,7 @@ MANIFEST_PATH = SCHEDULE_ROOT / "SUSTAINED_SCOUT_MANIFEST.json"
 ARRIVAL_SEED_BASE = 20260822_100
 ASSIGNMENT_SEED_BASE = 20260822_600
 
-LAMBDAS = (0.5, 0.75, 1.0, 1.25)
+LAMBDAS = (0.5, 0.75, 1.0, 1.25, 0.4, 0.6, 0.3)
 WARMUP_S = 60.0
 MIN_DURATION_S = 2700.0
 MIN_COUNT = 2000
