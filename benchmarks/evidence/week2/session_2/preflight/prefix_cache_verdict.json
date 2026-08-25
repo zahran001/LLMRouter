@@ -1,0 +1,47 @@
+{
+  "verdict": "PREFIX_CACHING_DISABLED",
+  "safe_for_controlled_headline": true,
+  "reasons": [
+    "every replay paid full prefill again (ratios 0.97, 0.97, 0.95, all >= 0.85)"
+  ],
+  "probes": [
+    {
+      "prompt_id": 790,
+      "char_len": 44445,
+      "first_ttft_ms": 1538.0037479999373,
+      "replay_ttft_ms": 1492.410251000024,
+      "ratio": 0.970355405791953
+    },
+    {
+      "prompt_id": 3823,
+      "char_len": 39801,
+      "first_ttft_ms": 1223.5902289999103,
+      "replay_ttft_ms": 1184.0401030000294,
+      "ratio": 0.9676769844491102
+    },
+    {
+      "prompt_id": 2257,
+      "char_len": 27562,
+      "first_ttft_ms": 745.6653779998987,
+      "replay_ttft_ms": 707.0756150000079,
+      "ratio": 0.9482478815049717
+    }
+  ],
+  "min_ratio": 0.9482478815049717,
+  "thresholds": {
+    "cache_hit_ratio_ceiling": 0.75,
+    "cold_ratio_floor": 0.85,
+    "min_probe_prompt_chars": 4566
+  },
+  "supporting_evidence": {
+    "prometheus_prefix_cache_hits": 0,
+    "prometheus_prefix_cache_queries": 0,
+    "engine_config_enable_prefix_caching": null,
+    "note": "Supporting only. The behavioural probe decides, because a counter or a config line can be missing or stale while the behaviour cannot."
+  },
+  "what": "Effective prefix-cache state of the live server (R4 README L6).",
+  "checked_at": "2026-08-23T07:28:42+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "model": "meta-llama/Llama-3.2-3B-Instruct",
+  "canonical_membership_id": "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b"
+}

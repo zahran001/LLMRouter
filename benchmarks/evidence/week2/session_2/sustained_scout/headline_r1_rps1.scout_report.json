@@ -1,0 +1,18 @@
+{
+  "what": "Session #2 sustained-scout point drive report (WEEK2_GPU_SESSION_2_PLAN.md 3/8).",
+  "driven_at": "2026-08-23T10:55:53+00:00",
+  "scenario": "sustained-scout",
+  "tag": "headline_r1_rps1",
+  "evidence_class": "scout_diagnostic",
+  "may_define_headline_breach": false,
+  "canonical_prompt_membership_id": "a49ecdd8071920303f240fcf0b8da42dbbc66da593ae88e3c07aa246c4b5aa7b",
+  "nominal_lambda_rps": 1.0,
+  "warmup_boundary_s": 60.0,
+  "post_warmup_target_count": 2640,
+  "exact_n_honoured": true,
+  "schedule_delivery_ok": true,
+  "n_shed_total": 0,
+  "ttft_censoring_rate": 0.0,
+  "point_state": "OVER",
+  "prefix_cache_verdict": "PREFIX_CACHING_DISABLED"
+}
