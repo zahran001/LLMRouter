@@ -1,0 +1,210 @@
+{
+  "what": "GPU session #3 artifacts, promoted as headline evidence -- closed the breach interval.",
+  "classification": "headline evidence -- lambda=0.4 classifies UNDER (3/3 unanimous), lambda=0.6 classifies OVER (3/3 unanimous); resolution RESOLVED, breach_interval (0.4, 0.6]",
+  "session_date": "2026-08-25",
+  "resolution": "RESOLVED",
+  "under_lambdas": [
+    0.4
+  ],
+  "over_lambdas": [
+    0.6
+  ],
+  "breach_interval": [
+    0.4,
+    0.6
+  ],
+  "note": "See WEEK2_GPU_SESSION_3_REPORT.md for the full record. Only session #3's NEW points are listed here (lambda in {0.4, 0.6}) -- sustained_scout/ and headline/ also hold session #2's already-promoted points in the same local directories (benchmarks/evidence/week2/session_2/), not duplicated here. headline/family_report.json reflects only the LAST drive_headline_family.py invocation (repeat 3, lambda 0.4+0.6) -- it is not a cross-repeat aggregate.",
+  "promoted_at": "2026-08-25T20:59:55+00:00",
+  "promoted_from": "benchmarks/runs",
+  "repo_head_at_promotion": "12ee666f79d23994fbad1719c55de5aae638d3af",
+  "hash_algorithm": "sha256",
+  "file_count": 31,
+  "files": [
+    {
+      "path": "benchmarks/evidence/week2/session_3/floor/floor.metrics.json",
+      "source_path": "benchmarks/runs/floor/floor.metrics.json",
+      "sha256": "7fa839c6ed37cfaff1138967d918a8f44c6e2866ee06c02cee83edfc0efa3fe5",
+      "bytes": 2365
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/floor/floor.raw_log.jsonl",
+      "source_path": "benchmarks/runs/floor/floor.raw_log.jsonl",
+      "sha256": "bc233a640e052caf9b25e82d7061db7638ba5c7367b68508cdf047d541d2b116",
+      "bytes": 568723
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/floor/floor.samples.jsonl",
+      "source_path": "benchmarks/runs/floor/floor.samples.jsonl",
+      "sha256": "114c6f083d82750c6c3556911119c01e96d177eaaaf3f90ddbe64ecbbb909acf",
+      "bytes": 663816
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/family_report.json",
+      "source_path": "benchmarks/runs/headline/family_report.json",
+      "sha256": "ce177a8e9316d9be4758bfb7e3a117592d7a5b3a9c2cbe5b60ce5597a5af528c",
+      "bytes": 8785
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r1_rps0.4.metrics.json",
+      "source_path": "benchmarks/runs/headline/headline_r1_rps0.4.metrics.json",
+      "sha256": "848ffcb0b6d4b418b47da7d35ff04d2b88dc8ae97cc9f5dab51eb50319901d57",
+      "bytes": 3333
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r1_rps0.4.raw_log.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r1_rps0.4.raw_log.jsonl",
+      "sha256": "f060d3e3992da1757f5e3229f9657f50ae0ba7203a7e2d24d44f0c2867bd8605",
+      "bytes": 285607
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r1_rps0.4.samples.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r1_rps0.4.samples.jsonl",
+      "sha256": "00a6522d536d48381739990f6062363ab9d491cb7a964812549d71e969a3d191",
+      "bytes": 24819791
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r1_rps0.6.metrics.json",
+      "source_path": "benchmarks/runs/headline/headline_r1_rps0.6.metrics.json",
+      "sha256": "37c373769db1a261c311c4db8fdeaf39e45736044d44696a77d61d8002fe93cb",
+      "bytes": 3337
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r1_rps0.6.raw_log.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r1_rps0.6.raw_log.jsonl",
+      "sha256": "ae741fc60991c5ab20a3c90b831f8b501b68aa70f35c1ab7b71e6b2a7206043b",
+      "bytes": 288354
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r1_rps0.6.samples.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r1_rps0.6.samples.jsonl",
+      "sha256": "1b78ffd22e8b23cd3dcc4ffeee3706b33885f2d9f8234b9cbd831ac67d2d2c8b",
+      "bytes": 24128116
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r2_rps0.4.metrics.json",
+      "source_path": "benchmarks/runs/headline/headline_r2_rps0.4.metrics.json",
+      "sha256": "76c8a70da129780547a7c5220fbbfff4ebbfe60f74318b1bf3b389df531694e4",
+      "bytes": 3339
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r2_rps0.4.raw_log.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r2_rps0.4.raw_log.jsonl",
+      "sha256": "dd2889f23fb53325c7e0cff5583d17ad5590f0033df0b313acb01fac712da3b3",
+      "bytes": 286398
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r2_rps0.4.samples.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r2_rps0.4.samples.jsonl",
+      "sha256": "c53ae794034df85f3793db8c25c121054608363839904a91f18117bea52d72c8",
+      "bytes": 23611733
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r2_rps0.6.metrics.json",
+      "source_path": "benchmarks/runs/headline/headline_r2_rps0.6.metrics.json",
+      "sha256": "a8bd0c907d9dcb47679c326c7ffdd1bded40ec063fc60a7a6618871c0bbd0264",
+      "bytes": 3335
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r2_rps0.6.raw_log.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r2_rps0.6.raw_log.jsonl",
+      "sha256": "4c8c07a28e39f436298e74cbe638df53e6661fbb5a02b8b66ee885e5b7a7db5e",
+      "bytes": 289784
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r2_rps0.6.samples.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r2_rps0.6.samples.jsonl",
+      "sha256": "4f04b7064c88b99402d487d355efc199f794fd382003e12775418f6fca58b113",
+      "bytes": 25845494
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r3_rps0.4.metrics.json",
+      "source_path": "benchmarks/runs/headline/headline_r3_rps0.4.metrics.json",
+      "sha256": "f8c23a240481de48b6a3d6bd9a93066bf9cd03480b2571a6a27fbfe79bdabca3",
+      "bytes": 3333
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r3_rps0.4.raw_log.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r3_rps0.4.raw_log.jsonl",
+      "sha256": "93428bd69835584ecbc782288ab7972b705d60d7f95365526416a2912fc4d0f4",
+      "bytes": 276566
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r3_rps0.4.samples.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r3_rps0.4.samples.jsonl",
+      "sha256": "4feac1d6c6249743e010c952d404f8fa19656c2cd931642f6619e108c540b923",
+      "bytes": 24578627
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r3_rps0.6.metrics.json",
+      "source_path": "benchmarks/runs/headline/headline_r3_rps0.6.metrics.json",
+      "sha256": "cd8c46449692fb772b224ec0bfeb1dc10015699ca2adbed78c5cb20734c24212",
+      "bytes": 3337
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r3_rps0.6.raw_log.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r3_rps0.6.raw_log.jsonl",
+      "sha256": "8f43b14fc26978e130b4c5675561b378c64c42c3886d57ad7ad74aabbd7424ff",
+      "bytes": 288004
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/headline/headline_r3_rps0.6.samples.jsonl",
+      "source_path": "benchmarks/runs/headline/headline_r3_rps0.6.samples.jsonl",
+      "sha256": "f05b198ff34fdf24f40d67f8f051c67251086d76e6cf46f8cab634b0db5d3bdc",
+      "bytes": 26312857
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/preflight/prefix_cache_verdict.json",
+      "source_path": "benchmarks/runs/preflight/prefix_cache_verdict.json",
+      "sha256": "c9c6b1957e5368dfc4c48498a57647dda15909df7abe0e46993daae85985f612",
+      "bytes": 1525
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.4.metrics.json",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.4.metrics.json",
+      "sha256": "13fd4730c7690c242395b22feec65b5d4f2b4d6f7acea48e5e0825e7659505f1",
+      "bytes": 3367
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.4.raw_log.jsonl",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.4.raw_log.jsonl",
+      "sha256": "0ae4165ee39f165d5377312b3a1c9ce5e194a309e9cb5f80bc97fd03d3682cee",
+      "bytes": 279430
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.4.samples.jsonl",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.4.samples.jsonl",
+      "sha256": "c1b68572c104548dac7ed7394b65cf8837e861e44e9b3c6e7383027c311e1dc7",
+      "bytes": 23417968
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.4.scout_report.json",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.4.scout_report.json",
+      "sha256": "98bc7ce486d32ea0dcec31b4d672c9c287ad2a5584b512131219a0aa09ede1a6",
+      "bytes": 671
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.6.metrics.json",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.6.metrics.json",
+      "sha256": "b792e546fc1c2b10c8b84efa08c14ab06bf8670a60effa3982aa044f07bffaf0",
+      "bytes": 3363
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.6.raw_log.jsonl",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.6.raw_log.jsonl",
+      "sha256": "34878de14a36cf38f6fbe79fc707d3440d1ea2bce3b74da1cdd3c6fb6c695dcb",
+      "bytes": 286677
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.6.samples.jsonl",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.6.samples.jsonl",
+      "sha256": "db412650396788286052b40aaedb4c889d9bd9e063ebec3269c5bb33ddc8dce2",
+      "bytes": 24334529
+    },
+    {
+      "path": "benchmarks/evidence/week2/session_3/sustained_scout/headline_r1_rps0.6.scout_report.json",
+      "source_path": "benchmarks/runs/sustained_scout/headline_r1_rps0.6.scout_report.json",
+      "sha256": "94fed82845aa4487fa9d38a48544a1b848a417b014971e803d0cead5aa9abc6c",
+      "bytes": 670
+    }
+  ]
+}

@@ -478,6 +478,14 @@ improvising on the meter.
 > interval as open below 0.75, or Block F waits for a further session that
 > establishes a confirmed `UNDER` anchor at a lower λ (`WEEK2_CLOSEOUT_PLAN.md`).
 > Full account: `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md`.
+>
+> **Update (2026-08-25): GPU session #3 closed the interval.** Sustained-scout
+> and three Tier B repeats at λ∈{0.4, 0.6} both classified unanimously — 0.4
+> `UNDER` 3/3, 0.6 `OVER` 3/3, no split at either endpoint, resolution
+> `RESOLVED`. Block F ran to completion: `BASELINE.md` states breach interval
+> `(0.4, 0.6]`. Full account: `WEEK2_GPU_SESSION_3_REPORT.md`. **Week 2 is
+> closed** — this block's remaining build steps below are historical
+> record of what was done, not outstanding work.
 
 **Ref:** §2.6, §6.4, §8. All post-teardown, free.
 

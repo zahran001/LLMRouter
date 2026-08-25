@@ -100,6 +100,7 @@ say yes.
 | `WEEK2_DOC_INDEX.md` | AUTHORITATIVE | This index | no | — |
 | `docs/WEEK2_MOCK_VALIDATION.md` | AUTHORITATIVE | The V1–V5 mock-validation procedure and its negative controls (GPU-free) | no | — |
 | `benchmarks/workloads/week2_headline/repeat_policy.json` | AUTHORITATIVE | Machine-readable repeat/evidence policy — `"status": "LOCKED"` | no | — |
+| `BASELINE.md` | AUTHORITATIVE | The Week 2 deliverable: measured breach interval `(0.4, 0.6]`, workload identity, endpoint repeat results, validity gates, limitations | no | — |
 
 ### Executable — may be followed on the meter
 

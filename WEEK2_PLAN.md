@@ -22,6 +22,12 @@ artifact carries a provenance note.
 > every supersession with its evidence; the superseded sections carry pointers
 > and keep their original text. Nothing in §10 reopens the infrastructure or the
 > 500ms SLO — see §10.9 for the explicit list of what did *not* change.
+>
+> **Week 2 closed 2026-08-25.** The redesigned methodology this document
+> specifies reached a defensible breach interval: `(0.4, 0.6]` RPS, both
+> endpoints unanimous across three repeats (GPU session #3). This document
+> remains the decision record for *why* the methodology looks the way it
+> does; the result itself is in `BASELINE.md`.
 
 **Status of this document: every design section (§2–§7) is LOCKED and
 implemented, and §6 is superseded for session #2 — see §10 and §11.** See §9 for

@@ -13,14 +13,14 @@ Where the project currently is. `README.md` describes what the project *is*
 and how it's built, and does not track progress — this file is the only place
 that does, so it's the only place that goes stale.
 
-**Current phase: Week 2 — load generation & baseline.**
+**Current phase: Week 3 — Week 2 closed 2026-08-25.**
 
 ## Phases
 
 | Phase | Scope | State |
 |---|---|---|
 | Week 1 | Foundation & measurement: streaming contract, metrics pipeline, transparent router, mock↔vLLM faithfulness | **Closed** |
-| Week 2 | Open-loop load generation, mock validation, and `BASELINE.md` — the naive single-replica breach curve | **In progress** |
+| Week 2 | Open-loop load generation, mock validation, and `BASELINE.md` — the naive single-replica breach curve | **Closed 2026-08-25** — breach interval `(0.4, 0.6]` RPS, both endpoints unanimous |
 | Week 3 | Token-count `prompt_len` for KV-cache math (deferred from Week 2 §3.4) | Not started |
 | Weeks 4–8 | SLO-aware admission control and routing strategies, measured against Week 2's baseline | Not started |
 
@@ -37,7 +37,19 @@ deliberately-broken routers the eval must fail against, so it goes red both
 when the router regresses and when the eval loses its teeth
 (`docs/archive/week1/WEEK1_ROUTER_IMPL.md` §4–§5).
 
-## Week 2 — in progress
+## Week 2 — closed 2026-08-25
+
+**Closing result: the naive single L4 replica is unanimously UNDER at 0.4
+RPS and unanimously OVER at 0.6 RPS — breach interval `(0.4, 0.6]` RPS**,
+confirmed by GPU session #3 (three repeats per endpoint, both unanimous, no
+split). Full statement, methodology and limitations: `BASELINE.md`. Full
+session narrative: `WEEK2_GPU_SESSION_3_REPORT.md`.
+
+This is the end state of a redesign arc that took three GPU sessions to
+reach a defensible interval. The history below (sessions #1 and #2) is kept
+because it explains *why* the redesigned methodology looks the way it does
+— read `BASELINE.md` first for the answer, this section for how it was
+reached.
 
 **GPU session #1 ran on 2026-08-18 and produced diagnostic evidence, not
 a final breach RPS.** The infrastructure worked — vLLM served, the open-loop
@@ -78,6 +90,10 @@ survivorship artifacts, valid only as evidence of severe saturation.
 | GPU session #2, attempt 2 (human-owned) | **Ran 2026-08-23** (two instances — first aborted on an argparse bug, second ran the full runbook). Sustained-scout tier (4 diagnostic points) + Hard Stop GPU-1 (human-cleared) + Tier B headline (λ∈{0.5, 0.75}, 3 repeats each) + secondary/steady/adversarial, clean teardown. **λ=0.75 → `OVER` (unanimous); λ=0.5 → `UNCERTAIN` (2 OVER, 1 UNDER).** Offline resolution: **`NO_UNDER_ANCHOR`** — no λ in the swept range confirmed `UNDER`; escalation not authorized. Full account: `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md` |
 | Threshold-family classification fix (`D-ATTEMPT2-2`) | **Committed 2026-08-24** — real headline family at λ≤1.25 uses the same threshold-freeze rule as sustained-scout; `metrics/classification.py` now checks a population floor instead of exact match for those λ. `repeat_policy.json` `policy_version` 4 |
 | Session #2 evidence promoted | **Done 2026-08-24** — 59 artifacts + SHA-256 manifest at `benchmarks/evidence/week2/session_2/` |
+| Session-3 lambda amendment (`D-SESSION3-1`) | **Locked 2026-08-24** — `repeat_policy.json` `policy_version` 5 extends `sustained_scout`/`headline_threshold` to λ∈{0.3, 0.4, 0.6}; by explicit user direction, run without a separate Hard Stop R-DOC/R-PREGPU pass since session #2 already established the mechanics |
+| GPU session #3 (human-directed, agent-driven) | **Ran 2026-08-25.** Sustained-scout at λ∈{0.4, 0.6} (bracket confirmed) + Tier B headline (3 repeats each), 2 spot preemptions both recovered cleanly, clean teardown. **λ=0.4 → `UNDER` (3/3 unanimous); λ=0.6 → `OVER` (3/3 unanimous).** Resolution: **`RESOLVED`**, breach interval **`(0.4, 0.6]`**. Full account: `WEEK2_GPU_SESSION_3_REPORT.md` |
+| Session #3 evidence promoted | **Done 2026-08-25** — 31 artifacts + SHA-256 manifest at `benchmarks/evidence/week2/session_3/` |
+| `BASELINE.md` written | **Done 2026-08-25** — Week 2 closed |
 
 **Why attempt 1 is not the closing result.** Tier A's N=500 scout (5–6 minute
 points) read λ=1 as clean `UNDER` and λ=2 as barely `OVER` at 0% censoring;
@@ -100,6 +116,13 @@ interval stays open below 0.75. Closing it needs a confirmed `UNDER` anchor
 from a further session at a lower λ, generated and frozen offline first — see
 `WEEK2_CLOSEOUT_PLAN.md` — not more analysis of this session's data. Full
 account: `WEEK2_GPU_SESSION_2_ATTEMPT_2_REPORT.md`.
+
+**Session #3 is the closing result.** Sustained-scout at λ∈{0.4, 0.6} read a
+clean bracket (0.4 UNDER, 0.6 OVER); three Tier B repeats confirmed both
+endpoints unanimously — no split, no `UNCERTAIN`, no majority vote or extra
+repeat needed at either λ. Breach interval **`(0.4, 0.6]`**, tighter than
+attempt 2's open `(?, 0.75]`. Full account: `WEEK2_GPU_SESSION_3_REPORT.md`;
+final statement: `BASELINE.md`.
 
 ### What the final pre-GPU pass changed
 
@@ -167,12 +190,10 @@ R-DOC — and the failure mode each one prevents.
 
 ### Deliverable
 
-`BASELINE.md`, stating: *at X RPS, naive single-replica serving breaches the
-500ms p99 TTFT SLO*, fully sourced and reproducible from the committed
-schedule and corpus artifacts. **Not yet written.** Session #2 attempt 2
-established `OVER` at 0.75 but no confirmed `UNDER` anchor
-(`NO_UNDER_ANCHOR`), so the interval is not yet closeable — see
-`WEEK2_CLOSEOUT_PLAN.md` for the planned path to a defensible `(A, B]`.
+`BASELINE.md` — **written 2026-08-25.** States the measured breach interval
+`(0.4, 0.6]` RPS, fully sourced and reproducible from the committed
+schedule/corpus artifacts and the promoted evidence under
+`benchmarks/evidence/week2/`.
 
 ### `[CALIBRATE]` values
 
