@@ -21,7 +21,7 @@ that does, so it's the only place that goes stale.
 |---|---|---|
 | Week 1 | Foundation & measurement: streaming contract, metrics pipeline, transparent router, mock↔vLLM faithfulness | **Closed** |
 | Week 2 | Open-loop load generation, mock validation, and `BASELINE.md` — the naive single-replica breach curve | **Closed 2026-08-25** — breach interval `(0.4, 0.6]` RPS, both endpoints unanimous |
-| Week 3 | Token-count `prompt_len` for KV-cache math (deferred from Week 2 §3.4) | Not started |
+| Week 3 | Token-count `prompt_len` for KV-cache math (deferred from Week 2 §3.4) | **Active** — contract frozen `WEEK3_COST_CONTRACT.md`, implementation in progress |
 | Weeks 4–8 | SLO-aware admission control and routing strategies, measured against Week 2's baseline | Not started |
 
 ## Week 1 — closed

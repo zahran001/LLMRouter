@@ -43,7 +43,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,6 +52,7 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from cost_model.tokenizer import build_renderer, load_tokenizer  # noqa: E402
 from loadgen.canonical import load_frozen  # noqa: E402
 from loadgen.corpus import load_corpus  # noqa: E402
 from metrics.artifacts import write_json_artifact  # noqa: E402
@@ -76,63 +76,6 @@ FIRST_SESSION_MAX_MODEL_LEN = 20000
 # workload cannot end up with a token-sized margin.
 MARGIN_FRACTION = 0.10
 MARGIN_FLOOR_TOKENS = 512
-
-
-def load_tokenizer():
-    try:
-        from tokenizers import Tokenizer
-    except ImportError:
-        raise SystemExit(
-            "the `tokenizers` package is required for the R4B capacity proof "
-            "(.venv/Scripts/pip install -r requirements-preflight.txt). This check must not fall back "
-            "to a char-based estimate -- replacing the estimate is its entire purpose.")
-
-    tok_path = TOKENIZER_CACHE / "tokenizer.json"
-    cfg_path = TOKENIZER_CACHE / "tokenizer_config.json"
-    if not tok_path.exists() or not cfg_path.exists():
-        raise SystemExit(
-            f"tokenizer not cached under {TOKENIZER_CACHE} -- run "
-            "scripts/fetch_tokenizer.py first (it proves the files are byte-identical to the "
-            "gated meta-llama repo).")
-
-    provenance_path = TOKENIZER_CACHE / "PROVENANCE.json"
-    if not provenance_path.exists():
-        raise SystemExit(f"{TOKENIZER_CACHE} has no PROVENANCE.json -- refusing to use a "
-                         "tokenizer whose identity was never proven")
-
-    return (Tokenizer.from_file(str(tok_path)),
-            json.loads(cfg_path.read_text(encoding="utf-8")),
-            json.loads(provenance_path.read_text(encoding="utf-8")))
-
-
-def build_renderer(tokenizer_config: dict):
-    """Render prompts exactly as vLLM will, using the model's own template."""
-    import jinja2
-
-    template_src = tokenizer_config.get("chat_template")
-    if isinstance(template_src, list):  # newer multi-template format
-        template_src = next(t["template"] for t in template_src if t.get("name") in (None, "default"))
-    if not template_src:
-        raise SystemExit("tokenizer_config.json carries no chat_template -- cannot reproduce "
-                         "what the server sees")
-
-    env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True)
-    env.globals["raise_exception"] = lambda msg: (_ for _ in ()).throw(RuntimeError(msg))
-    env.globals["strftime_now"] = lambda fmt: datetime.now(timezone.utc).strftime(fmt)
-    template = env.from_string(template_src)
-
-    bos = tokenizer_config.get("bos_token") or "<|begin_of_text|>"
-    if isinstance(bos, dict):
-        bos = bos.get("content", "<|begin_of_text|>")
-
-    def render(prompt_text: str) -> str:
-        return template.render(
-            messages=[{"role": "user", "content": prompt_text}],
-            add_generation_prompt=True,
-            bos_token=bos,
-        )
-
-    return render, template_src
 
 
 def _rel(path: Path) -> str:
@@ -175,7 +118,7 @@ def main() -> None:
     corpus = load_corpus()
     by_id = {p.prompt_id: p for p in corpus.prompts}
 
-    tokenizer, tok_config, tok_provenance = load_tokenizer()
+    tokenizer, tok_config, tok_provenance = load_tokenizer(TOKENIZER_CACHE)
     render, template_src = build_renderer(tok_config)
 
     membership = workload["membership"]
