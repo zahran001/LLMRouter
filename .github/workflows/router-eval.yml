@@ -31,6 +31,9 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Install preflight dependencies (tokenizer fetch + Python reference oracle)
+        run: pip install -r requirements-preflight.txt
+
       - name: Show toolchain versions
         run: |
           cargo --version
