@@ -682,6 +682,14 @@ NON_WEEK2_ROOT_DOCS = {
     "METRICS_TEST_SUITE.md",
     "MOCK_TRUST_BOUNDARY.md",
     "WEEK1_MEASUREMENT_SPEC.md",
+    # Week 3 process documents. WEEK2_DOC_INDEX.md is a Week 2 index by
+    # name and scope; Week 3's own authority chain is STATUS.md's
+    # "Week 3 -- closed" section -> WEEK3_EVIDENCE_PACKAGE.md, not this index.
+    "WEEK3_KV_REQUEST_COST_INVESTIGATION_README.md",
+    "WEEK3_KV_REQUEST_COST_INVESTIGATION_REPORT.md",
+    "WEEK3_IMPLEMENTATION_README.md",
+    "WEEK3_COST_CONTRACT.md",
+    "WEEK3_EVIDENCE_PACKAGE.md",
 }
 NON_WEEK2_DOCS_DIR = {"README.md", "architecture.md"}
 

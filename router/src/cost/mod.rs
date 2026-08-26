@@ -269,4 +269,89 @@ mod tests {
         let minus_one_reserved = cost.input_tokens + cost.max_output_tokens - 1;
         assert_ne!(cost.reserved_tokens, minus_one_reserved);
     }
+
+    /// W3-5 CPU overhead characterization
+    /// (WEEK3_IMPLEMENTATION_README.md section 6 W3-5): isolates
+    /// `compute_request_cost`'s own CPU cost from network/streaming noise
+    /// by timing it directly, in-process, at representative input lengths
+    /// drawn from the real corpus's distribution (min/p50/p90/p99/max
+    /// input_tokens, per benchmarks/workloads/week3_cost/golden_vectors.v1.jsonl).
+    /// Not a GPU/TTFT claim -- CPU wall-clock only. Run with
+    /// `cargo test --release -- --ignored --nocapture characterize_cpu_overhead`
+    /// to see the printed table (release, since that's the binary that
+    /// would actually be deployed -- same rationale as tests/router/conftest.py's
+    /// CARGO_PROFILE choice for O1).
+    #[test]
+    #[ignore = "prints a report; run explicitly with --ignored --nocapture"]
+    fn characterize_cpu_overhead_by_input_length() {
+        let Some(tok) = load_test_tokenizer() else { return };
+        let prov = provenance();
+
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+        let corpus_path = repo_root.join("corpus").join("baseline_prompts.jsonl");
+        let golden_path = repo_root
+            .join("benchmarks").join("workloads").join("week3_cost").join("golden_vectors.v1.jsonl");
+        if !corpus_path.exists() || !golden_path.exists() {
+            eprintln!(
+                "skipping: corpus/golden vectors not present (run scripts/build_cost_golden_vectors.py)"
+            );
+            return;
+        }
+
+        let corpus_text = std::fs::read_to_string(&corpus_path).unwrap();
+        let mut texts_by_id: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
+        for line in corpus_text.lines() {
+            let row: serde_json::Value = serde_json::from_str(line).unwrap();
+            let id = row["prompt_id"].as_u64().unwrap();
+            let text = row["text"].as_str().unwrap().to_string();
+            texts_by_id.insert(id, text);
+        }
+
+        let golden_text = std::fs::read_to_string(&golden_path).unwrap();
+        let mut golden: Vec<(u64, u64)> = golden_text
+            .lines()
+            .map(|line| {
+                let row: serde_json::Value = serde_json::from_str(line).unwrap();
+                (row["prompt_id"].as_u64().unwrap(), row["input_tokens"].as_u64().unwrap())
+            })
+            .collect();
+        golden.sort_by_key(|&(_, input_tokens)| input_tokens);
+
+        let n = golden.len();
+        let picks = [
+            ("min", 0),
+            ("p50", n / 2),
+            ("p90", n * 90 / 100),
+            ("p99", n * 99 / 100),
+            ("max", n - 1),
+        ];
+
+        const ITERATIONS: usize = 200;
+        println!("\ninput-length region | input_tokens | min us | mean us | p99 us");
+        for (label, idx) in picks {
+            let (prompt_id, input_tokens) = golden[idx];
+            let text = &texts_by_id[&prompt_id];
+            let request = serde_json::json!({
+                "model": prov.model_id,
+                "messages": [{"role": "user", "content": text}],
+                "max_tokens": 512,
+            });
+            let bytes = serde_json::to_vec(&request).unwrap();
+
+            let mut samples_us = Vec::with_capacity(ITERATIONS);
+            for _ in 0..ITERATIONS {
+                let start = std::time::Instant::now();
+                let cost = compute_request_cost(&bytes, &tok, prov).expect("golden prompt must be supported");
+                samples_us.push(start.elapsed().as_micros() as u64);
+                assert_eq!(cost.input_tokens, input_tokens as u32);
+            }
+            samples_us.sort_unstable();
+            let min_us = samples_us[0];
+            let mean_us = samples_us.iter().sum::<u64>() / samples_us.len() as u64;
+            let p99_us = samples_us[(samples_us.len() * 99 / 100).min(samples_us.len() - 1)];
+            println!(
+                "{label:>4} (prompt {prompt_id}) | {input_tokens:>12} | {min_us:>6} | {mean_us:>7} | {p99_us:>6}"
+            );
+        }
+    }
 }

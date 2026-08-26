@@ -10,7 +10,7 @@ Routing decisions need some notion of how much KV cache capacity a request will 
 
 ## Decision
 
-KV-cache-aware routing uses a **worst-case full-KV footprint estimate**, computed from prompt tokens plus max output tokens. It does not model vLLM's internal scheduler, prefix caching, or preemption behavior.
+KV-cache-aware routing uses a **worst-case full-KV footprint estimate**, computed from prompt tokens plus max output tokens. It does not model vLLM's internal scheduler, prefix caching, or preemption behavior. (This bound is one token more conservative than the true per-request KV-token maximum, a deliberate and inexpensive slack — see the Week 3 investigation, `WEEK3_KV_REQUEST_COST_INVESTIGATION_REPORT.md` section 7.)
 
 ## Consequences
 

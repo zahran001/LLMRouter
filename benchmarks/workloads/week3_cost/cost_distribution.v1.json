@@ -1,0 +1,41 @@
+{
+  "what": "Week 3 request-cost distribution over the full pinned corpus (WEEK3_IMPLEMENTATION_README.md section 6 W3-5).",
+  "source": {
+    "golden_vectors": "benchmarks/workloads/week3_cost/golden_vectors.v1.jsonl",
+    "n": 5000,
+    "max_output_tokens_policy": 512
+  },
+  "percentile_convention": {
+    "percentile_method": "nearest_rank",
+    "percentile_method_version": "nearest-rank-v1",
+    "definition": "rank = ceil(p/100 * n), one-indexed, over sorted valid samples",
+    "note": "Legacy first-session records used numpy_linear (numpy-linear-v1) and are deliberately NOT recomputed under this convention (WEEK2_PLAN.md 10.5)."
+  },
+  "distribution": {
+    "input_tokens": {
+      "min": 36,
+      "max": 10482,
+      "p50": 66.0,
+      "p90": 593.0,
+      "p95": 1185.0,
+      "p99": 2672.0
+    },
+    "reserved_tokens": {
+      "min": 548,
+      "max": 10994,
+      "p50": 578.0,
+      "p90": 1105.0,
+      "p95": 1697.0,
+      "p99": 3184.0
+    },
+    "estimated_kv_bytes": {
+      "min": 62849024,
+      "max": 1260879872,
+      "p50": 66289664.0,
+      "p90": 126730240.0,
+      "p95": 194625536.0,
+      "p99": 365166592.0
+    }
+  },
+  "caveat": "Workload characterization only -- deliberately does not define short/medium/long KV-cost strata. Week 2's character-based strata (tokenizer_capacity_report.json) are NOT reused here as KV-cost strata; any such banding is a separate Week 4 decision to be defined and documented on its own before being locked."
+}
