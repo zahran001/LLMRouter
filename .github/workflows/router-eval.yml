@@ -37,5 +37,8 @@ jobs:
           rustc --version
           python --version
 
+      - name: Fetch the pinned model's tokenizer (hash-verified against the gated repo)
+        run: python scripts/fetch_tokenizer.py
+
       - name: Run the router gate (eval + must-fail negative controls)
         run: bash scripts/router_eval.sh
