@@ -19,7 +19,7 @@ import uuid
 
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse, StreamingResponse
+from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import Route
 
 from mock.configs import CONFIGS, TAIL_MULTIPLIER, TAIL_PROBABILITY, MockConfig
@@ -163,7 +163,8 @@ def _sse(chunk_dict: dict) -> str:
 
 
 async def chat_completions(request: Request) -> StreamingResponse:
-    body = await request.json() if request.headers.get("content-length") not in (None, "0") else {}
+    raw_body = await request.body()
+    body = json.loads(raw_body) if raw_body else {}
     model = body.get("model", DEFAULT_MODEL)
 
     config_name = request.query_params.get("config", "fast")
@@ -187,6 +188,15 @@ async def chat_completions(request: Request) -> StreamingResponse:
     # question "what headers actually arrived?" can be asked.
     if request.query_params.get("echo_headers") is not None:
         return JSONResponse({"headers": {k.lower(): v for k, v in request.headers.items()}})
+
+    # Debug affordance for Week 3's negative control #15 (request-cost
+    # extraction must never mutate forwarded request bytes,
+    # WEEK3_IMPLEMENTATION_README.md section 6 W3-4): returns the RAW body
+    # bytes exactly as received, not a JSON round-trip, so the test can
+    # byte-compare rather than field-compare. Same rationale and pattern as
+    # echo_headers above.
+    if request.query_params.get("echo_body") is not None:
+        return Response(content=raw_body, media_type="application/octet-stream")
 
     async def event_stream():
         chat_id, created = _identity_for(seed)

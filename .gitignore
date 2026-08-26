@@ -49,3 +49,10 @@ benchmarks/**/*.samples.jsonl
 # the pinned model's tokenizer lives in its PROVENANCE.json, which is what
 # makes re-fetching cheap and committing it pointless.
 .tokenizer_cache/
+
+# Verified config.json fetched by scripts/fetch_model_config.py (Week 3 cost
+# model). Same rationale as .tokenizer_cache/: a build input, not evidence --
+# the hash proof lives in PROVENANCE.json and in the derived
+# benchmarks/workloads/week3_cost/request_cost_provenance.v1.json, which IS
+# committed.
+.model_config_cache/

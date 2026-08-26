@@ -7,11 +7,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::body::Body;
+use axum::body::{Body, Bytes};
 use axum::extract::State;
-use axum::http::{HeaderMap, Method, StatusCode, Uri};
+use axum::http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 
+use crate::cost::{self, CostTokenizer};
 use crate::headers;
 
 /// Cap on the *request* body the router will accept.
@@ -33,10 +34,11 @@ const UPSTREAM_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 pub struct AppState {
     client: reqwest::Client,
     upstream_base_url: Arc<str>,
+    cost_tokenizer: Arc<CostTokenizer>,
 }
 
 impl AppState {
-    pub fn new(upstream_base_url: String) -> Self {
+    pub fn new(upstream_base_url: String, cost_tokenizer: Arc<CostTokenizer>) -> Self {
         let client = reqwest::Client::builder()
             .connect_timeout(UPSTREAM_CONNECT_TIMEOUT)
             // The router talks to a replica it was explicitly pointed at; a
@@ -49,6 +51,7 @@ impl AppState {
         Self {
             client,
             upstream_base_url: upstream_base_url.into(),
+            cost_tokenizer,
         }
     }
 }
@@ -86,18 +89,20 @@ impl IntoResponse for ProxyError {
 /// `path` is passed explicitly rather than read off the `Uri` because the
 /// negative-control routes live under their own prefix but must still hit the
 /// upstream's real path.
+///
+/// Takes already-buffered `Bytes` rather than a `Body` (Week 3,
+/// WEEK3_COST_CONTRACT.md section 2 architectural seam): the caller reads
+/// the request body once and hands the SAME buffer both to this function
+/// and to `cost::compute_request_cost`, so cost inspection can never
+/// diverge from what is actually forwarded upstream.
 pub async fn open_upstream(
     state: &AppState,
     method: Method,
     path: &str,
     query: Option<&str>,
     incoming: &HeaderMap,
-    body: Body,
+    bytes: Bytes,
 ) -> Result<reqwest::Response, ProxyError> {
-    let bytes = axum::body::to_bytes(body, MAX_REQUEST_BODY_BYTES)
-        .await
-        .map_err(ProxyError::ReadRequestBody)?;
-
     let mut url = format!("{}{}", state.upstream_base_url, path);
     if let Some(query) = query {
         url.push('?');
@@ -114,6 +119,37 @@ pub async fn open_upstream(
         .map_err(ProxyError::Upstream)
 }
 
+/// Read the request body once, capped at `MAX_REQUEST_BODY_BYTES` --
+/// shared by every caller of `open_upstream` (the real route and, via
+/// `wrong.rs`, the negative-control routes) so there is exactly one place
+/// that does this read.
+pub(crate) async fn buffer_request_body(body: Body) -> Result<Bytes, ProxyError> {
+    axum::body::to_bytes(body, MAX_REQUEST_BODY_BYTES)
+        .await
+        .map_err(ProxyError::ReadRequestBody)
+}
+
+/// `X-Request-Cost-*` response headers, attached only on a successfully
+/// computed cost (WEEK3_COST_CONTRACT.md section 4). Never attached on a
+/// `RequestCostError` -- an unsupported/uncostable request proxies through
+/// with no extra headers, exactly as it did before Week 3.
+fn cost_response_headers(cost: cost::RequestCost) -> [(HeaderName, HeaderValue); 3] {
+    [
+        (
+            HeaderName::from_static("x-request-cost-input-tokens"),
+            HeaderValue::from_str(&cost.input_tokens.to_string()).expect("numeric header value"),
+        ),
+        (
+            HeaderName::from_static("x-request-cost-reserved-tokens"),
+            HeaderValue::from_str(&cost.reserved_tokens.to_string()).expect("numeric header value"),
+        ),
+        (
+            HeaderName::from_static("x-request-cost-estimated-kv-bytes"),
+            HeaderValue::from_str(&cost.estimated_kv_bytes.to_string()).expect("numeric header value"),
+        ),
+    ]
+}
+
 /// POST /v1/chat/completions — the real router.
 ///
 /// The whole Week 1 streaming claim lives in the body line below. Nothing
@@ -128,10 +164,24 @@ pub async fn proxy(
     incoming: HeaderMap,
     body: Body,
 ) -> Result<Response, ProxyError> {
-    let upstream = open_upstream(&state, method, uri.path(), uri.query(), &incoming, body).await?;
+    let bytes = buffer_request_body(body).await?;
+
+    // Week 3 (WEEK3_COST_CONTRACT.md section 2): a RequestCostError is
+    // purely internal signal. It is never surfaced as an HTTP error and
+    // never blocks forwarding -- `open_upstream` below receives the exact
+    // same `bytes` regardless of whether costing succeeded.
+    let cost_result = cost::compute_request_cost(&bytes, &state.cost_tokenizer, cost::provenance());
+
+    let upstream =
+        open_upstream(&state, method, uri.path(), uri.query(), &incoming, bytes).await?;
 
     let status = upstream.status();
-    let response_headers = headers::response_headers(upstream.headers());
+    let mut response_headers = headers::response_headers(upstream.headers());
+    if let Ok(cost) = cost_result {
+        for (name, value) in cost_response_headers(cost) {
+            response_headers.insert(name, value);
+        }
+    }
 
     // THE line. Do not "optimize" this into a collect.
     let body = Body::from_stream(upstream.bytes_stream());

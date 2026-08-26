@@ -1,0 +1,24 @@
+{
+  "schema_version": "1",
+  "cost_model_version": "v1",
+  "formula_version": "kv-worst-case-gqa-v1",
+  "source_provenance": {
+    "model_id": "meta-llama/Llama-3.2-3B-Instruct",
+    "model_revision": "0cb88a4f764b7a12671c53f0838cd831a0843b95",
+    "model_config_sha256": "39fb36dc5416f445ebc4e71cb71fbcf6727e80a35836d8ba1a1474c318467b7a",
+    "tokenizer_sha256": "79e3e522635f3171300913bb421464a87de6222182a0570b9b2ccba2a964b2b4",
+    "tokenizer_config_sha256": "9823dcfdc1121869029da45192238e85cf44f0b232a6d9dc20e4fe6f4242a14e",
+    "chat_template_sha256": "5816fce10444e03c2e9ee1ef8a4a1ea61ae7e69e438613f3b17b69d0426223a4"
+  },
+  "derived_architecture": {
+    "num_hidden_layers": 28,
+    "num_key_value_heads": 8,
+    "head_dim": 128,
+    "logical_kv_bytes_per_token": 114688
+  },
+  "serving_runtime": {
+    "effective_kv_cache_dtype": "bfloat16",
+    "bytes_per_kv_element": 2,
+    "vllm_version": "0.27.1"
+  }
+}

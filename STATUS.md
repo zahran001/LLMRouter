@@ -13,7 +13,7 @@ Where the project currently is. `README.md` describes what the project *is*
 and how it's built, and does not track progress — this file is the only place
 that does, so it's the only place that goes stale.
 
-**Current phase: Week 3 — Week 2 closed 2026-08-25.**
+**Current phase: Week 4 — Week 3 closed 2026-08-25.**
 
 ## Phases
 
@@ -21,7 +21,7 @@ that does, so it's the only place that goes stale.
 |---|---|---|
 | Week 1 | Foundation & measurement: streaming contract, metrics pipeline, transparent router, mock↔vLLM faithfulness | **Closed** |
 | Week 2 | Open-loop load generation, mock validation, and `BASELINE.md` — the naive single-replica breach curve | **Closed 2026-08-25** — breach interval `(0.4, 0.6]` RPS, both endpoints unanimous |
-| Week 3 | Token-count `prompt_len` for KV-cache math (deferred from Week 2 §3.4) | Not started |
+| Week 3 | Request-cost signal (`input_tokens`/`reserved_tokens`/`estimated_kv_bytes`) for KV-cache math (deferred from Week 2 §3.4) | **Closed 2026-08-25** — Rust↔Python conformance exact over the full 5,000-row corpus; see `WEEK3_EVIDENCE_PACKAGE.md` |
 | Weeks 4–8 | SLO-aware admission control and routing strategies, measured against Week 2's baseline | Not started |
 
 ## Week 1 — closed
@@ -224,6 +224,38 @@ canonical arrivals and silently leaves fewer than N measured samples.
 forward** at Hard Stop GPU-1 against session #2's Tier A transient, and if 60s
 proves insufficient the schedules are **regenerated offline at a larger
 boundary** — never re-filtered after the fact (`WEEK2_PLAN.md` §11.4).
+
+## Week 3 — closed 2026-08-25
+
+**Closing result:** LLMRouter deterministically computes the exact
+rendered-input token count under the pinned tokenizer/template identity,
+reserves the request's full permitted output budget, converts the
+reservation into the locked conservative logical KV-cost estimate
+(`estimated_kv_bytes = (input_tokens + max_output_tokens) *
+logical_kv_bytes_per_token`, `logical_kv_bytes_per_token = 114,688` bytes
+for the pinned identity), and exposes that signal through a stable
+`RequestCost` interface (Python `cost_model/`; Rust `router/src/cost/`,
+wired into the existing proxy behind `X-Request-Cost-*` response
+headers). The Rust runtime agrees with the Python reference **exactly**
+over the full pinned corpus (5,000/5,000 requests) plus required edge
+cases, all 15 required negative controls demonstrably bite, request
+forwarding remains byte-faithful (including for unsupported requests),
+and the existing Week 1/2 router-eval gate (fidelity, streaming, overhead,
+headers/errors, the 5 legacy negative controls) stays green. Full
+evidence: `WEEK3_EVIDENCE_PACKAGE.md`.
+
+Two locked decisions carry forward into Week 4:
+
+- **Week 4+ serving must explicitly pin `--kv-cache-dtype bfloat16`** and
+  verify the effective resolved dtype at startup before any routing
+  experiment begins (`WEEK3_IMPLEMENTATION_README.md` §2.8) — Week 2's
+  serving identity itself remains historically unchanged.
+- Week 4 routing code consumes `RequestCost` only — it must not need to
+  know tokenizer internals, chat-template internals, model architecture
+  constants, or the KV-byte formula itself (`WEEK3_IMPLEMENTATION_README.md`
+  §10).
+
+Work happened on branch `week3-request-cost`; `main` is unchanged by Week 3.
 
 ## Known issues
 

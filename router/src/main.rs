@@ -1,8 +1,11 @@
 mod config;
+mod cost;
 mod headers;
 mod proxy;
 #[cfg(feature = "wrong-routers")]
 mod wrong;
+
+use std::sync::Arc;
 
 use axum::{
     routing::{get, post},
@@ -10,6 +13,7 @@ use axum::{
 };
 
 use crate::config::Config;
+use crate::cost::CostTokenizer;
 use crate::proxy::AppState;
 
 #[tokio::main]
@@ -24,7 +28,21 @@ async fn main() {
         }
     };
 
-    let state = AppState::new(cfg.upstream_base_url.clone());
+    // Week 3 (WEEK3_COST_CONTRACT.md): fail loudly at startup, same as the
+    // upstream config above, rather than discovering a missing/unproven
+    // tokenizer cache on the first request. A RequestCostError on a live
+    // request is expected and never fatal (see cost::mod); a missing
+    // tokenizer cache at startup is an operator error and is fatal.
+    let cost_tokenizer_dir = crate::cost::tokenizer::default_cache_dir();
+    let cost_tokenizer = match CostTokenizer::load(&cost_tokenizer_dir) {
+        Ok(tok) => Arc::new(tok),
+        Err(err) => {
+            eprintln!("llmrouter: fatal cost-tokenizer error: {err}");
+            std::process::exit(2);
+        }
+    };
+
+    let state = AppState::new(cfg.upstream_base_url.clone(), cost_tokenizer);
     let app = Router::new()
         .route("/health", get(health))
         .route("/v1/chat/completions", post(proxy::proxy));
