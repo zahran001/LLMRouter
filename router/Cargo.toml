@@ -6,14 +6,34 @@ edition = "2024"
 [features]
 # Test-only. Mounts the two deliberately-broken routers (src/wrong.rs) the
 # eval must fail against. Never enable for a real deployment or benchmark.
-wrong-routers = ["dep:futures-util", "dep:serde_json"]
+wrong-routers = ["dep:futures-util"]
 
 [dependencies]
 axum = "0.8.9"
 reqwest = { version = "0.13.4", features = ["stream"] }
 tokio = { version = "1.53.1", features = ["full"] }
 
-# wrong-routers only: the real router needs neither a stream combinator nor a
-# JSON parser, which is precisely the point (decision 2 rationale).
+# Week 3 (WEEK3_COST_CONTRACT.md): request-cost computation on the already-
+# buffered request body. This is the one deliberate, documented break of
+# Week 1 decision 2's "no JSON parser in the real router" invariant -- the
+# RESPONSE stream (decision 2's actual concern, WEEK1_ROUTER_IMPL.md sec 2)
+# is untouched; only the request-body path gains a JSON parser.
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+# HF's own Rust tokenizer crate -- the same library the Python `tokenizers`
+# package binds to, so behavior parity with cost_model/tokenizer.py is a
+# realistic target.
+tokenizers = "0.20"
+# Jinja2-compatible chat-template rendering, matching
+# cost_model/tokenizer.py's jinja2.Environment(trim_blocks=True,
+# lstrip_blocks=True) exactly.
+minijinja = "2.5"
+# strftime-compatible date formatting for the chat template's
+# `strftime_now(fmt)` global, matching Python's
+# `datetime.now(timezone.utc).strftime(fmt)` semantics directly.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+# wrong-routers only: the real (non-wrong) response path needs no stream
+# combinator, which is precisely the point (decision 2 rationale). serde_json
+# is now a plain dependency (above) for the Week 3 request-cost path.
 futures-util = { version = "0.3.31", optional = true }
-serde_json = { version = "1.0.145", optional = true }

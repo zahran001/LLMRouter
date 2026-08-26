@@ -28,7 +28,7 @@ use axum::Router;
 use futures_util::StreamExt;
 
 use crate::headers;
-use crate::proxy::{open_upstream, AppState, ProxyError};
+use crate::proxy::{buffer_request_body, open_upstream, AppState, ProxyError};
 
 /// The upstream path both controls proxy to, regardless of the prefixed path
 /// they were called on.
@@ -55,7 +55,8 @@ async fn wrong_router_buffers(
     incoming: HeaderMap,
     body: Body,
 ) -> Result<Response, ProxyError> {
-    let upstream = open_upstream(&state, method, UPSTREAM_CHAT_PATH, uri.query(), &incoming, body).await?;
+    let bytes = buffer_request_body(body).await?;
+    let upstream = open_upstream(&state, method, UPSTREAM_CHAT_PATH, uri.query(), &incoming, bytes).await?;
 
     let status = upstream.status();
     let response_headers = headers::response_headers(upstream.headers());
@@ -80,7 +81,8 @@ async fn wrong_router_reemit(
     incoming: HeaderMap,
     body: Body,
 ) -> Result<Response, ProxyError> {
-    let upstream = open_upstream(&state, method, UPSTREAM_CHAT_PATH, uri.query(), &incoming, body).await?;
+    let bytes = buffer_request_body(body).await?;
+    let upstream = open_upstream(&state, method, UPSTREAM_CHAT_PATH, uri.query(), &incoming, bytes).await?;
 
     let status = upstream.status();
     let response_headers = headers::response_headers(upstream.headers());
